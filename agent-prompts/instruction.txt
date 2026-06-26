@@ -1,0 +1,14 @@
+Lee el archivo next-session.txt en esta carpeta para ver el contexto actual.
+Sesión 5 (JWT Authentication) está COMPLETA. Elige una de las opciones disponibles (PATH 1-6).
+Asegúrate de que npm run check pase antes de terminar.
+
+RECOMENDACIÓN PARA PRÓXIMA SESIÓN:
+→ PATH 3: FRONTEND JWT LOGIN UI (2-3 horas) - Crear pantallas de login/registro
+→ Luego PATH 5: DEPLOY TO PRODUCTION (30-40 minutos) - Desplegar a producción
+
+IMPORTANTE: Al finalizar tu sesión, actualiza los archivos en agent-prompts/ 
+para que la próxima sesión tenga contexto fresco:
+- Edita next-session.txt: actualiza sección "WHAT WAS DONE IN PREVIOUS SESSIONS"
+- Edita next-session.txt: ajusta las opciones según lo que completaste
+- Edita examples.md: agrega nuevos ejemplos de tu trabajo
+- Ejecuta: git add agent-prompts/ && git commit -m "chore: update prompts"
