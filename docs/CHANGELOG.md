@@ -1,4 +1,4 @@
-# SESSION_CHANGELOG.md - Changes Made Through June 26, 2026
+# Changelog — Changes Made Through June 26, 2026
 
 ## Session 5: JWT Authentication (June 26, 2026)
 
