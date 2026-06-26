@@ -1,2 +1,0 @@
-Lee el archivo next-prompt.txt en la raíz del proyecto y sigue una de las 
-5 opciones que se describen. Asegúrate de que npm run check pase antes de terminar.
