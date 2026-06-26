@@ -10,9 +10,9 @@ tests green. **Not yet deployed to production.**
 ## Next up
 1. **Deploy to production** (~40 min, human-driven) — Railway (PostgreSQL + Redis + backend)
    and Vercel (frontend). Needs dashboard access, so a person clicks through while the agent
-   preps env vars. Guide: `docs/PRODUCTION_DEPLOYMENT_GUIDE.md` · vars: `docs/ENVIRONMENT_VARIABLES_TEMPLATE.md`.
+   preps env vars. Guide: `docs/deployment/PRODUCTION_DEPLOYMENT_GUIDE.md` · vars: `docs/deployment/ENVIRONMENT_VARIABLES_TEMPLATE.md`.
 2. **Real AWS S3** (~1–2 h) — currently LocalStack. Create bucket + IAM creds, swap env vars,
-   test a real upload. See `docs/PHOTO_UPLOAD_IMPLEMENTATION.md`.
+   test a real upload. See `docs/architecture/PHOTO_UPLOAD_IMPLEMENTATION.md`.
 3. **Rotate the dev credentials** that used to live in `backend/.env` (now untracked) before
    anything goes live.
 
@@ -23,7 +23,7 @@ tests green. **Not yet deployed to production.**
 ## Guardrails
 - Services own all SQL + business logic; routes only validate and format (see `CLAUDE.md`).
 - Keep every change backward-compatible with the `X-User-Id` header — seeded test users rely on it.
-- No secrets in git. `.env` is gitignored; document config in `docs/ENVIRONMENT_VARIABLES_TEMPLATE.md`.
+- No secrets in git. `.env` is gitignored; document config in `docs/deployment/ENVIRONMENT_VARIABLES_TEMPLATE.md`.
 - Match existing code style and patterns; don't add dependencies without a clear reason.
 
 ## Log (newest first, one line per session)

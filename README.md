@@ -10,10 +10,10 @@ A production-ready full-stack dating app prototype with horizontal scaling suppo
 npm run deploy:railway production
 
 # Deploy frontend to Vercel (5 minutes) 
-# Follow: docs/VERCEL_SETUP.md
+# Follow: docs/deployment/VERCEL_SETUP.md
 ```
 
-See: [`QUICK_START_DEPLOYMENT.md`](./docs/QUICK_START_DEPLOYMENT.md)
+See: [`QUICK_START_DEPLOYMENT.md`](./docs/deployment/QUICK_START_DEPLOYMENT.md)
 
 ### Option 2: Test Locally
 ```bash
@@ -47,19 +47,20 @@ npm run docker:up
 
 ## 📖 Documentation
 
+Full index: [`docs/README.md`](./docs/README.md). Current status & next steps live in [`agent-prompts/STATE.md`](./agent-prompts/STATE.md).
+
 ### For Getting Started
-- [`QUICK_START_DEPLOYMENT.md`](./docs/QUICK_START_DEPLOYMENT.md) - 1-minute overview
-- [`PROJECT_STATUS.md`](./docs/PROJECT_STATUS.md) - Current state & next steps
+- [`QUICK_START_DEPLOYMENT.md`](./docs/deployment/QUICK_START_DEPLOYMENT.md) - 1-minute overview
 
 ### For Deployment
-- [`RAILWAY_SETUP.md`](./docs/RAILWAY_SETUP.md) - Railway step-by-step (Recommended)
-- [`VERCEL_SETUP.md`](./docs/VERCEL_SETUP.md) - Frontend on Vercel
-- [`DEPLOYMENT.md`](./docs/DEPLOYMENT.md) - Complete deployment guide
+- [`RAILWAY_SETUP.md`](./docs/deployment/RAILWAY_SETUP.md) - Railway step-by-step (Recommended)
+- [`VERCEL_SETUP.md`](./docs/deployment/VERCEL_SETUP.md) - Frontend on Vercel
+- [`DEPLOYMENT.md`](./docs/deployment/DEPLOYMENT.md) - Complete deployment guide
 
 ### For Developers
 - [`CLAUDE.md`](./CLAUDE.md) - Code guidelines & architecture
-- [`SCALABILITY_ARCHITECTURE.md`](./docs/SCALABILITY_ARCHITECTURE.md) - Technical details
-- [`AGENT_NOTES.md`](./docs/AGENT_NOTES.md) - Context for AI agents
+- [`SCALABILITY_ARCHITECTURE.md`](./docs/architecture/SCALABILITY_ARCHITECTURE.md) - Technical details
+- [`CHANGELOG.md`](./docs/CHANGELOG.md) - History of changes
 
 ## 🏗️ Architecture
 
@@ -95,7 +96,7 @@ Frontend (Vercel)
 - Cost: $20/month
 - Setup: 10 minutes
 - Features: Auto-scaling, managed PostgreSQL/Redis
-- Docs: [`RAILWAY_SETUP.md`](./docs/RAILWAY_SETUP.md)
+- Docs: [`RAILWAY_SETUP.md`](./docs/deployment/RAILWAY_SETUP.md)
 
 ```bash
 npm run deploy:railway production
@@ -105,7 +106,7 @@ npm run deploy:railway production
 - Cost: $15-30/month
 - Setup: 15 minutes  
 - Features: Global deployment
-- Docs: Deployment section in [`DEPLOYMENT.md`](./docs/DEPLOYMENT.md)
+- Docs: Deployment section in [`DEPLOYMENT.md`](./docs/deployment/DEPLOYMENT.md)
 
 ```bash
 npm run deploy:fly production
@@ -115,7 +116,7 @@ npm run deploy:fly production
 - Cost: Free tier (or $20/month Pro)
 - Setup: 5 minutes (auto from GitHub)
 - Works with Railway backend
-- Docs: [`VERCEL_SETUP.md`](./docs/VERCEL_SETUP.md)
+- Docs: [`VERCEL_SETUP.md`](./docs/deployment/VERCEL_SETUP.md)
 
 ## 📦 NPM Scripts
 
@@ -180,7 +181,7 @@ npm run typecheck:backend  # Just backend types
 ```
 
 ### Deployment issues
-See [`DEPLOYMENT.md`](./docs/DEPLOYMENT.md) Troubleshooting section
+See [`DEPLOYMENT.md`](./docs/deployment/DEPLOYMENT.md) Troubleshooting section
 
 ## 📝 Project Status
 
@@ -192,7 +193,7 @@ See [`DEPLOYMENT.md`](./docs/DEPLOYMENT.md) Troubleshooting section
 - [ ] JWT authentication (next priority)
 - [ ] Photo upload system (next priority)
 
-See [`PROJECT_STATUS.md`](./docs/PROJECT_STATUS.md) for detailed progress and to-dos.
+See [`agent-prompts/STATE.md`](./agent-prompts/STATE.md) for current status and next steps.
 
 ## 🎯 Next Steps
 
@@ -210,14 +211,14 @@ See [`PROJECT_STATUS.md`](./docs/PROJECT_STATUS.md) for detailed progress and to
    - Add photo upload system
    - Configure monitoring
 
-See [`PROJECT_STATUS.md`](./docs/PROJECT_STATUS.md) for full roadmap.
+See [`agent-prompts/STATE.md`](./agent-prompts/STATE.md) for the up-to-date roadmap.
 
 ## 📞 Help
 
-- **Deployment**: [`QUICK_START_DEPLOYMENT.md`](./docs/QUICK_START_DEPLOYMENT.md)
-- **Architecture**: [`SCALABILITY_ARCHITECTURE.md`](./docs/SCALABILITY_ARCHITECTURE.md)
+- **Deployment**: [`QUICK_START_DEPLOYMENT.md`](./docs/deployment/QUICK_START_DEPLOYMENT.md)
+- **Architecture**: [`SCALABILITY_ARCHITECTURE.md`](./docs/architecture/SCALABILITY_ARCHITECTURE.md)
 - **Code**: [`CLAUDE.md`](./CLAUDE.md)
-- **Context**: [`AGENT_NOTES.md`](./docs/AGENT_NOTES.md)
+- **Context**: [`agent-prompts/STATE.md`](./agent-prompts/STATE.md)
 
 ## 📄 License
 
@@ -225,4 +226,4 @@ MIT
 
 ---
 
-**Ready?** Start with [`QUICK_START_DEPLOYMENT.md`](./docs/QUICK_START_DEPLOYMENT.md) or choose an option from "Quick Start" above.
+**Ready?** Start with [`QUICK_START_DEPLOYMENT.md`](./docs/deployment/QUICK_START_DEPLOYMENT.md) or choose an option from "Quick Start" above.
