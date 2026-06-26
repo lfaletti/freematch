@@ -1,0 +1,20 @@
+{
+  "name": "freematch-workspace",
+  "private": true,
+  "scripts": {
+    "typecheck:frontend": "cd frontend && npx tsc --noEmit",
+    "typecheck:backend": "cd backend && npx tsc --noEmit",
+    "build:web": "cd frontend && npx expo export --platform web --output-dir /tmp/freematch-web-check",
+    "check": "npm run typecheck:backend && npm run typecheck:frontend && npm run build:web",
+    "start:web": "cd frontend && npx expo start --web --clear",
+    "clear:cache": "rm -rf frontend/.expo/web/cache /tmp/metro-cache /tmp/metro-file-map-*",
+    "docker:up": "docker-compose up",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build",
+    "docker:logs": "docker-compose logs -f backend",
+    "docker:reset": "docker-compose down -v && docker-compose up",
+    "build:backend": "cd backend && npm run build",
+    "deploy:railway": "bash deploy-railway.sh",
+    "deploy:fly": "bash deploy-fly.sh"
+  }
+}
