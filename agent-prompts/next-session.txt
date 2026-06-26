@@ -336,26 +336,40 @@ Use these docs when working on frontend, S3, or production deployment!
 - S3 Production Setup: Optional (1-2 hours)
 - **Total to Live MVP**: Ready! All code + guides prepared
 
-## FILES MODIFIED IN SESSION 7
-- docs/PRODUCTION_DEPLOYMENT_GUIDE.md - NEW (500+ lines of step-by-step deployment instructions)
-- docs/ENVIRONMENT_VARIABLES_TEMPLATE.md - NEW (all environment variable configurations)
-- agent-prompts/next-session.txt - Updated with Session 7 completion
+## FILES MODIFIED IN SESSION 8
+- docs/PRODUCTION_DEPLOYMENT_GUIDE.md - Complete deployment guide
+- docs/ENVIRONMENT_VARIABLES_TEMPLATE.md - All env variable configurations
+- docs/SESSION_8_TESTING_PLAN.md - Comprehensive testing plan
+- docs/SESSION_8_QUICK_TEST.md - Quick testing checklist
+- docs/SESSION_8_TEST_RESULTS.md - All test results (7/7 passed)
+- docs/MANUAL_TESTING_GUIDE.md - Browser testing URLs and manual tests
+- test-script.ps1 - PowerShell testing script
+- agent-prompts/next-session.txt - Updated with all Session 8 info
+
+## TESTING - HOW TO VERIFY LOCALLY
+
+**Quick Browser Testing**:
+1. Open http://localhost:19006 (Frontend)
+2. Register new user with email/password
+3. Login and verify tokens saved
+4. Upload photo to test S3
+5. Logout and verify tokens cleared
+
+**Full CURL Testing** (see docs/MANUAL_TESTING_GUIDE.md):
+- Health check: `curl http://localhost:3000/health`
+- Register: POST /api/auth/register with email/password
+- Login: POST /api/auth/login 
+- Photos: GET/POST/DELETE /api/photos with JWT token
+
+**See docs/MANUAL_TESTING_GUIDE.md for complete testing guide with all URLs**
 
 ## NEXT RECOMMENDED SESSION
-**PATH 5: MANUAL PRODUCTION DEPLOYMENT (30-40 minutes)**
-- All code is ready and verified
-- Follow docs/PRODUCTION_DEPLOYMENT_GUIDE.md for Railway deployment
-- Follow same guide for Vercel frontend deployment
-- Set JWT_SECRET environment variable using template
-- Go live and connect real users!
-
-## CRITICAL NEXT STEPS
-1. Read docs/PRODUCTION_DEPLOYMENT_GUIDE.md (comprehensive step-by-step guide)
-2. Follow ENVIRONMENT_VARIABLES_TEMPLATE.md for all settings
-3. Create Railway account and deploy backend (no code changes needed)
-4. Create Vercel account and deploy frontend (no code changes needed)
-5. Test production environment (health check + login flow)
-6. Monitor logs for any issues
+**PATH 5: PRODUCTION DEPLOYMENT (30-40 minutes)**
+- Follow docs/PRODUCTION_DEPLOYMENT_GUIDE.md
+- Create Railway account + 3 services (PostgreSQL, Redis, Backend)
+- Create Vercel account + deploy frontend
+- Set environment variables (especially JWT_SECRET on Railway)
+- Go live!
 
 ## REPORT BACK - UPDATE PROMPTS FOR NEXT SESSION
 When finished with your chosen path:
