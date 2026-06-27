@@ -1,0 +1,10 @@
+[
+  { "slot": "alex",   "displayName": "Alex" },
+  { "slot": "jordan", "displayName": "Jordan" },
+  { "slot": "sophia", "displayName": "Sophia" },
+  { "slot": "liam",   "displayName": "Liam" },
+  { "slot": "emma",   "displayName": "Emma" },
+  { "slot": "noah",   "displayName": "Noah" },
+  { "slot": "olivia", "displayName": "Olivia" },
+  { "slot": "ethan",  "displayName": "Ethan" }
+]
