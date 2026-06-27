@@ -15,11 +15,14 @@ const { width } = Dimensions.get('window');
 
 interface MatchModalProps {
   match: Match | null;
+  selfPhoto?: string;
   onClose: () => void;
   onChat: () => void;
 }
 
-const MatchModal: React.FC<MatchModalProps> = ({ match, onClose, onChat }) => {
+const PLACEHOLDER_PHOTO = 'https://randomuser.me/api/portraits/lego/1.jpg';
+
+const MatchModal: React.FC<MatchModalProps> = ({ match, selfPhoto, onClose, onChat }) => {
   if (!match) return null;
 
   return (
@@ -35,7 +38,7 @@ const MatchModal: React.FC<MatchModalProps> = ({ match, onClose, onChat }) => {
           <View style={styles.photos}>
             <View style={styles.photoWrap}>
               <Image
-                source={{ uri: 'https://randomuser.me/api/portraits/lego/1.jpg' }}
+                source={{ uri: selfPhoto || PLACEHOLDER_PHOTO }}
                 style={styles.photo}
               />
             </View>
