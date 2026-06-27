@@ -22,6 +22,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HomeScreen = ({ navigation }: { navigation: any }) => {
   const dispatch = useAppDispatch();
   const sessionUserId = useAppSelector((s) => s.session.userId);
+  const sessionPhoto = useAppSelector((s) => s.session.photo);
   const { all: users, currentIndex, loading, error } = useAppSelector((s) => s.users);
   const { newMatch } = useAppSelector((s) => s.matches);
   const [showMatch, setShowMatch] = useState(false);
@@ -197,6 +198,7 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       <MatchModal
         match={showMatch ? newMatch : null}
+        selfPhoto={sessionPhoto}
         onClose={handleModalClose}
         onChat={handleGoToChat}
       />
