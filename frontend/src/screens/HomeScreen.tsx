@@ -14,7 +14,6 @@ import { clearSession } from '../redux/slices/sessionSlice';
 import { colors } from '../theme/colors';
 import SwipeCard from '../components/SwipeCard';
 import MatchModal from '../components/MatchModal';
-import { resetTestData } from '../services/userService';
 import { storageService } from '../services/storageService';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -23,11 +22,10 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
   const dispatch = useAppDispatch();
   const sessionUserId = useAppSelector((s) => s.session.userId);
   const sessionPhoto = useAppSelector((s) => s.session.photo);
-  const { all: users, currentIndex, loading, error } = useAppSelector((s) => s.users);
+  const { all: users, currentIndex, loading, loaded, error } = useAppSelector((s) => s.users);
   const { newMatch } = useAppSelector((s) => s.matches);
   const [showMatch, setShowMatch] = useState(false);
   const [swiping, setSwiping] = useState(false);
-  const [resetting, setResetting] = useState(false);
   const swipingRef = useRef(false);
 
   useEffect(() => {
@@ -67,17 +65,6 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
     setSwiping(false);
   };
 
-  const handleReset = async () => {
-    setResetting(true);
-    try {
-      await resetTestData();
-      dispatch(loadUsers());
-      dispatch(loadMatches());
-    } finally {
-      setResetting(false);
-    }
-  };
-
   const handleLogout = async () => {
     await storageService.clearAll();
     dispatch(clearSession());
@@ -99,7 +86,7 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const currentUser = users[currentIndex];
   const nextUser = users[currentIndex + 1];
-  const isDone = !loading && !error && currentIndex >= users.length && users.length > 0;
+  const isDone = !loading && !error && loaded && currentIndex >= users.length;
 
   const renderCardArea = () => {
     if (loading) {
@@ -124,14 +111,8 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
       return (
         <View style={styles.center}>
           <Text style={styles.doneEmoji}>🎉</Text>
-          <Text style={styles.doneText}>You've seen everyone!</Text>
-          <Text style={styles.doneSubtext}>Check your matches and start chatting.</Text>
-          <TouchableOpacity
-            style={styles.retryBtn}
-            onPress={() => dispatch(loadUsers())}
-          >
-            <Text style={styles.retryText}>Start Over</Text>
-          </TouchableOpacity>
+          <Text style={styles.doneText}>That's all for now</Text>
+          <Text style={styles.doneSubtext}>You've seen everyone. Check your matches and start chatting.</Text>
         </View>
       );
     }
@@ -169,9 +150,7 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
           <Text style={styles.logo}>FreeMatch</Text>
           <Text style={styles.tagline}>Connect freely ❤️</Text>
         </View>
-        <TouchableOpacity style={styles.resetBtn} onPress={handleReset} disabled={resetting}>
-          <Text style={styles.resetText}>{resetting ? '…' : '↺'}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
       </View>
       <View style={styles.cardArea}>
         {renderCardArea()}
@@ -229,12 +208,8 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: colors.textMuted,
   },
-  resetBtn: {
-    padding: 8,
-  },
-  resetText: {
-    fontSize: 22,
-    color: colors.textMuted,
+  headerSpacer: {
+    width: 38,
   },
   logo: {
     fontSize: 28,

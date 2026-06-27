@@ -162,21 +162,29 @@ describe('HomeScreen', () => {
       const likeBtn = getByText('♥');
       await act(async () => { fireEvent.press(likeBtn); });
 
-      await waitFor(() => expect(getByText("You've seen everyone!")).toBeTruthy());
+      await waitFor(() => expect(getByText("That's all for now")).toBeTruthy());
     });
 
-    it('does NOT show done message when users array is empty (initial state before load)', async () => {
-      // Before loadUsers resolves, users = [] and currentIndex = 0.
-      // isDone requires users.length > 0 so it must not flash on initial empty state.
+    it('does NOT show done message before the first load completes', async () => {
+      // Before loadUsers resolves, users = [] and loaded = false.
+      // isDone requires loaded === true so it must not flash on the initial empty state.
       let resolveUsers: (v: any) => void;
       (fetchUsers as jest.Mock).mockReturnValue(new Promise((r) => { resolveUsers = r; }));
 
       const { queryByText } = renderHomeScreen();
 
       // During loading, "done" message must not appear
-      await waitFor(() => expect(queryByText("You've seen everyone!")).toBeNull());
+      await waitFor(() => expect(queryByText("That's all for now")).toBeNull());
 
       await act(async () => { resolveUsers!([mockUser1, mockUser2]); });
+    });
+
+    it('shows done message when the load returns no users (e.g. after logout/login with everyone swiped)', async () => {
+      (fetchUsers as jest.Mock).mockResolvedValue([]);
+
+      const { getByText } = renderHomeScreen();
+
+      await waitFor(() => expect(getByText("That's all for now")).toBeTruthy());
     });
   });
 
@@ -184,10 +192,9 @@ describe('HomeScreen', () => {
   // Reproduces the "blank screen on left swipe" bug. The screen goes blank when
   // renderCardArea() falls through to an empty fragment because:
   //   - loading=false, error=null (so neither spinner nor error UI shows)
-  //   - isDone=false  (requires users.length > 0)
+  //   - isDone=false  (requires loaded === true)
   //   - currentUser=undefined (currentIndex >= users.length)
-  // All three hold simultaneously only when users=[] — tests below ensure a
-  // left swipe never lands the UI in that state.
+  // Tests below ensure a left swipe never lands the UI in that state.
 
   describe('left swipe — blank screen regression', () => {
     it('left swipe on only card shows "done" screen, not blank', async () => {
@@ -199,7 +206,7 @@ describe('HomeScreen', () => {
       const nopeBtn = getByText('✕');
       await act(async () => { fireEvent.press(nopeBtn); });
 
-      await waitFor(() => expect(getByText("You've seen everyone!")).toBeTruthy());
+      await waitFor(() => expect(getByText("That's all for now")).toBeTruthy());
       // Nothing blank — the "done" state is visible
       expect(queryByText('Alice')).toBeNull();
     });
@@ -225,7 +232,7 @@ describe('HomeScreen', () => {
 
       // Swipe left on Bob
       await act(async () => { fireEvent.press(getByText('✕')); });
-      await waitFor(() => expect(getByText("You've seen everyone!")).toBeTruthy());
+      await waitFor(() => expect(getByText("That's all for now")).toBeTruthy());
 
       // Neither user card is visible, and it's not blank — the done UI shows
       expect(queryByText('Alice')).toBeNull();
@@ -254,7 +261,7 @@ describe('HomeScreen', () => {
 
       await act(async () => { fireEvent.press(getByText('✕')); });
 
-      await waitFor(() => expect(getByText("You've seen everyone!")).toBeTruthy());
+      await waitFor(() => expect(getByText("That's all for now")).toBeTruthy());
     });
 
     it('swipe button is re-enabled after a failed left swipe', async () => {
@@ -270,7 +277,7 @@ describe('HomeScreen', () => {
       await waitFor(() => expect(getByText('Bob')).toBeTruthy());
       await act(async () => { fireEvent.press(getAllByText('✕')[0]); });
 
-      await waitFor(() => expect(getByText("You've seen everyone!")).toBeTruthy());
+      await waitFor(() => expect(getByText("That's all for now")).toBeTruthy());
     });
   });
 

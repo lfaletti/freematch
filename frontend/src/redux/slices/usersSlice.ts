@@ -5,6 +5,7 @@ interface UsersState {
   all: User[];
   currentIndex: number;
   loading: boolean;
+  loaded: boolean;
   error: string | null;
 }
 
@@ -12,6 +13,7 @@ const initialState: UsersState = {
   all: [],
   currentIndex: 0,
   loading: false,
+  loaded: false,
   error: null,
 };
 
@@ -40,6 +42,7 @@ const usersSlice = createSlice({
         state.all = action.payload;
         state.currentIndex = 0;
         state.loading = false;
+        state.loaded = true;
       })
       .addCase(loadUsers.rejected, (state, action) => {
         state.loading = false;

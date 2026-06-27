@@ -133,10 +133,3 @@ export async function seedUsers() {
   console.log(`Seeded/updated ${Object.keys(TEST_USERS).length} mock users`);
 }
 
-export async function resetTestData() {
-  await query(`DELETE FROM matches`);
-  await query(`DELETE FROM swipes`);
-  await query(`DELETE FROM users`);
-  await insertSeedData();
-  console.log('Test data reset complete');
-}

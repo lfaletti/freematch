@@ -3,7 +3,6 @@ import cors from 'cors';
 import path from 'path';
 import { getUserId, USER_SLOTS, extractBearerToken } from './utils/session';
 import { getUserById } from './services/userService';
-import { resetTestData } from './database/migrate';
 import usersRouter from './routes/users';
 import swipesRouter from './routes/swipes';
 import matchesRouter from './routes/matches';
@@ -47,15 +46,6 @@ export function createApp() {
       });
     } catch (err) {
       res.status(500).json({ error: 'Session lookup failed' });
-    }
-  });
-
-  app.post('/api/reset', async (_req: Request, res: Response) => {
-    try {
-      await resetTestData();
-      res.json({ ok: true });
-    } catch (err) {
-      res.status(500).json({ error: 'Reset failed' });
     }
   });
 

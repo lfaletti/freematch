@@ -45,7 +45,6 @@ jest.mock('../../services/userService', () => ({
   fetchUsers: jest.fn().mockResolvedValue([]),
   fetchMatches: jest.fn().mockResolvedValue([]),
   swipe: jest.fn().mockResolvedValue({ match: null }),
-  resetTestData: jest.fn().mockResolvedValue(undefined),
 }));
 
 // ── Imports ───────────────────────────────────────────────────────────────────

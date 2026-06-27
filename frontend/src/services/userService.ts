@@ -54,7 +54,3 @@ export const fetchSession = async (): Promise<SessionInfo> => {
   const res = await api.get('/api/session');
   return res.data;
 };
-
-export const resetTestData = async (): Promise<void> => {
-  await api.post('/api/reset');
-};

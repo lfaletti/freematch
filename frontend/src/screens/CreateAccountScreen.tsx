@@ -39,6 +39,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [photo, setPhoto] = useState<PickedImage | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const pickPhoto = async () => {
     if (Platform.OS !== 'web') {
@@ -84,9 +85,10 @@ export default function CreateAccountScreen({ navigation }: Props) {
   };
 
   const handleSubmit = async () => {
-    const error = validate();
-    if (error) {
-      Alert.alert('Missing info', error);
+    setError(null);
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -124,9 +126,9 @@ export default function CreateAccountScreen({ navigation }: Props) {
       const status = err?.response?.status;
       const message = err?.response?.data?.error;
       if (status === 409) {
-        Alert.alert('Already registered', 'That email is already linked to an account.');
+        setError('That email is already linked to an account.');
       } else {
-        Alert.alert('Error', message ?? 'Registration failed. Please try again.');
+        setError(message ?? 'Registration failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -249,6 +251,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
           textAlignVertical="top"
         />
       </View>
+
+      {error && <Text style={styles.error}>{error}</Text>}
 
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
@@ -380,6 +384,12 @@ const styles = StyleSheet.create({
   textArea: {
     height: 100,
     paddingTop: 14,
+  },
+  error: {
+    color: colors.nope,
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   button: {
     backgroundColor: colors.primary,
