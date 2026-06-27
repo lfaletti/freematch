@@ -1,0 +1,171 @@
+import React, { useEffect } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import { loadMatches, Match } from '../redux/slices/matchesSlice';
+import { colors } from '../theme/colors';
+
+const MatchesScreen = ({ navigation }: { navigation: any }) => {
+  const dispatch = useAppDispatch();
+  const sessionUserId = useAppSelector((s) => s.session.userId);
+  const { all: matches, loading } = useAppSelector((s) => s.matches);
+
+  useEffect(() => {
+    if (!sessionUserId) return;
+    dispatch(loadMatches());
+  }, [sessionUserId]);
+
+  const renderMatch = ({ item }: { item: Match }) => (
+    <TouchableOpacity
+      style={styles.matchRow}
+      onPress={() => navigation.navigate('Chat', { match: item })}
+    >
+      <View style={styles.avatarWrap}>
+        <Image source={{ uri: item.partner_photo }} style={styles.avatar} />
+        <View style={styles.onlineDot} />
+      </View>
+      <View style={styles.info}>
+        <Text style={styles.name}>{item.partner_name}, {item.partner_age}</Text>
+        <Text style={styles.lastMsg} numberOfLines={1}>
+          {item.last_message || 'Say hello! 👋'}
+        </Text>
+      </View>
+      <Text style={styles.chevron}>›</Text>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Matches</Text>
+        <Text style={styles.subtitle}>{matches.length} connections</Text>
+      </View>
+      {matches.length === 0 ? (
+        <View style={styles.center}>
+          <Text style={styles.emptyEmoji}>💫</Text>
+          <Text style={styles.emptyText}>No matches yet</Text>
+          <Text style={styles.emptySubtext}>Start swiping to meet people!</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={matches}
+          keyExtractor={(item) => item.id}
+          renderItem={renderMatch}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    paddingTop: 56,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  list: {
+    padding: 16,
+  },
+  matchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+  },
+  avatarWrap: {
+    position: 'relative',
+  },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.success,
+    borderWidth: 2,
+    borderColor: colors.background,
+  },
+  info: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  name: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  lastMsg: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 3,
+  },
+  chevron: {
+    fontSize: 24,
+    color: colors.textMuted,
+    marginLeft: 8,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyEmoji: {
+    fontSize: 56,
+    marginBottom: 12,
+  },
+  emptyText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
+});
+
+export default MatchesScreen;
