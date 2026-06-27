@@ -53,8 +53,10 @@ npm run check          # TypeScript + web build (pre-deployment check)
 
 ## Architecture
 
-### Multi-User Session Model
-The app has no authentication. Users are identified by a `X-User-Id` HTTP header sent with every request. Each pre-seeded test user doubles as a session slot whose key **is the profile name** (lowercased): `alex` (default), `jordan`, `sophia`, `liam`, `emma`, `noah`, `olivia`, `ethan` — each with a fixed UUID (see `TEST_USERS` in `backend/src/database/migrate.ts`). The frontend switches slots via `POST /api/switch/:user`. On web, the `?user=alex` query param selects a slot, enabling two browser windows to simulate two users simultaneously.
+### Session Model
+The app authenticates with created accounts: register/login (`/api/auth/register`, `/api/auth/login` with email + password) issue a JWT (`token`) + `refreshToken`, which the frontend stores via `storageService` and sends as an `Authorization: Bearer` header (see the interceptor in `frontend/src/services/api.ts`). On startup `RootNavigator.initSession()` restores the session from the stored token by validating it against `GET /api/session` — no URL query param is involved; opening the app's base URL is enough.
+
+The backend still understands a legacy `X-User-Id` header and seeded `TEST_USERS` (`backend/src/database/migrate.ts`) as dev/test infrastructure — `getUserId()` (`backend/src/utils/session.ts`) falls back to it (and finally to the `alex` slot) when there's no Bearer token. The frontend no longer uses this path: the old query-string impersonation (`?user=<slot>`), the `POST /api/switch/:user` endpoint, and the `SessionSwitcher` component have been removed. Testing is done with self-created accounts.
 
 ### Data Flow
 **Swipe → Match:**
@@ -76,7 +78,7 @@ matches:  { all: Match[], newMatch }
 messages: { byMatchId: Record<string, Message[]> }
 ```
 
-Every Axios request automatically includes the `X-User-Id` header via an interceptor in `frontend/src/services/apiService.ts`.
+Every Axios request automatically includes the `Authorization: Bearer <token>` header (when a session token is present) via an interceptor in `frontend/src/services/api.ts`.
 
 ### Backend Request Pattern
 Routes call `getUserId(req)` to extract the user from the header, then delegate to service files in `backend/src/services/`. Services own all SQL and business logic; routes only validate and format responses.
@@ -93,10 +95,13 @@ users → swipes (swiper_id, swiped_id) → matches (user1_id < user2_id) → me
 ### Seeded Test Data
 `backend/src/database/migrate.ts` runs on startup: creates schema and seeds mock users. Two test users are pre-seeded with mutual right swipes so a match exists immediately after `docker-compose up`.
 
+### Starting the app after a reboot
+Only the Docker stack (postgres + redis + backend) comes back automatically — the **Expo web frontend runs natively, not in Docker** (there is no frontend service in `docker-compose.yml`), so it must be started by hand after every reboot. `npm run start:app` (root) runs `start-app.ps1`, which brings up the Docker stack detached, waits for the backend `/health` check, then starts Expo web on `:8081`. Then open `http://localhost:8081/` and log in (or create an account).
+
 ### Verifying Locally (running the app, not just tests)
 - Fastest stack: run only the DB in Docker (`docker compose up -d postgres redis`) and the backend locally (`cd backend && npm run dev`, reads `backend/.env` → `localhost:5432`, serves `:3000`). Don't build the backend image just to verify. Frontend web: `npx expo start --web --port 8081`; Metro recompiles from disk, so an already-running server picks up edits on a fresh page load.
-- Select a session slot on web with `?user=<slot>` (e.g. `localhost:8081/?user=alex`).
-- **Triggering a *new* match modal:** the pre-seeded mutual swipe won't fire it (`matches` is `ON CONFLICT DO NOTHING`). Instead `POST /api/reset`, have other users like your slot via `POST /api/swipes` (`X-User-Id: <other>`, `{"swipedId":"<your-id>","direction":"right"}`), then click ♥ in the UI — the first right-swipe creates an instant match.
+- Open `localhost:8081/` and log in with (or create) an account — the session is restored from the stored token; there is no `?user=` query param.
+- **Triggering a *new* match modal:** the pre-seeded mutual swipe won't fire it (`matches` is `ON CONFLICT DO NOTHING`). Instead `POST /api/reset`, have another user like your account via `POST /api/swipes` (authenticate that call with the other user's `Authorization: Bearer <token>`, or the legacy `X-User-Id: <other-id>` test header, `{"swipedId":"<your-id>","direction":"right"}`), then click ♥ in the UI — the first right-swipe creates an instant match.
 - Browser automation note: `randomuser.me` photos don't load in headless browsers; assert on `img.src`, not rendered pixels.
 
 ## Scalability & Production (Added June 2026)

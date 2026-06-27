@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -12,16 +12,12 @@ import CreateAccountScreen from '../screens/CreateAccountScreen';
 import LoginScreen from '../screens/LoginScreen';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { setSession, clearSession } from '../redux/slices/sessionSlice';
-import { switchUser } from '../services/userService';
 import { storageService } from '../services/storageService';
 import { api } from '../services/api';
 import { colors } from '../theme/colors';
-import testUsers from '../config/testUsers.json';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-
-const VALID_SLOTS = testUsers.map((u: { slot: string }) => u.slot);
 
 function MatchesStack() {
   return (
@@ -98,25 +94,6 @@ export default function RootNavigator() {
 
   async function initSession() {
     try {
-      if (Platform.OS === 'web') {
-        const param = new URLSearchParams(window.location.search).get('user') ?? '';
-        if (param && VALID_SLOTS.includes(param)) {
-          const info = await switchUser(param);
-          dispatch(setSession({
-            userId: info.userId,
-            slot: info.slot,
-            name: info.name,
-            photo: info.photo,
-            bio: info.bio,
-            bornDate: info.bornDate,
-            phoneNumber: info.phoneNumber,
-            email: info.email,
-          }));
-          setIsLoading(false);
-          return;
-        }
-      }
-
       const savedToken = await storageService.getToken();
       const savedRefreshToken = await storageService.getRefreshToken();
       const storedUserId = await storageService.getUserId();
@@ -137,21 +114,6 @@ export default function RootNavigator() {
           email: data.email ?? '',
           token: savedToken,
           refreshToken: savedRefreshToken ?? '',
-        }));
-      } else if (storedUserId) {
-        const res = await api.get('/api/session', {
-          headers: { 'X-User-Id': storedUserId },
-        });
-        const data = res.data;
-        dispatch(setSession({
-          userId: data.userId,
-          slot: data.slot ?? '',
-          name: data.name,
-          photo: data.photo,
-          bio: data.bio ?? '',
-          bornDate: data.bornDate ?? '',
-          phoneNumber: data.phoneNumber ?? '',
-          email: data.email ?? '',
         }));
       }
     } catch {

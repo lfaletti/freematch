@@ -20,13 +20,11 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const state = store.getState().session;
-  
+
   if (state.token) {
     config.headers.Authorization = `Bearer ${state.token}`;
-  } else if (state.userId) {
-    config.headers['X-User-Id'] = state.userId;
   }
-  
+
   return config;
 });
 
