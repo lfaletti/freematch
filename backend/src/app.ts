@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { getUserId, USER_SLOTS, extractBearerToken } from './utils/session';
 import { getUserById } from './services/userService';
-import { resetTestData, TEST_USERS } from './database/migrate';
+import { resetTestData } from './database/migrate';
 import usersRouter from './routes/users';
 import swipesRouter from './routes/swipes';
 import matchesRouter from './routes/matches';
@@ -48,26 +48,6 @@ export function createApp() {
     } catch (err) {
       res.status(500).json({ error: 'Session lookup failed' });
     }
-  });
-
-  app.post('/api/switch/:user', (req: Request, res: Response) => {
-    const slot = req.params.user;
-    const userId = USER_SLOTS[slot];
-    if (!userId) {
-      res.status(400).json({ error: `Unknown slot. Use: ${Object.keys(USER_SLOTS).join(', ')}` });
-      return;
-    }
-    const tu = Object.values(TEST_USERS).find((t) => t.id === userId);
-    res.json({
-      userId,
-      slot,
-      name: tu ? tu.name : 'Main User',
-      photo: tu ? tu.photo_url : '',
-      bio: tu ? tu.bio : '',
-      bornDate: tu ? tu.born_date : '',
-      phoneNumber: tu ? tu.phone_number : '',
-      email: tu ? tu.email : '',
-    });
   });
 
   app.post('/api/reset', async (_req: Request, res: Response) => {

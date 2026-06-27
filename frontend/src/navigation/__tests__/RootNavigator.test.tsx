@@ -6,11 +6,15 @@
  * not rendered) without the app going blank — the reported bug: refreshing
  * http://localhost:8081/ produces a blank screen.
  *
+ * Session restore is token-based: a stored JWT (+ userId) is validated against
+ * GET /api/session with an Authorization: Bearer header. Without a stored
+ * token the app falls through to the auth flow (WelcomeScreen).
+ *
  * Key paths in initSession():
- *  1. No stored userId          → WelcomeScreen (AuthStack)
- *  2. Stored userId + API ok    → TabNavigator  (authenticated)
- *  3. Stored userId + API fails → WelcomeScreen (AuthStack)  ← refresh bug
- *  4. Loading in progress       → spinner only  (not blank)
+ *  1. No stored token/userId      → WelcomeScreen (AuthStack)
+ *  2. Stored token + API ok       → TabNavigator  (authenticated)
+ *  3. Stored token + API fails    → WelcomeScreen (AuthStack)  ← refresh bug
+ *  4. Loading in progress         → spinner only  (not blank)
  */
 
 // ── Mocks must be declared before any import ──────────────────────────────────
@@ -41,7 +45,6 @@ jest.mock('../../services/userService', () => ({
   fetchUsers: jest.fn().mockResolvedValue([]),
   fetchMatches: jest.fn().mockResolvedValue([]),
   swipe: jest.fn().mockResolvedValue({ match: null }),
-  switchUser: jest.fn(),
   resetTestData: jest.fn().mockResolvedValue(undefined),
 }));
 
@@ -58,20 +61,19 @@ import matchesReducer from '../../redux/slices/matchesSlice';
 import messagesReducer from '../../redux/slices/messagesSlice';
 import { storageService } from '../../services/storageService';
 import { api } from '../../services/api';
-import { switchUser } from '../../services/userService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const mockStorage = storageService as jest.Mocked<typeof storageService>;
 const mockApi = api as jest.Mocked<typeof api>;
-const mockSwitchUser = switchUser as jest.MockedFunction<typeof switchUser>;
 
 const STORED_USER_ID = 'stored-user-uuid';
+const STORED_TOKEN = 'stored-jwt-token';
 
 const SESSION_RESPONSE = {
   data: {
     userId: STORED_USER_ID,
-    slot: 'alex',
+    slot: '',
     name: 'Alex',
     photo: 'https://example.com/alex.jpg',
     bio: 'Coffee lover',
@@ -113,8 +115,8 @@ describe('RootNavigator — initSession on refresh', () => {
 
   describe('loading state', () => {
     it('renders a spinner while initSession is in-flight — not blank', () => {
-      // Keep getUserId pending so isLoading stays true
-      mockStorage.getUserId.mockReturnValue(new Promise(() => {}));
+      // Keep getToken pending so isLoading stays true
+      mockStorage.getToken.mockReturnValue(new Promise(() => {}));
 
       const { getByTestId, queryByText } = renderNavigator();
 
@@ -136,7 +138,7 @@ describe('RootNavigator — initSession on refresh', () => {
   // ── No stored session ───────────────────────────────────────────────────────
 
   describe('no stored session', () => {
-    it('shows WelcomeScreen when AsyncStorage has no userId', async () => {
+    it('shows WelcomeScreen when AsyncStorage has no token', async () => {
       mockStorage.getUserId.mockResolvedValue(null);
 
       const { getByText } = renderNavigator();
@@ -146,7 +148,7 @@ describe('RootNavigator — initSession on refresh', () => {
       expect(getByText('Log In')).toBeTruthy();
     });
 
-    it('does NOT show authenticated tabs when there is no stored userId', async () => {
+    it('does NOT show authenticated tabs when there is no stored token', async () => {
       mockStorage.getUserId.mockResolvedValue(null);
 
       const { queryByText } = renderNavigator();
@@ -155,8 +157,11 @@ describe('RootNavigator — initSession on refresh', () => {
       expect(queryByText('Discover')).toBeNull();
     });
 
-    it('does not call the session API when there is no stored userId', async () => {
-      mockStorage.getUserId.mockResolvedValue(null);
+    it('does not call the session API when there is no stored token', async () => {
+      // A stored userId without a token must NOT trigger a session lookup —
+      // restore is token-only now.
+      mockStorage.getUserId.mockResolvedValue(STORED_USER_ID);
+      mockStorage.getToken.mockResolvedValue(null);
 
       renderNavigator();
 
@@ -168,10 +173,14 @@ describe('RootNavigator — initSession on refresh', () => {
   // ── Refresh bug: stored session + backend unreachable ──────────────────────
 
   describe('backend unreachable on refresh — the blank screen bug', () => {
-    it('shows WelcomeScreen when the API throws a network error', async () => {
-      // Simulates: user refreshes, has a stored userId, but the backend is down.
-      // initSession() must fall through to WelcomeScreen — not a blank screen.
+    beforeEach(() => {
       mockStorage.getUserId.mockResolvedValue(STORED_USER_ID);
+      mockStorage.getToken.mockResolvedValue(STORED_TOKEN);
+    });
+
+    it('shows WelcomeScreen when the API throws a network error', async () => {
+      // Simulates: user refreshes, has a stored token, but the backend is down.
+      // initSession() must fall through to WelcomeScreen — not a blank screen.
       mockApi.get.mockRejectedValue(new Error('Network Error'));
 
       const { getByText } = renderNavigator();
@@ -181,7 +190,6 @@ describe('RootNavigator — initSession on refresh', () => {
     });
 
     it('clears stored credentials after a failed session restore', async () => {
-      mockStorage.getUserId.mockResolvedValue(STORED_USER_ID);
       mockApi.get.mockRejectedValue(new Error('Network Error'));
 
       renderNavigator();
@@ -193,7 +201,6 @@ describe('RootNavigator — initSession on refresh', () => {
       // clearAll() throwing must not prevent setIsLoading(false) from running.
       // The source wraps clearAll in an inner try/catch so the error is swallowed
       // and the finally block always executes → WelcomeScreen, never blank.
-      mockStorage.getUserId.mockResolvedValue(STORED_USER_ID);
       mockApi.get.mockRejectedValue(new Error('Network Error'));
       mockStorage.clearAll.mockRejectedValue(new Error('Storage write failed'));
 
@@ -205,7 +212,6 @@ describe('RootNavigator — initSession on refresh', () => {
     });
 
     it('shows WelcomeScreen on a 401 Unauthorized response', async () => {
-      mockStorage.getUserId.mockResolvedValue(STORED_USER_ID);
       mockApi.get.mockRejectedValue({
         response: { status: 401, data: { error: 'Unauthorized' } },
       });
@@ -216,7 +222,6 @@ describe('RootNavigator — initSession on refresh', () => {
     });
 
     it('shows WelcomeScreen on a 404 (user deleted) response', async () => {
-      mockStorage.getUserId.mockResolvedValue(STORED_USER_ID);
       mockApi.get.mockRejectedValue({
         response: { status: 404, data: { error: 'User not found' } },
       });
@@ -230,8 +235,12 @@ describe('RootNavigator — initSession on refresh', () => {
   // ── Successful session restore ──────────────────────────────────────────────
 
   describe('successful session restore', () => {
-    it('shows the authenticated tab navigator when session restores', async () => {
+    beforeEach(() => {
       mockStorage.getUserId.mockResolvedValue(STORED_USER_ID);
+      mockStorage.getToken.mockResolvedValue(STORED_TOKEN);
+    });
+
+    it('shows the authenticated tab navigator when session restores', async () => {
       mockApi.get.mockResolvedValue(SESSION_RESPONSE);
 
       const { getByText } = renderNavigator();
@@ -241,7 +250,6 @@ describe('RootNavigator — initSession on refresh', () => {
     });
 
     it('does NOT show WelcomeScreen after successful session restore', async () => {
-      mockStorage.getUserId.mockResolvedValue(STORED_USER_ID);
       mockApi.get.mockResolvedValue(SESSION_RESPONSE);
 
       const { queryByText } = renderNavigator();
@@ -250,8 +258,7 @@ describe('RootNavigator — initSession on refresh', () => {
       expect(queryByText('Find your spark')).toBeNull();
     });
 
-    it('sends the stored userId in the X-User-Id header when validating', async () => {
-      mockStorage.getUserId.mockResolvedValue(STORED_USER_ID);
+    it('sends the stored token as a Bearer header when validating', async () => {
       mockApi.get.mockResolvedValue(SESSION_RESPONSE);
 
       renderNavigator();
@@ -260,49 +267,10 @@ describe('RootNavigator — initSession on refresh', () => {
         expect(mockApi.get).toHaveBeenCalledWith(
           '/api/session',
           expect.objectContaining({
-            headers: expect.objectContaining({ 'X-User-Id': STORED_USER_ID }),
+            headers: expect.objectContaining({ Authorization: `Bearer ${STORED_TOKEN}` }),
           })
         )
       );
-    });
-  });
-
-  // ── Web ?user= dev bypass ───────────────────────────────────────────────────
-
-  describe('web ?user= dev bypass', () => {
-    it('shows WelcomeScreen when the ?user= slot is invalid', async () => {
-      // Even on web with an unrecognised slot, the app must fall through to auth
-      // (not go blank). Platform.OS is not 'web' in this test environment so the
-      // ?user= branch is skipped and getUserId runs instead.
-      mockStorage.getUserId.mockResolvedValue(null);
-      // window.location.search has no valid slot
-      Object.defineProperty(global.window, 'location', {
-        value: { search: '?user=invalidslot' },
-        writable: true,
-        configurable: true,
-      });
-
-      const { getByText } = renderNavigator();
-
-      await waitFor(() => expect(getByText('Find your spark')).toBeTruthy());
-    });
-
-    it('always resolves to a non-blank screen regardless of ?user= value', async () => {
-      // In the node/jest environment Platform.OS is not 'web', so the ?user=
-      // branch is skipped and the normal session restore path runs instead.
-      // Either way the screen must not be blank — this guards both code paths.
-      mockStorage.getUserId.mockResolvedValue(null);
-
-      Object.defineProperty(global.window, 'location', {
-        value: { search: '?user=alex' },
-        writable: true,
-        configurable: true,
-      });
-
-      const { getByText } = renderNavigator();
-
-      // WelcomeScreen (no session in node env) — confirms no blank screen
-      await waitFor(() => expect(getByText('Find your spark')).toBeTruthy());
     });
   });
 });

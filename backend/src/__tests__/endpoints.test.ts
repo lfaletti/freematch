@@ -169,28 +169,6 @@ describe('FreeMatch API', () => {
     });
   });
 
-  // ── Switch ──────────────────────────────────────────────────────────────────
-
-  describe('POST /api/switch/:user', () => {
-    it('switches to a valid slot', async () => {
-      const res = await request(app).post('/api/switch/jordan');
-
-      expect(res.status).toBe(200);
-      expect(res.body).toMatchObject({
-        userId: JORDAN_ID,
-        slot: 'jordan',
-        name: 'Jordan',
-      });
-    });
-
-    it('returns 400 for an unknown slot', async () => {
-      const res = await request(app).post('/api/switch/unknown');
-
-      expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error');
-    });
-  });
-
   // ── Reset ───────────────────────────────────────────────────────────────────
 
   describe('POST /api/reset', () => {
@@ -466,40 +444,46 @@ describe('FreeMatch API', () => {
   // ── Auth: Register ──────────────────────────────────────────────────────────
 
   describe('POST /api/auth/register', () => {
+    // The route requires name, email, password, and born_date (phone_number is optional).
     const validPayload = {
       name: 'Test User',
+      email: 'test@example.com',
+      password: 'secret123',
       born_date: '2000-01-01',
       phone_number: '+15559999999',
       bio: 'Hello',
-      email: 'test@example.com',
     };
 
     it('returns 400 when name is missing', async () => {
-      const res = await request(app)
-        .post('/api/auth/register')
-        .send({ born_date: '2000-01-01', phone_number: '+15559999999' });
+      const { name, ...noName } = validPayload;
+      const res = await request(app).post('/api/auth/register').send(noName);
 
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('error');
     });
 
+    it('returns 400 when email is missing', async () => {
+      const { email, ...noEmail } = validPayload;
+      const res = await request(app).post('/api/auth/register').send(noEmail);
+
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 400 when password is missing', async () => {
+      const { password, ...noPassword } = validPayload;
+      const res = await request(app).post('/api/auth/register').send(noPassword);
+
+      expect(res.status).toBe(400);
+    });
+
     it('returns 400 when born_date is missing', async () => {
-      const res = await request(app)
-        .post('/api/auth/register')
-        .send({ name: 'Test', phone_number: '+15559999999' });
+      const { born_date, ...noBornDate } = validPayload;
+      const res = await request(app).post('/api/auth/register').send(noBornDate);
 
       expect(res.status).toBe(400);
     });
 
-    it('returns 400 when phone_number is missing', async () => {
-      const res = await request(app)
-        .post('/api/auth/register')
-        .send({ name: 'Test', born_date: '2000-01-01' });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('creates a user and returns 201', async () => {
+    it('creates a user and returns 201 with a token', async () => {
       const created = {
         id: 'new-user-id',
         name: 'Test User',
@@ -508,7 +492,6 @@ describe('FreeMatch API', () => {
         phone_number: '+15559999999',
         email: 'test@example.com',
         photo_url: null,
-        age: 25,
       };
       mockQuery.mockResolvedValueOnce({ rows: [created] } as any);
 
@@ -520,12 +503,18 @@ describe('FreeMatch API', () => {
       expect(res.body).toMatchObject({
         userId: 'new-user-id',
         name: 'Test User',
+        email: 'test@example.com',
         phoneNumber: '+15559999999',
       });
+      expect(res.body.token).toBeTruthy();
+      expect(res.body.refreshToken).toBeTruthy();
     });
 
-    it('returns 409 on duplicate phone number', async () => {
-      const pgError = Object.assign(new Error('duplicate key'), { code: '23505' });
+    it('returns 409 on duplicate email', async () => {
+      const pgError = Object.assign(new Error('duplicate key'), {
+        code: '23505',
+        constraint: 'users_email_key',
+      });
       mockQuery.mockRejectedValueOnce(pgError);
 
       const res = await request(app)

@@ -12,7 +12,6 @@ jest.mock('../../services/userService', () => ({
   fetchUsers: jest.fn(),
   fetchMatches: jest.fn(),
   swipe: jest.fn(),
-  switchUser: jest.fn(),
 }));
 
 jest.mock('../../services/storageService', () => ({
@@ -24,7 +23,7 @@ jest.mock('../../services/storageService', () => ({
   },
 }));
 
-import { fetchUsers, fetchMatches, swipe, switchUser } from '../../services/userService';
+import { fetchUsers, fetchMatches, swipe } from '../../services/userService';
 import { storageService } from '../../services/storageService';
 
 const mockUser1 = {
@@ -90,12 +89,6 @@ beforeEach(() => {
   (fetchUsers as jest.Mock).mockResolvedValue([mockUser1, mockUser2]);
   (fetchMatches as jest.Mock).mockResolvedValue([]);
   (swipe as jest.Mock).mockResolvedValue({ match: null });
-  (switchUser as jest.Mock).mockResolvedValue({
-    userId: 'user-session-1',
-    slot: 'alex',
-    name: 'Alex (Test)',
-    photo: 'https://example.com/alex.jpg',
-  });
 });
 
 describe('HomeScreen', () => {
@@ -120,8 +113,8 @@ describe('HomeScreen', () => {
 
   describe('loadUsers dispatch count — regression for infinite loop', () => {
     it('dispatches loadUsers only a finite number of times on mount', async () => {
-      // switchUser triggers onSwitch → loadUsers. Combined with the HomeScreen own useEffect,
-      // loadUsers must NOT be called infinitely. It should be called at most twice.
+      // HomeScreen's own useEffect (guarded on sessionUserId) must NOT call
+      // loadUsers infinitely. It should be called at most twice.
       const store = createStore();
       renderHomeScreen(store);
 

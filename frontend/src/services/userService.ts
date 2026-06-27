@@ -55,11 +55,6 @@ export const fetchSession = async (): Promise<SessionInfo> => {
   return res.data;
 };
 
-export const switchUser = async (slot: string): Promise<SessionInfo> => {
-  const res = await api.post(`/api/switch/${slot}`);
-  return res.data;
-};
-
 export const resetTestData = async (): Promise<void> => {
   await api.post('/api/reset');
 };
