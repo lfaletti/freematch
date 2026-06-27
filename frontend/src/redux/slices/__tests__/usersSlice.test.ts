@@ -29,6 +29,7 @@ const initialState = {
   all: [],
   currentIndex: 0,
   loading: false,
+  loaded: false,
   error: null,
 };
 
@@ -61,7 +62,7 @@ describe('usersSlice', () => {
     });
 
     it('sets users, resets currentIndex to 0, and clears loading on fulfilled', () => {
-      const stateWithProgress = { all: [mockUser], currentIndex: 5, loading: true, error: null };
+      const stateWithProgress = { all: [mockUser], currentIndex: 5, loading: true, loaded: false, error: null };
       const state = reducer(stateWithProgress, {
         type: loadUsers.fulfilled.type,
         payload: [mockUser],
@@ -69,6 +70,16 @@ describe('usersSlice', () => {
       expect(state.all).toEqual([mockUser]);
       expect(state.currentIndex).toBe(0);
       expect(state.loading).toBe(false);
+      expect(state.loaded).toBe(true);
+    });
+
+    it('marks loaded true even when the payload is empty', () => {
+      const state = reducer(initialState, {
+        type: loadUsers.fulfilled.type,
+        payload: [],
+      });
+      expect(state.all).toEqual([]);
+      expect(state.loaded).toBe(true);
     });
 
     it('resetting currentIndex to 0 on each fulfilled prevents stale index', () => {
@@ -95,7 +106,7 @@ describe('usersSlice', () => {
     // UI renders blank when users=[] and isDone=false simultaneously.
 
     it('fulfilled with match:null does not mutate state', () => {
-      const before = { all: [mockUser], currentIndex: 1, loading: false, error: null };
+      const before = { all: [mockUser], currentIndex: 1, loading: false, loaded: true, error: null };
       const state = reducer(before, {
         type: recordSwipe.fulfilled.type,
         payload: { success: true, match: null },
@@ -106,7 +117,7 @@ describe('usersSlice', () => {
     });
 
     it('fulfilled with a match does not mutate state', () => {
-      const before = { all: [mockUser], currentIndex: 1, loading: false, error: null };
+      const before = { all: [mockUser], currentIndex: 1, loading: false, loaded: true, error: null };
       const match = { id: 'match-1', user1_id: 'user-session', user2_id: 'user-1' };
       const state = reducer(before, {
         type: recordSwipe.fulfilled.type,
@@ -119,7 +130,7 @@ describe('usersSlice', () => {
 
     it('rejected does not clear users array or set an error', () => {
       // If users were cleared or error were set on rejection, the UI would go blank.
-      const before = { all: [mockUser], currentIndex: 1, loading: false, error: null };
+      const before = { all: [mockUser], currentIndex: 1, loading: false, loaded: true, error: null };
       const state = reducer(before, {
         type: recordSwipe.rejected.type,
         error: { message: 'Network error' },
@@ -132,7 +143,7 @@ describe('usersSlice', () => {
 
     it('advanceCard + fulfilled: currentIndex stays advanced, users intact', () => {
       const users = [mockUser, { ...mockUser, id: 'user-2' }];
-      let state = reducer({ all: users, currentIndex: 0, loading: false, error: null }, advanceCard());
+      let state = reducer({ all: users, currentIndex: 0, loading: false, loaded: true, error: null }, advanceCard());
       state = reducer(state, {
         type: recordSwipe.fulfilled.type,
         payload: { success: true, match: null },
@@ -143,7 +154,7 @@ describe('usersSlice', () => {
 
     it('advanceCard + rejected: currentIndex stays advanced, users intact — no blank screen', () => {
       const users = [mockUser, { ...mockUser, id: 'user-2' }];
-      let state = reducer({ all: users, currentIndex: 0, loading: false, error: null }, advanceCard());
+      let state = reducer({ all: users, currentIndex: 0, loading: false, loaded: true, error: null }, advanceCard());
       state = reducer(state, {
         type: recordSwipe.rejected.type,
         error: { message: 'Network error' },
@@ -158,30 +169,36 @@ describe('usersSlice', () => {
       // Single card, advanceCard fires → isDone. Then recordSwipe rejects.
       // State must remain in isDone territory, not fall into the blank (users=[]) path.
       let state = reducer(
-        { all: [mockUser], currentIndex: 0, loading: false, error: null },
+        { all: [mockUser], currentIndex: 0, loading: false, loaded: true, error: null },
         advanceCard()
       );
       state = reducer(state, {
         type: recordSwipe.rejected.type,
         error: { message: 'Network error' },
       });
-      const isDone = !state.loading && !state.error && state.currentIndex >= state.all.length && state.all.length > 0;
+      const isDone = !state.loading && !state.error && state.loaded && state.currentIndex >= state.all.length;
       expect(isDone).toBe(true);
     });
   });
 
   describe('isDone logic', () => {
+    const computeIsDone = (state: { all: unknown[]; currentIndex: number; loading: boolean; loaded: boolean; error: string | null }) =>
+      !state.loading && !state.error && state.loaded && state.currentIndex >= state.all.length;
+
     it('currentIndex === users.length means all cards seen', () => {
       const users = [mockUser, { ...mockUser, id: 'user-2' }];
-      const state = { all: users, currentIndex: users.length, loading: false, error: null };
-      const isDone = !state.loading && !state.error && state.currentIndex >= state.all.length && state.all.length > 0;
-      expect(isDone).toBe(true);
+      const state = { all: users, currentIndex: users.length, loading: false, loaded: true, error: null };
+      expect(computeIsDone(state)).toBe(true);
     });
 
-    it('empty users array with currentIndex 0 is NOT done (initial state before load)', () => {
-      const state = { all: [], currentIndex: 0, loading: false, error: null };
-      const isDone = !state.loading && !state.error && state.currentIndex >= state.all.length && state.all.length > 0;
-      expect(isDone).toBe(false);
+    it('empty users array is NOT done before the first load completes', () => {
+      const state = { all: [], currentIndex: 0, loading: false, loaded: false, error: null };
+      expect(computeIsDone(state)).toBe(false);
+    });
+
+    it('empty users array IS done once loaded (e.g. after logout/login with everyone swiped)', () => {
+      const state = { all: [], currentIndex: 0, loading: false, loaded: true, error: null };
+      expect(computeIsDone(state)).toBe(true);
     });
   });
 });

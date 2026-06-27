@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAppDispatch } from '../redux/hooks';
@@ -26,17 +25,19 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
-    
+
+    setError(null);
     if (!trimmedEmail) {
-      Alert.alert('Email required', 'Please enter your email address.');
+      setError('Please enter your email address.');
       return;
     }
     if (!trimmedPassword) {
-      Alert.alert('Password required', 'Please enter your password.');
+      setError('Please enter your password.');
       return;
     }
 
@@ -66,11 +67,11 @@ export default function LoginScreen({ navigation }: Props) {
       const status = err?.response?.status;
       const message = err?.response?.data?.error;
       if (status === 401) {
-        Alert.alert('Invalid credentials', 'Email or password is incorrect.');
+        setError('Email or password is incorrect.');
       } else if (status === 404) {
-        Alert.alert('Not found', 'No account found with that email.');
+        setError('No account found with that email.');
       } else {
-        Alert.alert('Error', message ?? 'Login failed. Please try again.');
+        setError(message ?? 'Login failed. Please check your connection and try again.');
       }
     } finally {
       setLoading(false);
@@ -119,6 +120,8 @@ export default function LoginScreen({ navigation }: Props) {
             onSubmitEditing={handleLogin}
           />
         </View>
+
+        {error && <Text style={styles.error}>{error}</Text>}
 
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
@@ -194,6 +197,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: colors.text,
+  },
+  error: {
+    color: colors.nope,
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   button: {
     backgroundColor: colors.primary,

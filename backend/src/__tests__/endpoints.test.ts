@@ -40,7 +40,6 @@ jest.mock('../database/migrate', () => ({
   },
   runMigrations: jest.fn().mockResolvedValue(undefined),
   seedUsers: jest.fn().mockResolvedValue(undefined),
-  resetTestData: jest.fn().mockResolvedValue(undefined),
 }));
 
 // ── Actual imports ────────────────────────────────────────────────────────────
@@ -166,25 +165,6 @@ describe('FreeMatch API', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.slot).toBe('alex');
-    });
-  });
-
-  // ── Reset ───────────────────────────────────────────────────────────────────
-
-  describe('POST /api/reset', () => {
-    it('resets test data successfully', async () => {
-      const res = await request(app).post('/api/reset');
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({ ok: true });
-    });
-
-    it('returns 500 when reset throws', async () => {
-      const { resetTestData } = require('../database/migrate');
-      (resetTestData as jest.Mock).mockRejectedValueOnce(new Error('reset failed'));
-
-      const res = await request(app).post('/api/reset');
-      expect(res.status).toBe(500);
-      expect(res.body).toHaveProperty('error');
     });
   });
 
