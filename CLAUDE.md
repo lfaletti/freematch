@@ -92,8 +92,8 @@ users → swipes (swiper_id, swiped_id) → matches (user1_id < user2_id) → me
 ```
 `swipes` uses `ON CONFLICT ... DO UPDATE`; `matches` uses `ON CONFLICT DO NOTHING` — both are safe to call repeatedly.
 
-### Seeded Test Data
-`backend/src/database/migrate.ts` runs on startup: creates schema and seeds mock users. Two test users are pre-seeded with mutual right swipes so a match exists immediately after `docker-compose up`.
+### No Seeded Profiles
+`backend/src/database/migrate.ts` runs migrations on startup but **does not seed any users** — the app only ever contains accounts created manually via registration (`is_mock = false`). The old mock-user seeding (`seedUsers`/`insertSeedData`) was removed, and migration `005_remove_mock_users.sql` deletes any pre-existing mock rows (`is_mock = true`) plus their swipes/matches on every boot (idempotent). `TEST_USERS` survives only as the dev/test slot map for the legacy `X-User-Id` header and the `/api/session` slot label; those slot IDs are no longer present in the database, so the `X-User-Id` testing path needs a real registered account instead.
 
 ### Starting the app after a reboot
 Only the Docker stack (postgres + redis + backend) comes back automatically — the **Expo web frontend runs natively, not in Docker** (there is no frontend service in `docker-compose.yml`), so it must be started by hand after every reboot. `npm run start:app` (root) runs `start-app.ps1`, which brings up the Docker stack detached, waits for the backend `/health` check, then starts Expo web on `:8081`. Then open `http://localhost:8081/` and log in (or create an account).
@@ -101,7 +101,7 @@ Only the Docker stack (postgres + redis + backend) comes back automatically — 
 ### Verifying Locally (running the app, not just tests)
 - Fastest stack: run only the DB in Docker (`docker compose up -d postgres redis`) and the backend locally (`cd backend && npm run dev`, reads `backend/.env` → `localhost:5432`, serves `:3000`). Don't build the backend image just to verify. Frontend web: `npx expo start --web --port 8081`; Metro recompiles from disk, so an already-running server picks up edits on a fresh page load.
 - Open `localhost:8081/` and log in with (or create) an account — the session is restored from the stored token; there is no `?user=` query param.
-- **Triggering a *new* match modal:** the pre-seeded mutual swipe won't fire it (`matches` is `ON CONFLICT DO NOTHING`). Use a freshly-registered account that has no existing match yet: have another (unmatched) user like your account via `POST /api/swipes` (authenticate that call with the other user's `Authorization: Bearer <token>`, or the legacy `X-User-Id: <other-id>` test header, `{"swipedId":"<your-id>","direction":"right"}`), then click ♥ in the UI — the first right-swipe creates an instant match. (There is no `POST /api/reset` endpoint — it was removed because it did `DELETE FROM users`, wiping all real accounts.)
+- **Triggering a *new* match modal:** there are no seeded profiles, so register **two** accounts. Have the other account like yours via `POST /api/swipes` (authenticate with that account's `Authorization: Bearer <token>`, or its `X-User-Id: <other-id>` test header, `{"swipedId":"<your-id>","direction":"right"}`), then click ♥ on that user in your UI — the first reciprocal right-swipe creates an instant match. (There is no `POST /api/reset` endpoint — it was removed because it did `DELETE FROM users`, wiping all real accounts.)
 - Browser automation note: `randomuser.me` photos don't load in headless browsers; assert on `img.src`, not rendered pixels.
 
 ## Scalability & Production (Added June 2026)

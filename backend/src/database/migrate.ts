@@ -1,5 +1,8 @@
 import { query } from './connection';
 
+// Dev/test slot map used by `getUserId()` (legacy `X-User-Id` header) and the
+// `/api/session` slot label. These users are NOT seeded into the database — the
+// app only ever contains accounts created manually via registration.
 export const TEST_USERS: Record<string, {
   id: string; name: string; born_date: string; bio: string;
   photo_url: string; interests: string[]; location: string;
@@ -111,25 +114,10 @@ export async function runMigrations() {
   const sql004 = fs.readFileSync(path.join(__dirname, 'migrations/004_jwt_auth.sql'), 'utf8');
   await query(sql004);
 
+  const sql005 = fs.readFileSync(path.join(__dirname, 'migrations/005_remove_mock_users.sql'), 'utf8');
+  await query(sql005);
+
   console.log('Migrations ran successfully');
 }
 
-async function insertSeedData() {
-  for (const tu of Object.values(TEST_USERS)) {
-    await query(
-      `INSERT INTO users (id, name, born_date, bio, photo_url, interests, location, phone_number, email, is_mock)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
-       ON CONFLICT (id) DO UPDATE SET
-         born_date = EXCLUDED.born_date,
-         phone_number = EXCLUDED.phone_number,
-         email = EXCLUDED.email`,
-      [tu.id, tu.name, tu.born_date, tu.bio, tu.photo_url, tu.interests, tu.location, tu.phone_number, tu.email]
-    );
-  }
-}
-
-export async function seedUsers() {
-  await insertSeedData();
-  console.log(`Seeded/updated ${Object.keys(TEST_USERS).length} mock users`);
-}
 
