@@ -3,7 +3,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import { createClient } from 'redis';
 import { createAdapter } from '@socket.io/redis-adapter';
-import { runMigrations, seedUsers } from './database/migrate';
+import { runMigrations } from './database/migrate';
 import { saveMessage } from './services/messageService';
 import { createApp } from './app';
 
@@ -14,7 +14,6 @@ export { getUserId } from './app';
 
 async function bootstrap() {
   await runMigrations();
-  await seedUsers();
 
   const app = createApp();
   const server = http.createServer(app);
