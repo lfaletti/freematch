@@ -15,6 +15,9 @@ import { setSession, clearSession } from '../redux/slices/sessionSlice';
 import { storageService } from '../services/storageService';
 import { api } from '../services/api';
 import { colors } from '../theme/colors';
+import { navigationRef } from './navigationRef';
+import RealtimeManager from '../components/RealtimeManager';
+import GlobalMatchModal from '../components/GlobalMatchModal';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -29,6 +32,11 @@ function MatchesStack() {
 }
 
 function TabNavigator() {
+  const unreadCount = useAppSelector((s) =>
+    Object.values(s.matches.unread).reduce((sum, n) => sum + n, 0)
+  );
+  const hasUnread = unreadCount > 0;
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -57,7 +65,12 @@ function TabNavigator() {
         component={MatchesStack}
         options={{
           tabBarLabel: 'Matches',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>❤️</Text>,
+          tabBarBadge: hasUnread ? unreadCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.primary, color: colors.white },
+          // The heart turns into a love-letter while there are unread messages.
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 22, color }}>{hasUnread ? '💌' : '❤️'}</Text>
+          ),
         }}
       />
       <Tab.Screen
@@ -133,8 +146,16 @@ export default function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      {isAuthenticated ? <TabNavigator /> : <AuthStack />}
+    <NavigationContainer ref={navigationRef}>
+      {isAuthenticated ? (
+        <>
+          <RealtimeManager />
+          <TabNavigator />
+          <GlobalMatchModal />
+        </>
+      ) : (
+        <AuthStack />
+      )}
     </NavigationContainer>
   );
 }

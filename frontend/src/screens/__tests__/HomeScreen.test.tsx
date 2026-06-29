@@ -74,13 +74,11 @@ const createStore = (preloadedState?: any) =>
     preloadedState: { session: DEFAULT_SESSION, ...preloadedState },
   });
 
-const mockNavigation = { navigate: jest.fn() };
-
 const renderHomeScreen = (store = createStore()) =>
 
   render(
     <Provider store={store}>
-      <HomeScreen navigation={mockNavigation} />
+      <HomeScreen />
     </Provider>
   );
 
@@ -312,7 +310,10 @@ describe('HomeScreen', () => {
   });
 
   describe('match flow', () => {
-    it('shows match modal when swipe results in a match', async () => {
+    // The "It's a Match!" modal now lives in a global component (GlobalMatchModal)
+    // driven by `matches.newMatch`; HomeScreen's job is just to set it on a local
+    // match. So we assert the store state rather than the modal text here.
+    it('sets newMatch in the store when a swipe results in a match', async () => {
       const matchPayload = {
         match: {
           id: 'match-1',
@@ -323,13 +324,19 @@ describe('HomeScreen', () => {
       };
       (swipe as jest.Mock).mockResolvedValue(matchPayload);
 
-      const { getByText, findByText } = renderHomeScreen();
+      const store = createStore();
+      const { getByText } = renderHomeScreen(store);
       await waitFor(() => expect(getByText('Alice')).toBeTruthy());
 
       const likeBtn = getByText('♥');
       await act(async () => { fireEvent.press(likeBtn); });
 
-      await findByText("It's a Match!");
+      await waitFor(() => {
+        const newMatch = store.getState().matches.newMatch;
+        expect(newMatch).not.toBeNull();
+        expect(newMatch?.id).toBe('match-1');
+        expect(newMatch?.partner_name).toBe('Alice');
+      });
     });
   });
 });

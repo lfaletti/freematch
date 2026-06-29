@@ -9,22 +9,18 @@ import {
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { loadUsers, advanceCard, recordSwipe } from '../redux/slices/usersSlice';
-import { addMatch, clearNewMatch, loadMatches } from '../redux/slices/matchesSlice';
+import { addMatch, loadMatches } from '../redux/slices/matchesSlice';
 import { clearSession } from '../redux/slices/sessionSlice';
 import { colors } from '../theme/colors';
 import SwipeCard from '../components/SwipeCard';
-import MatchModal from '../components/MatchModal';
 import { storageService } from '../services/storageService';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const HomeScreen = ({ navigation }: { navigation: any }) => {
+const HomeScreen = () => {
   const dispatch = useAppDispatch();
   const sessionUserId = useAppSelector((s) => s.session.userId);
-  const sessionPhoto = useAppSelector((s) => s.session.photo);
   const { all: users, currentIndex, loading, loaded, error } = useAppSelector((s) => s.users);
-  const { newMatch } = useAppSelector((s) => s.matches);
-  const [showMatch, setShowMatch] = useState(false);
   const [swiping, setSwiping] = useState(false);
   const swipingRef = useRef(false);
 
@@ -33,10 +29,6 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
     dispatch(loadUsers());
     dispatch(loadMatches());
   }, [sessionUserId]);
-
-  useEffect(() => {
-    if (newMatch) setShowMatch(true);
-  }, [newMatch]);
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (swipingRef.current) return;
@@ -68,20 +60,6 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
   const handleLogout = async () => {
     await storageService.clearAll();
     dispatch(clearSession());
-  };
-
-  const handleModalClose = () => {
-    setShowMatch(false);
-    dispatch(clearNewMatch());
-  };
-
-  const handleGoToChat = () => {
-    setShowMatch(false);
-    const match = newMatch;
-    dispatch(clearNewMatch());
-    if (match) {
-      navigation.navigate('Matches', { screen: 'Chat', params: { match } });
-    }
   };
 
   const currentUser = users[currentIndex];
@@ -174,13 +152,6 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
           </TouchableOpacity>
         </View>
       )}
-
-      <MatchModal
-        match={showMatch ? newMatch : null}
-        selfPhoto={sessionPhoto}
-        onClose={handleModalClose}
-        onChat={handleGoToChat}
-      />
     </View>
   );
 };

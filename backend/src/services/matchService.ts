@@ -36,3 +36,24 @@ export async function getMatchById(matchId: string) {
   const result = await query('SELECT * FROM matches WHERE id = $1', [matchId]);
   return result.rows[0] || null;
 }
+
+// A single match enriched with the partner's details from `userId`'s perspective
+// (same shape as getMatchesForUser rows). Used to push a `new_match` event.
+export async function getMatchForUser(matchId: string, userId: string) {
+  const result = await query(
+    `SELECT m.*,
+      u.id as partner_id, u.name as partner_name,
+      EXTRACT(YEAR FROM AGE(u.born_date))::integer as partner_age,
+      u.photo_url as partner_photo, u.bio as partner_bio, u.location as partner_location,
+      u.interests as partner_interests,
+      (SELECT content FROM messages WHERE match_id = m.id ORDER BY created_at DESC LIMIT 1) as last_message,
+      (SELECT created_at FROM messages WHERE match_id = m.id ORDER BY created_at DESC LIMIT 1) as last_message_at
+     FROM matches m
+     JOIN users u ON (
+       CASE WHEN m.user1_id = $1::uuid THEN m.user2_id ELSE m.user1_id END = u.id
+     )
+     WHERE m.id = $2::uuid AND (m.user1_id = $1::uuid OR m.user2_id = $1::uuid)`,
+    [userId, matchId]
+  );
+  return result.rows[0] || null;
+}
