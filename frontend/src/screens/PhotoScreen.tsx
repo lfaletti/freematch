@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
   FlatList,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAppSelector } from '../redux/hooks';
@@ -83,28 +84,40 @@ const PhotoScreen = () => {
     }
   };
 
+  const performDelete = async (photoId: string) => {
+    try {
+      await deletePhoto(photoId);
+      setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+    } catch (err) {
+      console.error('Delete failed:', err);
+      if (Platform.OS === 'web') {
+        setError('Failed to delete photo');
+      } else {
+        Alert.alert('Error', 'Failed to delete photo');
+      }
+    }
+  };
+
   const handleDelete = (photoId: string) => {
-    Alert.alert(
-      'Delete Photo',
-      'Are you sure you want to delete this photo?',
-      [
-        { text: 'Cancel', onPress: () => {}, style: 'cancel' },
-        {
-          text: 'Delete',
-          onPress: async () => {
-            try {
-              await deletePhoto(photoId);
-              setPhotos(photos.filter((p) => p.id !== photoId));
-              Alert.alert('Success', 'Photo deleted successfully');
-            } catch (err) {
-              console.error('Delete failed:', err);
-              Alert.alert('Error', 'Failed to delete photo');
-            }
-          },
-          style: 'destructive',
-        },
-      ]
-    );
+    if (Platform.OS === 'web') {
+      // RN Web's Alert.alert ignores the buttons array and never fires the
+      // onPress callbacks, so the delete would never run. Use the browser's
+      // native confirm dialog instead.
+      const confirmed = window.confirm('Are you sure you want to delete this photo?');
+      if (confirmed) {
+        performDelete(photoId);
+      }
+      return;
+    }
+
+    Alert.alert('Delete Photo', 'Are you sure you want to delete this photo?', [
+      { text: 'Cancel', onPress: () => {}, style: 'cancel' },
+      {
+        text: 'Delete',
+        onPress: () => performDelete(photoId),
+        style: 'destructive',
+      },
+    ]);
   };
 
   const renderPhotoItem = ({ item }: { item: Photo }) => (
