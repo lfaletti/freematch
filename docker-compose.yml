@@ -31,6 +31,40 @@ services:
     volumes:
       - redis_data:/data
 
+  minio:
+    image: minio/minio:latest
+    container_name: freematch-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: create the bucket and make it publicly readable so the
+  # browser can load uploaded photos directly by URL.
+  minio-init:
+    image: minio/mc:latest
+    container_name: freematch-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin123 &&
+      mc mb --ignore-existing local/freematch-dev &&
+      mc anonymous set download local/freematch-dev
+      "
+    restart: "no"
+
   backend:
     build:
       context: ./backend
@@ -42,9 +76,12 @@ services:
       REDIS_URL: redis://redis:6379
       NODE_ENV: development
       AWS_REGION: us-east-1
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
-      AWS_S3_ENDPOINT: http://localhost:4566
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin123
+      # Endpoint the backend uses to talk to MinIO (container network)
+      AWS_S3_ENDPOINT: http://minio:9000
+      # Endpoint baked into returned photo URLs so the browser can reach them
+      S3_PUBLIC_ENDPOINT: http://localhost:9000
       S3_BUCKET: freematch-dev
     ports:
       - "3000:3000"
@@ -53,6 +90,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     volumes:
       - ./backend/src:/app/src
     restart: unless-stopped
@@ -60,3 +99,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  minio_data:
