@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { api } from './api';
 
 export interface Photo {
@@ -14,13 +15,22 @@ export const uploadPhoto = async (file: {
   name: string;
 }): Promise<Photo> => {
   const formData = new FormData();
-  formData.append('file', file as any);
 
-  const res = await api.post('/api/photos/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  if (Platform.OS === 'web') {
+    // On web, FormData needs a real Blob/File — appending the RN-style
+    // { uri, type, name } object would serialize to "[object Object]" and
+    // the server would receive no file. Fetch the (blob:/data:) URI to get
+    // the actual bytes.
+    const blob = await (await fetch(file.uri)).blob();
+    formData.append('file', blob, file.name);
+  } else {
+    formData.append('file', file as any);
+  }
+
+  // Don't set Content-Type manually: the platform must add the multipart
+  // boundary itself. Forcing 'multipart/form-data' without a boundary makes
+  // the body unparseable on the server.
+  const res = await api.post('/api/photos/upload', formData);
 
   return res.data.photo;
 };

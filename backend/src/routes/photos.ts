@@ -7,13 +7,10 @@ import {
   getPhotoById,
   deletePhoto,
 } from '../services/photoService';
+import { getUserId } from '../utils/session';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
-
-function getUserId(req: Request): string {
-  return (req.headers['x-user-id'] as string) || 'main';
-}
 
 router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
   try {

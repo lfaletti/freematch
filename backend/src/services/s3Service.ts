@@ -12,6 +12,10 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
   },
   endpoint: process.env.AWS_S3_ENDPOINT,
+  // S3-compatible stores (MinIO/LocalStack) don't support virtual-hosted-style
+  // (<bucket>.host) addressing, so use path-style (host/<bucket>) when a custom
+  // endpoint is set.
+  forcePathStyle: !!process.env.AWS_S3_ENDPOINT,
 });
 
 export async function uploadPhoto(
@@ -35,8 +39,14 @@ export async function uploadPhoto(
 
     await s3Client.send(command);
 
-    const s3Endpoint = process.env.AWS_S3_ENDPOINT || 'https://s3.amazonaws.com';
-    const photoUrl = `${s3Endpoint}/${bucket}/${fileName}`;
+    // The browser must be able to reach the returned URL. When the backend
+    // talks to MinIO over the container network (AWS_S3_ENDPOINT=http://minio:9000)
+    // the public-facing host differs, so prefer S3_PUBLIC_ENDPOINT for the URL.
+    const publicEndpoint =
+      process.env.S3_PUBLIC_ENDPOINT ||
+      process.env.AWS_S3_ENDPOINT ||
+      'https://s3.amazonaws.com';
+    const photoUrl = `${publicEndpoint}/${bucket}/${fileName}`;
 
     return photoUrl;
   } catch (error) {
