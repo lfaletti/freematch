@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAppSelector } from '../redux/hooks';
 import { colors } from '../theme/colors';
 import { uploadPhoto, getUserPhotos, deletePhoto, Photo } from '../services/photoService';
+import ConfirmModal from '../components/ConfirmModal';
 
 const PhotoScreen = () => {
   const userId = useAppSelector((s) => s.session.userId);
@@ -22,6 +23,7 @@ const PhotoScreen = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (userId) {
@@ -98,26 +100,11 @@ const PhotoScreen = () => {
     }
   };
 
-  const handleDelete = (photoId: string) => {
-    if (Platform.OS === 'web') {
-      // RN Web's Alert.alert ignores the buttons array and never fires the
-      // onPress callbacks, so the delete would never run. Use the browser's
-      // native confirm dialog instead.
-      const confirmed = window.confirm('Are you sure you want to delete this photo?');
-      if (confirmed) {
-        performDelete(photoId);
-      }
-      return;
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId) {
+      performDelete(pendingDeleteId);
     }
-
-    Alert.alert('Delete Photo', 'Are you sure you want to delete this photo?', [
-      { text: 'Cancel', onPress: () => {}, style: 'cancel' },
-      {
-        text: 'Delete',
-        onPress: () => performDelete(photoId),
-        style: 'destructive',
-      },
-    ]);
+    setPendingDeleteId(null);
   };
 
   const renderPhotoItem = ({ item }: { item: Photo }) => (
@@ -125,7 +112,7 @@ const PhotoScreen = () => {
       <Image source={{ uri: item.url }} style={styles.photoImage} />
       <TouchableOpacity
         style={styles.deleteBtn}
-        onPress={() => handleDelete(item.id)}
+        onPress={() => setPendingDeleteId(item.id)}
       >
         <Text style={styles.deleteBtnText}>✕</Text>
       </TouchableOpacity>
@@ -192,6 +179,17 @@ const PhotoScreen = () => {
           contentContainerStyle={styles.galleryContent}
         />
       )}
+
+      <ConfirmModal
+        visible={pendingDeleteId !== null}
+        title="Delete Photo"
+        message="Are you sure you want to delete this photo?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        destructive
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </View>
   );
 };
