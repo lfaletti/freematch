@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,10 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
-import { loadMessages, addMessage, setTyping, Message } from '../redux/slices/messagesSlice';
-import { updateLastMessage } from '../redux/slices/matchesSlice';
+import { loadMessages, setTyping, setActiveMatch, Message } from '../redux/slices/messagesSlice';
+import { clearUnread } from '../redux/slices/matchesSlice';
 import { getSocket } from '../services/socketService';
 import { colors } from '../theme/colors';
 import { Match } from '../redux/slices/matchesSlice';
@@ -35,29 +36,36 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
   const flatListRef = useRef<FlatList>(null);
   const socket = getSocket();
 
+  // Incoming messages are handled globally (RealtimeManager) and land in the
+  // store; here we only load history and listen for typing indicators.
   useEffect(() => {
     dispatch(loadMessages(match.id));
-    socket.emit('join_match', match.id);
 
-    socket.on('new_message', (message: Message) => {
-      dispatch(addMessage(message));
-      dispatch(updateLastMessage({ matchId: match.id, content: message.content, createdAt: message.created_at }));
-    });
-
-    socket.on('typing_start', ({ userId }: { userId: string }) => {
+    const onTypingStart = ({ userId }: { userId: string }) =>
       dispatch(setTyping({ userId, typing: true }));
-    });
-
-    socket.on('typing_stop', ({ userId }: { userId: string }) => {
+    const onTypingStop = ({ userId }: { userId: string }) =>
       dispatch(setTyping({ userId, typing: false }));
-    });
+
+    socket.on('typing_start', onTypingStart);
+    socket.on('typing_stop', onTypingStop);
 
     return () => {
-      socket.off('new_message');
-      socket.off('typing_start');
-      socket.off('typing_stop');
+      socket.off('typing_start', onTypingStart);
+      socket.off('typing_stop', onTypingStop);
     };
   }, [match.id]);
+
+  // While this chat is focused, mark it active (suppresses its badge) and clear
+  // any pending unread count.
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(setActiveMatch(match.id));
+      dispatch(clearUnread(match.id));
+      return () => {
+        dispatch(setActiveMatch(null));
+      };
+    }, [match.id])
+  );
 
   useEffect(() => {
     if (messages.length > 0) {

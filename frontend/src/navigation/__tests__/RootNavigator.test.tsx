@@ -47,6 +47,21 @@ jest.mock('../../services/userService', () => ({
   swipe: jest.fn().mockResolvedValue({ match: null }),
 }));
 
+// RealtimeManager (mounted in the authenticated tree) opens a socket — stub it
+// so tests never touch the network.
+jest.mock('../../services/socketService', () => {
+  const socket = {
+    connected: false,
+    on: jest.fn(),
+    off: jest.fn(),
+    emit: jest.fn(),
+  };
+  return {
+    getSocket: jest.fn(() => socket),
+    disconnectSocket: jest.fn(),
+  };
+});
+
 // ── Imports ───────────────────────────────────────────────────────────────────
 
 import React from 'react';

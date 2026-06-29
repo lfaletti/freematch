@@ -21,12 +21,14 @@ interface MatchesState {
   all: Match[];
   loading: boolean;
   newMatch: Match | null;
+  unread: Record<string, number>;
 }
 
 const initialState: MatchesState = {
   all: [],
   loading: false,
   newMatch: null,
+  unread: {},
 };
 
 export const loadMatches = createAsyncThunk('matches/load', fetchMatches);
@@ -50,6 +52,13 @@ const matchesSlice = createSlice({
         match.last_message_at = action.payload.createdAt;
       }
     },
+    incrementUnread(state, action: PayloadAction<string>) {
+      const matchId = action.payload;
+      state.unread[matchId] = (state.unread[matchId] || 0) + 1;
+    },
+    clearUnread(state, action: PayloadAction<string>) {
+      delete state.unread[action.payload];
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -61,5 +70,6 @@ const matchesSlice = createSlice({
   },
 });
 
-export const { addMatch, clearNewMatch, updateLastMessage } = matchesSlice.actions;
+export const { addMatch, clearNewMatch, updateLastMessage, incrementUnread, clearUnread } =
+  matchesSlice.actions;
 export default matchesSlice.reducer;

@@ -9,6 +9,8 @@ import reducer, {
   addMatch,
   clearNewMatch,
   updateLastMessage,
+  incrementUnread,
+  clearUnread,
   loadMatches,
   Match,
 } from '../matchesSlice';
@@ -33,6 +35,7 @@ const initialState = {
   all: [],
   loading: false,
   newMatch: null,
+  unread: {},
 };
 
 describe('matchesSlice', () => {
@@ -94,6 +97,27 @@ describe('matchesSlice', () => {
         updateLastMessage({ matchId: 'nonexistent', content: 'Hello!', createdAt: '2026-01-02T00:00:00Z' })
       );
       expect(state.all[0].last_message).toBeNull();
+    });
+  });
+
+  describe('unread', () => {
+    it('increments the unread count for a match', () => {
+      let state = reducer(initialState, incrementUnread('match-1'));
+      expect(state.unread['match-1']).toBe(1);
+      state = reducer(state, incrementUnread('match-1'));
+      expect(state.unread['match-1']).toBe(2);
+    });
+
+    it('tracks unread counts per match independently', () => {
+      let state = reducer(initialState, incrementUnread('match-1'));
+      state = reducer(state, incrementUnread('match-2'));
+      expect(state.unread).toEqual({ 'match-1': 1, 'match-2': 1 });
+    });
+
+    it('clears the unread count for a match', () => {
+      let state = reducer(initialState, incrementUnread('match-1'));
+      state = reducer(state, clearUnread('match-1'));
+      expect(state.unread['match-1']).toBeUndefined();
     });
   });
 

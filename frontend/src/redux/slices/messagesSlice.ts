@@ -13,12 +13,15 @@ interface MessagesState {
   byMatchId: Record<string, Message[]>;
   loading: boolean;
   typingPartners: string[];
+  // The match whose chat is currently open; used to suppress its unread badge.
+  activeMatchId: string | null;
 }
 
 const initialState: MessagesState = {
   byMatchId: {},
   loading: false,
   typingPartners: [],
+  activeMatchId: null,
 };
 
 export const loadMessages = createAsyncThunk(
@@ -48,6 +51,9 @@ const messagesSlice = createSlice({
         state.typingPartners = state.typingPartners.filter((id) => id !== action.payload.userId);
       }
     },
+    setActiveMatch(state, action: PayloadAction<string | null>) {
+      state.activeMatchId = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -59,5 +65,5 @@ const messagesSlice = createSlice({
   },
 });
 
-export const { addMessage, setTyping } = messagesSlice.actions;
+export const { addMessage, setTyping, setActiveMatch } = messagesSlice.actions;
 export default messagesSlice.reducer;
