@@ -1,0 +1,22 @@
+# Normalize all text files to LF in the repo, regardless of the contributor's
+# platform or their core.autocrlf setting. Stops the "LF will be replaced by
+# CRLF" warnings and keeps diffs clean across Windows/macOS/Linux.
+* text=auto eol=lf
+
+# Windows-only scripts must keep CRLF to run correctly.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binaries: never touch line endings.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
