@@ -21,3 +21,6 @@ Thumbs.db
 # Expo / Metro
 .expo/
 web-build/
+
+# Uploaded user photos (runtime-generated)
+backend/uploads/
