@@ -13,9 +13,12 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
-import { loadMessages, setTyping, setActiveMatch, Message } from '../redux/slices/messagesSlice';
-import { clearUnread } from '../redux/slices/matchesSlice';
+import { loadMessages, setTyping, setActiveMatch, removeMatchMessages, Message } from '../redux/slices/messagesSlice';
+import { clearUnread, removeMatch } from '../redux/slices/matchesSlice';
+import { loadUsers } from '../redux/slices/usersSlice';
 import { getSocket } from '../services/socketService';
+import { unmatch } from '../services/userService';
+import ConfirmModal from '../components/ConfirmModal';
 import { colors } from '../theme/colors';
 import { Match } from '../redux/slices/matchesSlice';
 
@@ -33,6 +36,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
   const typingPartners = useAppSelector((s) => s.messages.typingPartners);
   const loading = useAppSelector((s) => s.messages.loading);
   const [inputText, setInputText] = useState('');
+  const [confirmUnmatch, setConfirmUnmatch] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const socket = getSocket();
 
@@ -72,6 +76,24 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }, [messages]);
+
+  // Mirror of the swipe → match flow: hit the API, then update the store. The
+  // backend pushes the removal to the partner in realtime; we update locally and
+  // leave the now-empty chat.
+  const handleUnmatch = async () => {
+    setConfirmUnmatch(false);
+    try {
+      await unmatch(match.id);
+    } catch (err) {
+      console.error('Failed to unmatch:', err);
+    }
+    dispatch(removeMatch(match.id));
+    dispatch(removeMatchMessages(match.id));
+    // Swipes are wiped on the backend, so refresh the deck to bring the partner
+    // back as a swipeable profile (re-match is possible again).
+    dispatch(loadUsers());
+    navigation.goBack();
+  };
 
   const sendMessage = () => {
     const text = inputText.trim();
@@ -118,6 +140,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
             {isTyping ? 'typing...' : 'online'}
           </Text>
         </View>
+        <TouchableOpacity onPress={() => setConfirmUnmatch(true)} style={styles.unmatchBtn}>
+          <Text style={styles.unmatchIcon}>💔</Text>
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -171,6 +196,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
           <Text style={styles.sendIcon}>➤</Text>
         </TouchableOpacity>
       </View>
+
+      <ConfirmModal
+        visible={confirmUnmatch}
+        title="Unmatch"
+        message={`Unmatch ${match.partner_name}? This deletes your conversation for both of you.`}
+        confirmText="Unmatch"
+        cancelText="Cancel"
+        destructive
+        onConfirm={handleUnmatch}
+        onCancel={() => setConfirmUnmatch(false)}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -208,6 +244,13 @@ const styles = StyleSheet.create({
   },
   headerInfo: {
     marginLeft: 10,
+  },
+  unmatchBtn: {
+    marginLeft: 'auto',
+    padding: 6,
+  },
+  unmatchIcon: {
+    fontSize: 22,
   },
   headerName: {
     fontSize: 17,

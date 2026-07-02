@@ -20,3 +20,15 @@ export async function recordSwipe(swiperId: string, swipedId: string, direction:
   }
   return null;
 }
+
+// Wipes the swipe history between two users in both directions. Used by unmatch
+// so the pair returns to their pre-swipe state: each reappears in the other's
+// deck and they can match again.
+export async function deleteSwipesBetween(userAId: string, userBId: string) {
+  await query(
+    `DELETE FROM swipes
+     WHERE (swiper_id = $1 AND swiped_id = $2)
+        OR (swiper_id = $2 AND swiped_id = $1)`,
+    [userAId, userBId]
+  );
+}

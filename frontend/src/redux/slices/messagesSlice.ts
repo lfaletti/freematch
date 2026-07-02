@@ -54,6 +54,11 @@ const messagesSlice = createSlice({
     setActiveMatch(state, action: PayloadAction<string | null>) {
       state.activeMatchId = action.payload;
     },
+    // Drop a conversation from the cache when its match is removed (unmatch).
+    removeMatchMessages(state, action: PayloadAction<string>) {
+      delete state.byMatchId[action.payload];
+      if (state.activeMatchId === action.payload) state.activeMatchId = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -65,5 +70,5 @@ const messagesSlice = createSlice({
   },
 });
 
-export const { addMessage, setTyping, setActiveMatch } = messagesSlice.actions;
+export const { addMessage, setTyping, setActiveMatch, removeMatchMessages } = messagesSlice.actions;
 export default messagesSlice.reducer;

@@ -37,6 +37,20 @@ export async function getMatchById(matchId: string) {
   return result.rows[0] || null;
 }
 
+// Removes a match (and, via ON DELETE CASCADE on messages.match_id, the whole
+// conversation). Only a participant can unmatch; returns the deleted row — which
+// carries both user ids — so the caller can notify the other user, or null when
+// the match doesn't exist or the user isn't part of it.
+export async function deleteMatch(matchId: string, userId: string) {
+  const result = await query(
+    `DELETE FROM matches
+     WHERE id = $1::uuid AND (user1_id = $2::uuid OR user2_id = $2::uuid)
+     RETURNING *`,
+    [matchId, userId]
+  );
+  return result.rows[0] || null;
+}
+
 // A single match enriched with the partner's details from `userId`'s perspective
 // (same shape as getMatchesForUser rows). Used to push a `new_match` event.
 export async function getMatchForUser(matchId: string, userId: string) {

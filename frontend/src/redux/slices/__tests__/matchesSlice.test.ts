@@ -11,6 +11,7 @@ import reducer, {
   updateLastMessage,
   incrementUnread,
   clearUnread,
+  removeMatch,
   loadMatches,
   Match,
 } from '../matchesSlice';
@@ -118,6 +119,51 @@ describe('matchesSlice', () => {
       let state = reducer(initialState, incrementUnread('match-1'));
       state = reducer(state, clearUnread('match-1'));
       expect(state.unread['match-1']).toBeUndefined();
+    });
+  });
+
+  describe('removeMatch', () => {
+    it('removes the match from the list', () => {
+      const other: Match = { ...mockMatch, id: 'match-2' };
+      const state = reducer(
+        { ...initialState, all: [mockMatch, other] },
+        removeMatch('match-1')
+      );
+      expect(state.all).toHaveLength(1);
+      expect(state.all[0].id).toBe('match-2');
+    });
+
+    it('clears any unread count for the removed match', () => {
+      const state = reducer(
+        { ...initialState, all: [mockMatch], unread: { 'match-1': 3 } },
+        removeMatch('match-1')
+      );
+      expect(state.unread['match-1']).toBeUndefined();
+    });
+
+    it('clears newMatch when it is the removed match', () => {
+      const state = reducer(
+        { ...initialState, all: [mockMatch], newMatch: mockMatch },
+        removeMatch('match-1')
+      );
+      expect(state.newMatch).toBeNull();
+    });
+
+    it('leaves newMatch untouched when a different match is removed', () => {
+      const other: Match = { ...mockMatch, id: 'match-2' };
+      const state = reducer(
+        { ...initialState, all: [mockMatch, other], newMatch: mockMatch },
+        removeMatch('match-2')
+      );
+      expect(state.newMatch).toEqual(mockMatch);
+    });
+
+    it('is a no-op when the match id is not present', () => {
+      const state = reducer(
+        { ...initialState, all: [mockMatch] },
+        removeMatch('nonexistent')
+      );
+      expect(state.all).toHaveLength(1);
     });
   });
 
