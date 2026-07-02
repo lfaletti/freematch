@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { api } from './api';
 
 export interface AuthResponse {
@@ -33,6 +34,48 @@ export const registerWithPassword = async (
     bio,
     phone_number: phoneNumber,
   });
+  return res.data;
+};
+
+export interface RegisterPhotoFile {
+  uri: string;
+  type: string;
+  name: string;
+}
+
+// Registers a new account together with a profile photo. The backend
+// `/api/auth/register` route accepts `upload.single('photo')`, so we send
+// everything as multipart/form-data and the file becomes the user's photo_url.
+export const registerWithPhoto = async (
+  fields: {
+    name: string;
+    email: string;
+    password: string;
+    bornDate: string;
+    bio?: string;
+    phoneNumber?: string;
+  },
+  photo: RegisterPhotoFile,
+): Promise<AuthResponse> => {
+  const formData = new FormData();
+  formData.append('name', fields.name);
+  formData.append('email', fields.email);
+  formData.append('password', fields.password);
+  formData.append('born_date', fields.bornDate);
+  if (fields.bio) formData.append('bio', fields.bio);
+  if (fields.phoneNumber) formData.append('phone_number', fields.phoneNumber);
+
+  if (Platform.OS === 'web') {
+    // On web FormData needs real bytes — the RN { uri, type, name } object would
+    // serialize to "[object Object]". Fetch the (blob:/data:) URI for the Blob.
+    const blob = await (await fetch(photo.uri)).blob();
+    formData.append('photo', blob, photo.name);
+  } else {
+    formData.append('photo', photo as any);
+  }
+
+  // Let the platform set the multipart boundary; don't force Content-Type.
+  const res = await api.post('/api/auth/register', formData);
   return res.data;
 };
 
