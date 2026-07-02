@@ -45,6 +45,11 @@ export const fetchMatches = async () => {
   return res.data;
 };
 
+export const unmatch = async (matchId: string) => {
+  const res = await api.delete(`/api/matches/${matchId}`);
+  return res.data;
+};
+
 export const fetchMessages = async (matchId: string) => {
   const res = await api.get(`/api/messages/${matchId}`);
   return res.data;

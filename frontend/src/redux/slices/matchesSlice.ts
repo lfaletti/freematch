@@ -59,6 +59,15 @@ const matchesSlice = createSlice({
     clearUnread(state, action: PayloadAction<string>) {
       delete state.unread[action.payload];
     },
+    // The mirror of addMatch: drop the match (and any pending unread/modal state)
+    // when either side unmatches. Driven locally by the unmatcher and in realtime
+    // for the other user.
+    removeMatch(state, action: PayloadAction<string>) {
+      const matchId = action.payload;
+      state.all = state.all.filter((m) => m.id !== matchId);
+      delete state.unread[matchId];
+      if (state.newMatch?.id === matchId) state.newMatch = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -70,6 +79,6 @@ const matchesSlice = createSlice({
   },
 });
 
-export const { addMatch, clearNewMatch, updateLastMessage, incrementUnread, clearUnread } =
+export const { addMatch, clearNewMatch, updateLastMessage, incrementUnread, clearUnread, removeMatch } =
   matchesSlice.actions;
 export default matchesSlice.reducer;
