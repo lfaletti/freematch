@@ -12,12 +12,44 @@ import {
 
 const router = Router();
 
+const MIN_AGE = 18;
+
+// Full-years age from a YYYY-MM-DD (or any Date-parseable) birth date.
+// Returns null when the date can't be parsed. YYYY-MM-DD is built as a *local*
+// date so the day-of-month comparison below isn't shifted by the UTC offset
+// (a plain `new Date("2008-07-02")` is UTC midnight, which reads as the prior
+// day in negative-offset zones and lets someone one day short of 18 through).
+function calculateAge(bornDate: string): number | null {
+  const ymd = /^(\d{4})-(\d{2})-(\d{2})/.exec((bornDate ?? '').trim());
+  const dob = ymd
+    ? new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]))
+    : new Date(bornDate);
+  if (isNaN(dob.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const monthDiff = now.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 router.post('/register', upload.single('photo'), async (req, res) => {
   try {
     const { name, email, password, bio, born_date, phone_number } = req.body;
 
     if (!name || !email || !password || !born_date) {
       res.status(400).json({ error: 'name, email, password, and born_date are required' });
+      return;
+    }
+
+    const age = calculateAge(born_date);
+    if (age === null) {
+      res.status(400).json({ error: 'born_date is not a valid date' });
+      return;
+    }
+    if (age < MIN_AGE) {
+      res.status(400).json({ error: `You must be at least ${MIN_AGE} years old to register` });
       return;
     }
 

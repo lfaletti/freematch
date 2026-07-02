@@ -463,6 +463,26 @@ describe('FreeMatch API', () => {
       expect(res.status).toBe(400);
     });
 
+    it('returns 400 when the user is under 18', async () => {
+      const now = new Date();
+      const under18 = `${now.getFullYear() - 16}-01-01`;
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({ ...validPayload, born_date: under18 });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/18 years old/i);
+    });
+
+    it('returns 400 when born_date is not a real date', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({ ...validPayload, born_date: 'not-a-date' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/valid date/i);
+    });
+
     it('creates a user and returns 201 with a token', async () => {
       const created = {
         id: 'new-user-id',

@@ -15,7 +15,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAppDispatch } from '../redux/hooks';
 import { setSession } from '../redux/slices/sessionSlice';
-import { registerWithPassword } from '../services/authService';
+import { registerWithPhoto } from '../services/authService';
+import { uploadPhoto } from '../services/photoService';
 import { storageService } from '../services/storageService';
 import { colors } from '../theme/colors';
 
@@ -27,7 +28,11 @@ interface PickedImage {
   uri: string;
   width: number;
   height: number;
+  mimeType: string;
+  fileName: string;
 }
+
+const MAX_PHOTOS = 6;
 
 export default function CreateAccountScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
@@ -37,11 +42,13 @@ export default function CreateAccountScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [photo, setPhoto] = useState<PickedImage | null>(null);
+  const [photos, setPhotos] = useState<PickedImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const pickPhoto = async () => {
+    if (photos.length >= MAX_PHOTOS) return;
+
     if (Platform.OS !== 'web') {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -59,11 +66,26 @@ export default function CreateAccountScreen({ navigation }: Props) {
 
     if (!result.canceled && result.assets.length > 0) {
       const asset = result.assets[0];
-      setPhoto({ uri: asset.uri, width: asset.width, height: asset.height });
+      setPhotos((prev) => [
+        ...prev,
+        {
+          uri: asset.uri,
+          width: asset.width,
+          height: asset.height,
+          mimeType: asset.mimeType || 'image/jpeg',
+          fileName: asset.fileName || `photo-${prev.length + 1}.jpg`,
+        },
+      ]);
+      setError(null);
     }
   };
 
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const validate = (): string | null => {
+    if (photos.length === 0) return 'Please add at least one photo.';
     if (!name.trim()) return 'Name is required.';
     if (!email.trim()) return 'Email is required.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -94,14 +116,19 @@ export default function CreateAccountScreen({ navigation }: Props) {
 
     setLoading(true);
     try {
-      const user = await registerWithPassword(
-        name.trim(),
-        email.trim(),
-        password.trim(),
-        bornDate.trim(),
-        bio.trim() || undefined,
+      const [profile, ...rest] = photos;
+
+      const user = await registerWithPhoto(
+        {
+          name: name.trim(),
+          email: email.trim(),
+          password: password.trim(),
+          bornDate: bornDate.trim(),
+          bio: bio.trim() || undefined,
+        },
+        { uri: profile.uri, type: profile.mimeType, name: profile.fileName },
       );
-      
+
       await storageService.setUserId(user.userId);
       if (user.token) {
         await storageService.setToken(user.token);
@@ -109,7 +136,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
       if (user.refreshToken) {
         await storageService.setRefreshToken(user.refreshToken);
       }
-      
+
       dispatch(setSession({
         userId: user.userId,
         name: user.name,
@@ -122,6 +149,15 @@ export default function CreateAccountScreen({ navigation }: Props) {
         refreshToken: user.refreshToken ?? '',
         slot: '',
       }));
+
+      // Extra photos go to the gallery. The request interceptor reads the token
+      // from Redux, so this must run after setSession. Best-effort: a failed
+      // gallery upload shouldn't block the now-authenticated user.
+      rest.forEach((p) => {
+        uploadPhoto({ uri: p.uri, type: p.mimeType, name: p.fileName }).catch((e) =>
+          console.warn('Failed to upload additional photo:', e),
+        );
+      });
     } catch (err: any) {
       const status = err?.response?.status;
       const message = err?.response?.data?.error;
@@ -147,6 +183,36 @@ export default function CreateAccountScreen({ navigation }: Props) {
 
       <Text style={styles.title}>Create your profile</Text>
       <Text style={styles.subtitle}>Let's get you set up</Text>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Photos <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.photoHint}>Add at least one photo. The first is your main photo.</Text>
+        <View style={styles.photoGrid}>
+          {photos.map((p, index) => (
+            <View key={`${p.uri}-${index}`} style={styles.photoTile}>
+              <Image source={{ uri: p.uri }} style={styles.photoTileImage} />
+              {index === 0 && (
+                <View style={styles.mainBadge}>
+                  <Text style={styles.mainBadgeText}>MAIN</Text>
+                </View>
+              )}
+              <TouchableOpacity
+                style={styles.removePhotoBtn}
+                onPress={() => removePhoto(index)}
+                accessibilityLabel="Remove photo"
+              >
+                <Text style={styles.removePhotoText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          {photos.length < MAX_PHOTOS && (
+            <TouchableOpacity style={styles.addPhotoTile} onPress={pickPhoto} activeOpacity={0.7}>
+              <Text style={styles.addPhotoIcon}>＋</Text>
+              <Text style={styles.addPhotoText}>Add photo</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
 
       <View style={styles.field}>
         <Text style={styles.label}>Name <Text style={styles.required}>*</Text></Text>
@@ -305,21 +371,62 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 32,
   },
-  photoPicker: {
-    alignSelf: 'center',
-    marginBottom: 8,
+  photoHint: {
+    color: colors.textMuted,
+    fontSize: 12,
+    marginBottom: 12,
   },
-  photoPreview: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 3,
-    borderColor: colors.primary,
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
-  photoPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  photoTile: {
+    width: 96,
+    height: 96,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+  },
+  photoTileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  mainBadge: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.primary,
+    paddingVertical: 2,
+    alignItems: 'center',
+  },
+  mainBadgeText: {
+    color: colors.white,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  removePhotoBtn: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removePhotoText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  addPhotoTile: {
+    width: 96,
+    height: 96,
+    borderRadius: 12,
     backgroundColor: colors.surface,
     borderWidth: 2,
     borderColor: colors.border,
@@ -327,29 +434,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  photoPlaceholderIcon: {
+  addPhotoIcon: {
     fontSize: 28,
-    marginBottom: 4,
-  },
-  photoPlaceholderText: {
-    color: colors.text,
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  photoPlaceholderHint: {
-    color: colors.textMuted,
-    fontSize: 10,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  changePhotoLink: {
-    alignSelf: 'center',
-    marginBottom: 24,
-  },
-  changePhotoText: {
     color: colors.primary,
-    fontSize: 14,
+    marginBottom: 2,
+  },
+  addPhotoText: {
+    color: colors.textSecondary,
+    fontSize: 11,
     fontWeight: '600',
   },
   field: {
