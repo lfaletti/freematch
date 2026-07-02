@@ -13,3 +13,21 @@ pool.on('error', (err) => {
 });
 
 export const query = (text: string, params?: unknown[]) => pool.query(text, params);
+
+// Wait for Postgres to accept connections before running migrations. `depends_on`
+// only guarantees ordering at the initial `docker-compose up`; if Postgres is
+// later recreated (new IP / brief DNS gap on the `postgres` host) the backend can
+// boot faster than the DB is ready. Retry with backoff instead of crashing.
+export async function waitForDatabase(retries = 15, delayMs = 2000): Promise<void> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await pool.query('SELECT 1');
+      return;
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      console.warn(`DB not ready (attempt ${attempt}/${retries}): ${reason}`);
+      if (attempt === retries) throw err;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}

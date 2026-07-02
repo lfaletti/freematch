@@ -95,6 +95,18 @@ services:
     volumes:
       - ./backend/src:/app/src
     restart: unless-stopped
+    # Reflect real serving state in `docker ps` (a crashed boot used to show "Up"
+    # despite nothing listening). Uses node since the image has no curl/wget.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   postgres_data:
