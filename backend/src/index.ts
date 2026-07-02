@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import { createClient } from 'redis';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { runMigrations } from './database/migrate';
+import { waitForDatabase } from './database/connection';
 import { saveMessage } from './services/messageService';
 import { getMatchById } from './services/matchService';
 import { createApp } from './app';
@@ -14,6 +15,7 @@ dotenv.config();
 export { getUserId } from './app';
 
 async function bootstrap() {
+  await waitForDatabase();
   await runMigrations();
 
   const app = createApp();
@@ -82,4 +84,10 @@ async function bootstrap() {
   });
 }
 
-bootstrap().catch(console.error);
+// Exit non-zero on a fatal boot error so the container's restart policy (and
+// ts-node-dev --respawn in dev) restarts us, instead of leaving a live process
+// with no server listening — which is what made a failed boot look "Up" but dead.
+bootstrap().catch((err) => {
+  console.error('Fatal bootstrap error:', err);
+  process.exit(1);
+});
