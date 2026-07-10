@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { loadUsers, advanceCard, recordSwipe } from '../redux/slices/usersSlice';
@@ -23,6 +24,7 @@ const HomeScreen = () => {
   const sessionUserId = useAppSelector((s) => s.session.userId);
   const { all: users, currentIndex, loading, loaded, error } = useAppSelector((s) => s.users);
   const [swiping, setSwiping] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const swipingRef = useRef(false);
 
   useEffect(() => {
@@ -59,8 +61,14 @@ const HomeScreen = () => {
   };
 
   const handleLogout = async () => {
+    setMenuOpen(false);
     await storageService.clearAll();
     dispatch(clearSession());
+  };
+
+  const handleEditProfile = () => {
+    setMenuOpen(false);
+    navigate('Photos');
   };
 
   const currentUser = users[currentIndex];
@@ -136,14 +144,29 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>↩</Text>
-        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
         <View style={styles.headerCenter}>
           <Text style={styles.logo}>FreeMatch</Text>
           <Text style={styles.tagline}>Connect freely ❤️</Text>
         </View>
-        <View style={styles.headerSpacer} />
+        <View style={styles.menuContainer}>
+          <TouchableOpacity style={styles.menuBtn} onPress={() => setMenuOpen(!menuOpen)}>
+            <Text style={styles.menuIcon}>⋮</Text>
+          </TouchableOpacity>
+          <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+            <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuOpen(false)}>
+              <View style={styles.menuDropdown}>
+                <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}>
+                  <Text style={styles.menuItemText}>✏️ Editar perfil</Text>
+                </TouchableOpacity>
+                <View style={styles.menuDivider} />
+                <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                  <Text style={[styles.menuItemText, styles.logoutText]}>🚪 Salir</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        </View>
       </View>
       <View style={styles.cardArea}>
         {renderCardArea()}
@@ -187,12 +210,48 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  logoutBtn: {
+  menuContainer: {
+    width: 38,
+    position: 'relative',
+  },
+  menuBtn: {
     padding: 8,
   },
-  logoutText: {
-    fontSize: 22,
+  menuIcon: {
+    fontSize: 24,
     color: colors.textMuted,
+    fontWeight: '700',
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingTop: 80,
+  },
+  menuDropdown: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    marginHorizontal: 20,
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  menuItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  logoutText: {
+    color: colors.nope,
   },
   headerSpacer: {
     width: 38,
