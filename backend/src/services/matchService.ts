@@ -14,10 +14,11 @@ export async function createMatch(user1Id: string, user2Id: string) {
 
 export async function getMatchesForUser(userId: string) {
   const result = await query(
-    `SELECT m.*, 
+    `SELECT m.*,
       u.id as partner_id, u.name as partner_name,
       EXTRACT(YEAR FROM AGE(u.born_date))::integer as partner_age,
-      u.photo_url as partner_photo, u.bio as partner_bio, u.location as partner_location,
+      COALESCE(u.photo_url, (SELECT p.url FROM photos p WHERE p.user_id = u.id ORDER BY p.created_at ASC LIMIT 1)) as partner_photo,
+      u.bio as partner_bio, u.location as partner_location,
       u.interests as partner_interests,
       (SELECT content FROM messages WHERE match_id = m.id ORDER BY created_at DESC LIMIT 1) as last_message,
       (SELECT created_at FROM messages WHERE match_id = m.id ORDER BY created_at DESC LIMIT 1) as last_message_at
@@ -58,7 +59,8 @@ export async function getMatchForUser(matchId: string, userId: string) {
     `SELECT m.*,
       u.id as partner_id, u.name as partner_name,
       EXTRACT(YEAR FROM AGE(u.born_date))::integer as partner_age,
-      u.photo_url as partner_photo, u.bio as partner_bio, u.location as partner_location,
+      COALESCE(u.photo_url, (SELECT p.url FROM photos p WHERE p.user_id = u.id ORDER BY p.created_at ASC LIMIT 1)) as partner_photo,
+      u.bio as partner_bio, u.location as partner_location,
       u.interests as partner_interests,
       (SELECT content FROM messages WHERE match_id = m.id ORDER BY created_at DESC LIMIT 1) as last_message,
       (SELECT created_at FROM messages WHERE match_id = m.id ORDER BY created_at DESC LIMIT 1) as last_message_at
