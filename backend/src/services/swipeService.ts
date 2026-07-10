@@ -32,3 +32,12 @@ export async function deleteSwipesBetween(userAId: string, userBId: string) {
     [userAId, userBId]
   );
 }
+
+// Reset all left swipes for a user so those people reappear in their deck.
+// Does NOT touch right swipes or existing matches.
+export async function resetLeftSwipes(userId: string) {
+  await query(
+    `DELETE FROM swipes WHERE swiper_id = $1 AND direction = 'left'`,
+    [userId]
+  );
+}
