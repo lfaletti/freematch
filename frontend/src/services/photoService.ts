@@ -48,3 +48,8 @@ export const getPhotoById = async (photoId: string): Promise<Photo> => {
 export const deletePhoto = async (photoId: string): Promise<void> => {
   await api.delete(`/api/photos/${photoId}`);
 };
+
+export const fetchUserPhotos = async (userId: string): Promise<Photo[]> => {
+  const res = await api.get(`/api/users/${userId}/photos`);
+  return res.data;
+};

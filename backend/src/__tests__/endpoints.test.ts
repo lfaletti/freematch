@@ -234,6 +234,47 @@ describe('FreeMatch API', () => {
     });
   });
 
+  describe('GET /api/users/:id/photos', () => {
+    it('returns photos for a user', async () => {
+      const photoRow = {
+        id: 'photo-1',
+        user_id: ALEX_ID,
+        url: 'https://example.com/photo1.jpg',
+        uploaded_at: '2026-01-01T00:00:00Z',
+        created_at: '2026-01-01T00:00:00Z',
+      };
+      mockQuery.mockResolvedValueOnce({ rows: [photoRow] } as any);
+
+      const res = await request(app).get(`/api/users/${ALEX_ID}/photos`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body[0]).toEqual({
+        id: 'photo-1',
+        url: 'https://example.com/photo1.jpg',
+        uploaded_at: '2026-01-01T00:00:00Z',
+      });
+    });
+
+    it('returns empty array when user has no photos', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+
+      const res = await request(app).get(`/api/users/${ALEX_ID}/photos`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([]);
+    });
+
+    it('returns 500 on DB error', async () => {
+      mockQuery.mockRejectedValueOnce(new Error('DB error'));
+
+      const res = await request(app).get(`/api/users/${ALEX_ID}/photos`);
+
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error');
+    });
+  });
+
   // ── Swipes ──────────────────────────────────────────────────────────────────
 
   describe('POST /api/swipes', () => {

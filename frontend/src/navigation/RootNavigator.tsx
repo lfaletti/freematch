@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
 import MatchesScreen from '../screens/MatchesScreen';
 import ChatScreen from '../screens/ChatScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import PhotoScreen from '../screens/PhotoScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import CreateAccountScreen from '../screens/CreateAccountScreen';
@@ -18,6 +19,7 @@ import { colors } from '../theme/colors';
 import { navigationRef } from './navigationRef';
 import RealtimeManager from '../components/RealtimeManager';
 import GlobalMatchModal from '../components/GlobalMatchModal';
+import GlobalUnmatchModal from '../components/GlobalUnmatchModal';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -27,6 +29,7 @@ function MatchesStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MatchesList" component={MatchesScreen} />
       <Stack.Screen name="Chat" component={ChatScreen as React.ComponentType<any>} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );
 }
@@ -95,6 +98,19 @@ function AuthStack() {
   );
 }
 
+function AppStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={TabNavigator} />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ presentation: 'card' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function RootNavigator() {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((s) => s.session.isAuthenticated);
@@ -150,8 +166,9 @@ export default function RootNavigator() {
       {isAuthenticated ? (
         <>
           <RealtimeManager />
-          <TabNavigator />
+          <AppStack />
           <GlobalMatchModal />
+          <GlobalUnmatchModal />
         </>
       ) : (
         <AuthStack />

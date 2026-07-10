@@ -186,12 +186,13 @@ See [`DEPLOYMENT.md`](./docs/deployment/DEPLOYMENT.md) Troubleshooting section
 ## 📝 Project Status
 
 **Current State**: Production Ready 🟢
-- [x] Core app features complete
+- [x] Core app features complete (swipe, match, chat, profile view)
 - [x] Horizontal scaling setup
 - [x] Docker + deployment configs
-- [x] All tests passing
-- [ ] JWT authentication (next priority)
-- [ ] Photo upload system (next priority)
+- [x] All tests passing (frontend 88/88, backend 43/43)
+- [x] JWT authentication (email/password + bcrypt)
+- [x] Photo upload system (S3/MinIO)
+- [ ] Not yet deployed to production
 
 See [`agent-prompts/STATE.md`](./agent-prompts/STATE.md) for current status and next steps.
 

@@ -8,6 +8,18 @@ import matchesReducer from '../../redux/slices/matchesSlice';
 import sessionReducer from '../../redux/slices/sessionSlice';
 
 // Mock the services so no real network calls are made
+jest.mock('../../services/api', () => ({
+  api: {
+    get: jest.fn(),
+    post: jest.fn(),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() },
+    },
+  },
+  getPhotoUrl: (url: string) => url,
+}));
+
 jest.mock('../../services/userService', () => ({
   fetchUsers: jest.fn(),
   fetchMatches: jest.fn(),

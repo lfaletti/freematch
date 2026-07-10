@@ -12,6 +12,18 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import SwipeCard from '../SwipeCard';
 
+jest.mock('../../services/api', () => ({
+  api: {
+    get: jest.fn(),
+    post: jest.fn(),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() },
+    },
+  },
+  getPhotoUrl: (url: string) => url,
+}));
+
 const baseUser = {
   id: 'user-1',
   name: 'Alice',
