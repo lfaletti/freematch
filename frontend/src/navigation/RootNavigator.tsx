@@ -8,6 +8,7 @@ import MatchesScreen from '../screens/MatchesScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PhotoScreen from '../screens/PhotoScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import CreateAccountScreen from '../screens/CreateAccountScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -102,6 +103,7 @@ function AppStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={TabNavigator} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen
         name="Profile"
         component={ProfileScreen}
