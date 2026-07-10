@@ -81,7 +81,8 @@ services:
       # Endpoint the backend uses to talk to MinIO (container network)
       AWS_S3_ENDPOINT: http://minio:9000
       # Endpoint baked into returned photo URLs so the browser can reach them
-      S3_PUBLIC_ENDPOINT: http://localhost:9000
+      # (use 127.0.0.1, not localhost — Windows resolves localhost to IPv6 ::1).
+      S3_PUBLIC_ENDPOINT: http://127.0.0.1:9000
       S3_BUCKET: freematch-dev
     ports:
       - "3000:3000"
