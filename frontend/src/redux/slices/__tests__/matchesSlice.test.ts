@@ -12,6 +12,8 @@ import reducer, {
   incrementUnread,
   clearUnread,
   removeMatch,
+  receiveUnmatch,
+  clearEndedNotice,
   loadMatches,
   Match,
 } from '../matchesSlice';
@@ -37,6 +39,7 @@ const initialState = {
   loading: false,
   newMatch: null,
   unread: {},
+  endedNotice: null,
 };
 
 describe('matchesSlice', () => {
@@ -164,6 +167,52 @@ describe('matchesSlice', () => {
         removeMatch('nonexistent')
       );
       expect(state.all).toHaveLength(1);
+    });
+  });
+
+  describe('receiveUnmatch', () => {
+    it('removes the match like removeMatch does', () => {
+      const other: Match = { ...mockMatch, id: 'match-2' };
+      const state = reducer(
+        { ...initialState, all: [mockMatch, other] },
+        receiveUnmatch('match-1')
+      );
+      expect(state.all).toHaveLength(1);
+      expect(state.all[0].id).toBe('match-2');
+    });
+
+    it('stashes an endedNotice with the partner name and photo', () => {
+      const state = reducer(
+        { ...initialState, all: [mockMatch] },
+        receiveUnmatch('match-1')
+      );
+      expect(state.endedNotice).toEqual({
+        name: 'Bob',
+        photo: 'https://example.com/bob.jpg',
+      });
+    });
+
+    it('falls back to a generic notice when the match is not present', () => {
+      const state = reducer(initialState, receiveUnmatch('nonexistent'));
+      expect(state.endedNotice).toEqual({ name: 'Your match', photo: '' });
+    });
+
+    it('clears newMatch when the unmatched match was pending', () => {
+      const state = reducer(
+        { ...initialState, all: [mockMatch], newMatch: mockMatch },
+        receiveUnmatch('match-1')
+      );
+      expect(state.newMatch).toBeNull();
+    });
+  });
+
+  describe('clearEndedNotice', () => {
+    it('clears the endedNotice to null', () => {
+      const state = reducer(
+        { ...initialState, endedNotice: { name: 'Bob', photo: 'x.jpg' } },
+        clearEndedNotice()
+      );
+      expect(state.endedNotice).toBeNull();
     });
   });
 

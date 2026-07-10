@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { Match } from '../redux/slices/matchesSlice';
+import { getPhotoUrl } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -46,7 +47,7 @@ const MatchModal: React.FC<MatchModalProps> = ({ match, selfPhoto, onClose, onCh
               <Text style={styles.heart}>❤️</Text>
             </View>
             <View style={styles.photoWrap}>
-              <Image source={{ uri: match.partner_photo }} style={styles.photo} />
+              <Image source={{ uri: getPhotoUrl(match.partner_photo) }} style={styles.photo} />
             </View>
           </View>
 
