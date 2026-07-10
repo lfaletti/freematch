@@ -1,5 +1,7 @@
 import { Router } from 'express';
-import { upload } from '../middleware/upload';
+import multer from 'multer';
+import { v4 as uuidv4 } from 'uuid';
+import { uploadPhoto } from '../services/s3Service';
 import {
   registerUser,
   loginUser,
@@ -13,6 +15,20 @@ import {
 const router = Router();
 
 const MIN_AGE = 18;
+
+// Memory storage for registration photos — forwarded to S3/MinIO, never
+// written to disk so they survive container restarts.
+const memoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP images are allowed'));
+    }
+  },
+});
 
 // Full-years age from a YYYY-MM-DD (or any Date-parseable) birth date.
 // Returns null when the date can't be parsed. YYYY-MM-DD is built as a *local*
@@ -34,7 +50,7 @@ function calculateAge(bornDate: string): number | null {
   return age;
 }
 
-router.post('/register', upload.single('photo'), async (req, res) => {
+router.post('/register', memoryUpload.single('photo'), async (req, res) => {
   try {
     const { name, email, password, bio, born_date, phone_number } = req.body;
 
@@ -53,7 +69,14 @@ router.post('/register', upload.single('photo'), async (req, res) => {
       return;
     }
 
-    const photo_url = req.file ? `/uploads/${req.file.filename}` : undefined;
+    // Generate ID upfront so the S3 key is namespaced to the real user ID.
+    const id = uuidv4();
+
+    // Upload to S3/MinIO if a photo was provided; otherwise leave photo_url null.
+    let photo_url: string | undefined;
+    if (req.file) {
+      photo_url = await uploadPhoto(req.file, id);
+    }
 
     const input: RegisterInput = {
       name,
@@ -63,6 +86,7 @@ router.post('/register', upload.single('photo'), async (req, res) => {
       born_date,
       phone_number,
       photo_url,
+      id,
     };
 
     const result = await registerUser(input);
@@ -167,7 +191,7 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
-router.post('/register-phone', upload.single('photo'), async (req, res) => {
+router.post('/register-phone', memoryUpload.single('photo'), async (req, res) => {
   try {
     const { name, bio, born_date, phone_number, email } = req.body;
 
@@ -176,7 +200,14 @@ router.post('/register-phone', upload.single('photo'), async (req, res) => {
       return;
     }
 
-    const photo_url = req.file ? `/uploads/${req.file.filename}` : null;
+    // Generate ID upfront so the S3 key is namespaced to the real user ID.
+    const id = uuidv4();
+
+    let photo_url: string | null = null;
+    if (req.file) {
+      photo_url = await uploadPhoto(req.file, id);
+    }
+
     const user = await registerUserByPhone({
       name,
       bio,
@@ -184,6 +215,7 @@ router.post('/register-phone', upload.single('photo'), async (req, res) => {
       phone_number,
       email,
       photo_url,
+      id,
     });
 
     res.status(201).json({

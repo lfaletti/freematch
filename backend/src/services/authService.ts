@@ -15,6 +15,7 @@ export interface RegisterInput {
   born_date: string;
   phone_number?: string;
   photo_url?: string;
+  id?: string; // Pre-generated UUID for S3 upload; falls back to internal generation.
 }
 
 export interface LoginInput {
@@ -74,7 +75,7 @@ export function verifyToken(token: string): JWTPayload | null {
 }
 
 export async function registerUser(input: RegisterInput): Promise<AuthResponse> {
-  const id = uuidv4();
+  const id = input.id || uuidv4();
   const passwordHash = await hashPassword(input.password);
 
   const result = await query(
@@ -170,7 +171,7 @@ export async function loginByPhone(phone_number: string) {
 }
 
 export async function registerUserByPhone(input: any) {
-  const id = uuidv4();
+  const id = input.id || uuidv4();
   const result = await query(
     `INSERT INTO users (id, name, bio, born_date, phone_number, email, photo_url, is_mock)
      VALUES ($1, $2, $3, $4, $5, $6, $7, false)
