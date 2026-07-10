@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { store } from '../redux/store';
 import { getSocket, disconnectSocket } from '../services/socketService';
 import { addMessage, removeMatchMessages, Message } from '../redux/slices/messagesSlice';
-import { addMatch, updateLastMessage, incrementUnread, removeMatch, Match } from '../redux/slices/matchesSlice';
+import { addMatch, updateLastMessage, incrementUnread, receiveUnmatch, Match } from '../redux/slices/matchesSlice';
 import { loadUsers } from '../redux/slices/usersSlice';
 
 /**
@@ -44,9 +44,10 @@ export default function RealtimeManager() {
     };
 
     // The other side unmatched us: drop the match and its conversation so the
-    // Matches list / unread badge update wherever we currently are.
+    // Matches list / unread badge update wherever we currently are. receiveUnmatch
+    // also stashes an `endedNotice` that drives the global "connection ended" modal.
     const onUnmatch = ({ matchId }: { matchId: string }) => {
-      dispatch(removeMatch(matchId));
+      dispatch(receiveUnmatch(matchId));
       dispatch(removeMatchMessages(matchId));
       // The pair's swipes were wiped server-side; refresh our deck so the other
       // person can be swiped — and matched — again.

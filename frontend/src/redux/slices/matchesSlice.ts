@@ -17,11 +17,17 @@ export interface Match {
   created_at: string;
 }
 
+export interface UnmatchNotice {
+  name: string;
+  photo: string;
+}
+
 interface MatchesState {
   all: Match[];
   loading: boolean;
   newMatch: Match | null;
   unread: Record<string, number>;
+  endedNotice: UnmatchNotice | null;
 }
 
 const initialState: MatchesState = {
@@ -29,6 +35,7 @@ const initialState: MatchesState = {
   loading: false,
   newMatch: null,
   unread: {},
+  endedNotice: null,
 };
 
 export const loadMatches = createAsyncThunk('matches/load', fetchMatches);
@@ -68,6 +75,23 @@ const matchesSlice = createSlice({
       delete state.unread[matchId];
       if (state.newMatch?.id === matchId) state.newMatch = null;
     },
+    // Realtime-only variant of removeMatch: the partner unmatched us. Capture who
+    // they were (from the match we're about to drop) so the global "connection
+    // ended" modal can name them, then remove the match like removeMatch does.
+    receiveUnmatch(state, action: PayloadAction<string>) {
+      const matchId = action.payload;
+      const match = state.all.find((m) => m.id === matchId);
+      state.endedNotice = {
+        name: match?.partner_name || 'Your match',
+        photo: match?.partner_photo || '',
+      };
+      state.all = state.all.filter((m) => m.id !== matchId);
+      delete state.unread[matchId];
+      if (state.newMatch?.id === matchId) state.newMatch = null;
+    },
+    clearEndedNotice(state) {
+      state.endedNotice = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -79,6 +103,14 @@ const matchesSlice = createSlice({
   },
 });
 
-export const { addMatch, clearNewMatch, updateLastMessage, incrementUnread, clearUnread, removeMatch } =
-  matchesSlice.actions;
+export const {
+  addMatch,
+  clearNewMatch,
+  updateLastMessage,
+  incrementUnread,
+  clearUnread,
+  removeMatch,
+  receiveUnmatch,
+  clearEndedNotice,
+} = matchesSlice.actions;
 export default matchesSlice.reducer;
