@@ -14,6 +14,7 @@ import { clearSession } from '../redux/slices/sessionSlice';
 import { colors } from '../theme/colors';
 import SwipeCard from '../components/SwipeCard';
 import { storageService } from '../services/storageService';
+import { navigate } from '../navigation/navigationRef';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -66,6 +67,19 @@ const HomeScreen = () => {
   const nextUser = users[currentIndex + 1];
   const isDone = !loading && !error && loaded && currentIndex >= users.length;
 
+  const handleTapProfile = (user: typeof currentUser) => {
+    if (!user) return;
+    navigate('Profile', {
+      partnerId: user.id,
+      name: user.name,
+      age: user.age ?? 0,
+      photo: user.photo_url,
+      bio: user.bio,
+      location: user.location,
+      interests: user.interests ?? [],
+    });
+  };
+
   const renderCardArea = () => {
     if (loading) {
       return (
@@ -112,6 +126,7 @@ const HomeScreen = () => {
             onSwipeLeft={() => handleSwipe('left')}
             onSwipeRight={() => handleSwipe('right')}
             isTop={true}
+            onTapProfile={() => handleTapProfile(currentUser)}
           />
         )}
       </>

@@ -7,9 +7,11 @@ import {
   Dimensions,
   Animated,
   PanResponder,
+  TouchableOpacity,
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { User } from '../services/userService';
+import { getPhotoUrl } from '../services/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.9, 420);
@@ -21,9 +23,10 @@ interface SwipeCardProps {
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   isTop: boolean;
+  onTapProfile?: () => void;
 }
 
-const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, isTop }) => {
+const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, isTop, onTapProfile }) => {
   const pan = useRef(new Animated.ValueXY()).current;
   const rotate = pan.x.interpolate({
     inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
@@ -81,7 +84,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, 
   if (!isTop) {
     return (
       <View style={[styles.card, styles.backCard]}>
-        <Image source={{ uri: user.photo_url }} style={styles.image} />
+        <Image source={{ uri: getPhotoUrl(user.photo_url) }} style={styles.image} />
         <View style={styles.info}>
           <Text style={styles.name}>{user.name}, {user.age}</Text>
         </View>
@@ -99,7 +102,9 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, 
       ]}
       {...panResponder.panHandlers}
     >
-      <Image source={{ uri: user.photo_url }} style={styles.image} />
+      <TouchableOpacity activeOpacity={0.8} onPress={onTapProfile}>
+        <Image source={{ uri: getPhotoUrl(user.photo_url) }} style={styles.image} />
+      </TouchableOpacity>
       <Animated.View style={[styles.badge, styles.likeBadge, { opacity: likeOpacity }]}>
         <Text style={styles.badgeText}>LIKE</Text>
       </Animated.View>

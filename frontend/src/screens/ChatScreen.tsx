@@ -21,6 +21,7 @@ import { unmatch } from '../services/userService';
 import ConfirmModal from '../components/ConfirmModal';
 import { colors } from '../theme/colors';
 import { Match } from '../redux/slices/matchesSlice';
+import { getPhotoUrl } from '../services/api';
 
 interface ChatScreenProps {
   route: { params: { match: Match } };
@@ -109,7 +110,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
     return (
       <View style={[styles.msgRow, isOwn ? styles.ownRow : styles.theirRow]}>
         {!isOwn && (
-          <Image source={{ uri: match.partner_photo }} style={styles.msgAvatar} />
+          <Image source={{ uri: getPhotoUrl(match.partner_photo) }} style={styles.msgAvatar} />
         )}
         <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.theirBubble]}>
           <Text style={[styles.msgText, isOwn ? styles.ownText : styles.theirText]}>
@@ -133,13 +134,36 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backIcon}>‹</Text>
         </TouchableOpacity>
-        <Image source={{ uri: match.partner_photo }} style={styles.headerAvatar} />
-        <View style={styles.headerInfo}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Profile', {
+            partnerId: match.partner_id,
+            name: match.partner_name,
+            age: match.partner_age,
+            photo: match.partner_photo,
+            bio: match.partner_bio,
+            location: match.partner_location,
+            interests: match.partner_interests,
+          })}
+        >
+          <Image source={{ uri: getPhotoUrl(match.partner_photo) }} style={styles.headerAvatar} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.headerInfo}
+          onPress={() => navigation.navigate('Profile', {
+            partnerId: match.partner_id,
+            name: match.partner_name,
+            age: match.partner_age,
+            photo: match.partner_photo,
+            bio: match.partner_bio,
+            location: match.partner_location,
+            interests: match.partner_interests,
+          })}
+        >
           <Text style={styles.headerName}>{match.partner_name}</Text>
           <Text style={styles.headerStatus}>
             {isTyping ? 'typing...' : 'online'}
           </Text>
-        </View>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => setConfirmUnmatch(true)} style={styles.unmatchBtn}>
           <Text style={styles.unmatchIcon}>💔</Text>
         </TouchableOpacity>
@@ -160,7 +184,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
           ListFooterComponent={
             isTyping ? (
               <View style={styles.typingRow}>
-                <Image source={{ uri: match.partner_photo }} style={styles.msgAvatar} />
+                <Image source={{ uri: getPhotoUrl(match.partner_photo) }} style={styles.msgAvatar} />
                 <View style={styles.typingBubble}>
                   <Text style={styles.typingDots}>•••</Text>
                 </View>

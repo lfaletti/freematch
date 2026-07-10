@@ -11,6 +11,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { loadMatches, Match } from '../redux/slices/matchesSlice';
 import { colors } from '../theme/colors';
+import { getPhotoUrl } from '../services/api';
 
 const MatchesScreen = ({ navigation }: { navigation: any }) => {
   const dispatch = useAppDispatch();
@@ -27,10 +28,21 @@ const MatchesScreen = ({ navigation }: { navigation: any }) => {
       style={styles.matchRow}
       onPress={() => navigation.navigate('Chat', { match: item })}
     >
-      <View style={styles.avatarWrap}>
-        <Image source={{ uri: item.partner_photo }} style={styles.avatar} />
+      <TouchableOpacity
+        style={styles.avatarWrap}
+        onPress={() => navigation.navigate('Profile', {
+          partnerId: item.partner_id,
+          name: item.partner_name,
+          age: item.partner_age,
+          photo: item.partner_photo,
+          bio: item.partner_bio,
+          location: item.partner_location,
+          interests: item.partner_interests,
+        })}
+      >
+        <Image source={{ uri: getPhotoUrl(item.partner_photo) }} style={styles.avatar} />
         <View style={styles.onlineDot} />
-      </View>
+      </TouchableOpacity>
       <View style={styles.info}>
         <Text style={styles.name}>{item.partner_name}, {item.partner_age}</Text>
         <Text style={styles.lastMsg} numberOfLines={1}>

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import * as userService from '../services/userService';
+import * as photoService from '../services/photoService';
 import { getUserId } from '../utils/session';
 
 const router = Router();
@@ -10,6 +11,19 @@ router.get('/', async (req: Request, res: Response) => {
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+router.get('/:id/photos', async (req: Request, res: Response) => {
+  try {
+    const photos = await photoService.getUserPhotos(req.params.id);
+    res.json(photos.map((p) => ({
+      id: p.id,
+      url: p.url,
+      uploaded_at: p.uploaded_at,
+    })));
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch user photos' });
   }
 });
 
