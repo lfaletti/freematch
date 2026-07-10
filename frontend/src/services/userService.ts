@@ -59,3 +59,8 @@ export const fetchSession = async (): Promise<SessionInfo> => {
   const res = await api.get('/api/session');
   return res.data;
 };
+
+export const resetLeftSwipes = async () => {
+  const res = await api.post('/api/swipes/reset-left');
+  return res.data;
+};

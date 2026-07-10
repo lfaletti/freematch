@@ -16,6 +16,7 @@ import { colors } from '../theme/colors';
 import SwipeCard from '../components/SwipeCard';
 import { storageService } from '../services/storageService';
 import { navigate } from '../navigation/navigationRef';
+import { resetLeftSwipes } from '../services/userService';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -25,6 +26,7 @@ const HomeScreen = () => {
   const { all: users, currentIndex, loading, loaded, error } = useAppSelector((s) => s.users);
   const [swiping, setSwiping] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [resetDialog, setResetDialog] = useState(false);
   const swipingRef = useRef(false);
 
   useEffect(() => {
@@ -68,7 +70,17 @@ const HomeScreen = () => {
 
   const handleEditProfile = () => {
     setMenuOpen(false);
-    navigate('Photos');
+    navigate('EditProfile');
+  };
+
+  const handleResetSwipes = async () => {
+    setResetDialog(false);
+    try {
+      await resetLeftSwipes();
+      dispatch(loadUsers());
+    } catch {
+      // silently fail
+    }
   };
 
   const currentUser = users[currentIndex];
@@ -159,6 +171,9 @@ const HomeScreen = () => {
                 <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}>
                   <Text style={styles.menuItemText}>✏️ Editar perfil</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); setResetDialog(true); }}>
+                  <Text style={styles.menuItemText}>🔄 Reiniciar swipes</Text>
+                </TouchableOpacity>
                 <View style={styles.menuDivider} />
                 <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
                   <Text style={[styles.menuItemText, styles.logoutText]}>🚪 Salir</Text>
@@ -168,6 +183,27 @@ const HomeScreen = () => {
           </Modal>
         </View>
       </View>
+
+      {/* Reset swipes confirmation dialog */}
+      <Modal visible={resetDialog} transparent animationType="fade" onRequestClose={() => setResetDialog(false)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setResetDialog(false)}>
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>⚠️ Reiniciar swipes</Text>
+            <Text style={styles.dialogText}>
+              Volverás a ver nuevamente a las personas que le diste No like. ¿Estás seguro/a?
+            </Text>
+            <View style={styles.dialogButtons}>
+              <TouchableOpacity style={styles.dialogCancel} onPress={() => setResetDialog(false)}>
+                <Text style={styles.dialogCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.dialogConfirm} onPress={handleResetSwipes}>
+                <Text style={styles.dialogConfirmText}>Sí, reiniciar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       <View style={styles.cardArea}>
         {renderCardArea()}
       </View>
@@ -346,6 +382,67 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '700',
     fontSize: 16,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialog: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 24,
+    width: '80%',
+    maxWidth: 340,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  dialogTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  dialogText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  dialogButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dialogCancel: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  dialogCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  dialogConfirm: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: colors.nope,
+    alignItems: 'center',
+  },
+  dialogConfirmText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.white,
   },
 });
 

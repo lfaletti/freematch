@@ -33,4 +33,14 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/reset-left', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    await swipeService.resetLeftSwipes(userId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to reset left swipes' });
+  }
+});
+
 export default router;
