@@ -9,6 +9,7 @@ export async function getOrCreateSessionUser(): Promise<string> {
 export async function getAllUsers(sessionUserId: string) {
   const result = await query(
     `SELECT u.*,
+       COALESCE(u.photo_url, (SELECT p.url FROM photos p WHERE p.user_id = u.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
        EXTRACT(YEAR FROM AGE(u.born_date))::integer AS age
      FROM users u
      WHERE u.id != $1
@@ -23,7 +24,10 @@ export async function getAllUsers(sessionUserId: string) {
 
 export async function getUserById(id: string) {
   const result = await query(
-    `SELECT *, EXTRACT(YEAR FROM AGE(born_date))::integer AS age FROM users WHERE id = $1`,
+    `SELECT *,
+       COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
+       EXTRACT(YEAR FROM AGE(born_date))::integer AS age
+     FROM users WHERE id = $1`,
     [id]
   );
   return result.rows[0] || null;
