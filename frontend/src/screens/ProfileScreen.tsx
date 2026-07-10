@@ -17,7 +17,9 @@ import { fetchUser, User } from '../services/userService';
 import { colors } from '../theme/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PHOTO_HEIGHT = SCREEN_WIDTH;
+// Photo carousel: portrait ratio (4:5) centered, so it doesn't fill the entire screen
+const PHOTO_WIDTH = SCREEN_WIDTH * 0.85;
+const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
 
 type ProfileParams = {
   Profile: {
@@ -109,17 +111,19 @@ const ProfileScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      <FlatList
-        data={photoUrls}
-        renderItem={renderPhoto}
-        keyExtractor={(url) => url}
-        horizontal
-        pagingEnabled
-        snapToInterval={SCREEN_WIDTH}
-        decelerationRate="fast"
-        showsHorizontalScrollIndicator={false}
-        style={styles.carousel}
-      />
+      <View style={styles.carouselContainer}>
+        <FlatList
+          data={photoUrls}
+          renderItem={renderPhoto}
+          keyExtractor={(url) => url}
+          horizontal
+          pagingEnabled
+          snapToInterval={PHOTO_WIDTH}
+          decelerationRate="fast"
+          showsHorizontalScrollIndicator={false}
+          style={styles.carousel}
+        />
+      </View>
 
       {photoUrls.length > 1 && (
         <View style={styles.photoIndicator}>
@@ -189,10 +193,17 @@ const styles = StyleSheet.create({
   carousel: {
     maxHeight: PHOTO_HEIGHT,
   },
+  carouselContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  carousel: {
+    maxWidth: PHOTO_WIDTH,
+  },
   photo: {
-    width: SCREEN_WIDTH,
+    width: PHOTO_WIDTH,
     height: PHOTO_HEIGHT,
-    maxHeight: PHOTO_HEIGHT,
+    borderRadius: 16,
   },
   photoIndicator: {
     paddingVertical: 8,
