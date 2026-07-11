@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Dimensions,
   ScrollView,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -99,7 +101,8 @@ const ProfileScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.surface} />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -191,8 +194,7 @@ const ProfileScreen = () => {
         )}
       </View>
       </ScrollView>
-
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -207,10 +209,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 56,
+    paddingTop: 12,
     paddingBottom: 12,
     paddingHorizontal: 16,
     backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   backBtn: {
     padding: 4,
