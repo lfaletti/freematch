@@ -64,3 +64,16 @@ export const resetLeftSwipes = async () => {
   const res = await api.post('/api/swipes/reset-left');
   return res.data;
 };
+
+export interface ProfileUpdatePayload {
+  name?: string;
+  bio?: string;
+  location?: string;
+  interests?: string[];
+  photo_url?: string | null;
+}
+
+export const updateProfile = async (updates: ProfileUpdatePayload) => {
+  const res = await api.patch('/api/users/me', updates);
+  return res.data;
+};
