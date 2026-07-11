@@ -16,6 +16,8 @@ import { getPhotoUrl } from '../services/api';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.9, 420);
 const CARD_HEIGHT = Math.min(SCREEN_HEIGHT * 0.68, 580);
+const IMAGE_HEIGHT = Math.round(CARD_HEIGHT * 0.65);
+const INFO_HEIGHT = CARD_HEIGHT - IMAGE_HEIGHT;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 
 interface SwipeCardProps {
@@ -102,7 +104,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, 
       ]}
       {...panResponder.panHandlers}
     >
-      <TouchableOpacity activeOpacity={0.8} onPress={onTapProfile}>
+      <TouchableOpacity activeOpacity={0.8} onPress={onTapProfile} style={styles.imageContainer}>
         <Image source={{ uri: getPhotoUrl(user.photo_url) }} style={styles.image} />
       </TouchableOpacity>
       <Animated.View style={[styles.badge, styles.likeBadge, { opacity: likeOpacity }]}>
@@ -116,8 +118,8 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, 
           <Text style={styles.name}>{user.name}</Text>
           <Text style={styles.age}>{user.age}</Text>
         </View>
-        <Text style={styles.location}>📍 {user.location}</Text>
-        <Text style={styles.bio} numberOfLines={2}>{user.bio}</Text>
+        {user.location && <Text style={styles.location}>📍 {user.location}</Text>}
+        {user.bio && <Text style={styles.bio} numberOfLines={2}>{user.bio}</Text>}
         <View style={styles.interests}>
           {(user.interests ?? []).slice(0, 3).map((interest) => (
             <View key={interest} style={styles.tag}>
@@ -148,9 +150,13 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }, { translateY: 12 }],
     zIndex: 0,
   },
+  imageContainer: {
+    width: '100%',
+    height: IMAGE_HEIGHT,
+  },
   image: {
     width: '100%',
-    height: '65%',
+    height: '100%',
     resizeMode: 'cover',
   },
   badge: {
@@ -179,7 +185,8 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   info: {
-    flex: 1,
+    width: '100%',
+    height: INFO_HEIGHT,
     padding: 16,
     justifyContent: 'center',
   },
