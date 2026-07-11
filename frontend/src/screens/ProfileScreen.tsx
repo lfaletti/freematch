@@ -37,6 +37,7 @@ type ProfileRouteProp = RouteProp<ProfileParams, 'Profile'>;
 type ProfileNavProp = NativeStackNavigationProp<ProfileParams, 'Profile'>;
 
 const HEADER_HEIGHT = 68;
+const STATUS_BAR_HEIGHT = 24;
 
 const ProfileScreen = () => {
   const route = useRoute<ProfileRouteProp>();
@@ -100,7 +101,7 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header — fixed top */}
+      {/* Header — absolutely positioned above content */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backIcon}>‹</Text>
@@ -109,7 +110,7 @@ const ProfileScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Scrollable content below header */}
+      {/* Scrollable content — padded to avoid header overlap */}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -205,15 +206,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 16,
+    paddingTop: STATUS_BAR_HEIGHT + 12,
     paddingBottom: 12,
     paddingHorizontal: 16,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     zIndex: 10,
+    elevation: 4,
   },
   backBtn: {
     padding: 4,
@@ -242,7 +248,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 0,
+    paddingTop: HEADER_HEIGHT + STATUS_BAR_HEIGHT,
     paddingBottom: 40,
   },
 
