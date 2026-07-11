@@ -42,11 +42,16 @@ export async function uploadPhoto(
     // The browser must be able to reach the returned URL. When the backend
     // talks to MinIO over the container network (AWS_S3_ENDPOINT=http://minio:9000)
     // the public-facing host differs, so prefer S3_PUBLIC_ENDPOINT for the URL.
+    // R2 public endpoints already include the bucket, so don't add it to the path.
+    // For S3-compatible endpoints (MinIO), include the bucket in the path.
+    const isR2Public = process.env.S3_PUBLIC_ENDPOINT?.includes('r2.dev');
     const publicEndpoint =
       process.env.S3_PUBLIC_ENDPOINT ||
       process.env.AWS_S3_ENDPOINT ||
       'https://s3.amazonaws.com';
-    const photoUrl = `${publicEndpoint}/${bucket}/${fileName}`;
+    const photoUrl = isR2Public
+      ? `${publicEndpoint}/${fileName}`
+      : `${publicEndpoint}/${bucket}/${fileName}`;
 
     return photoUrl;
   } catch (error) {
@@ -58,7 +63,16 @@ export async function uploadPhoto(
 export async function deletePhotoFromS3(photoUrl: string): Promise<void> {
   try {
     const bucket = process.env.AWS_S3_BUCKET || 'freematch-dev';
-    const key = photoUrl.split(`/${bucket}/`)[1];
+    // R2 public URLs don't include the bucket in the path
+    const isR2Public = photoUrl.includes('r2.dev');
+    let key: string | undefined;
+    if (isR2Public) {
+      // Extract key from https://pub-xxx.r2.dev/userId/uuid.jpg
+      const url = new URL(photoUrl);
+      key = url.pathname.replace(/^\//, '');
+    } else {
+      key = photoUrl.split(`/${bucket}/`)[1];
+    }
 
     if (!key) {
       throw new Error('Invalid photo URL');
