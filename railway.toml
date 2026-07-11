@@ -3,6 +3,6 @@ builder = "nixpacks"
 rootDirectory = "backend"
 
 [deploy]
-startCommand = "cd backend && npm start"
+startCommand = "npm start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
