@@ -1,11 +1,8 @@
-[project-name]
-freematch-workspace
-
 [build]
-rootDirectory = backend
-command = npm ci && npm run build
+builder = "dockerfile"
+dockerfilePath = "backend/Dockerfile"
 
 [deploy]
-command = npm start
-restartPolicyType = ON_FAILURE
+startCommand = "npm start"
+restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
