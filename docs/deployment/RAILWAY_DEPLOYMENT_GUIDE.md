@@ -47,7 +47,7 @@ restartPolicyMaxRetries = 10
 NODE_ENV=staging
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 REDIS_URL=${{Redis.REDIS_URL}}
-JWT_SECRET=d4386cac53e585c00213cdf8bde8a967e840067faf1bc2934351140b2b324af6
+JWT_SECRET=*** (see Railway UI or memory files) ***
 PORT=3000
 CORS_ORIGIN=http://localhost:8081
 ```
@@ -152,3 +152,17 @@ docker compose -f docker-compose.staging.yml up -d
 - Postgres: `localhost:5433`
 - Redis: `localhost:6380`
 - MinIO: `http://localhost:9002`
+
+## Frontend Deployment (Vercel)
+
+`frontend/src/services/api.ts` reads `EXPO_PUBLIC_API_URL` env var (fallback to `localhost:3000`).
+
+### Vercel Setup
+- **Project**: connect `lfaletti/freematch`
+- **Root Directory**: `frontend`
+- **Build Command**: `npx expo export -p web`
+- **Output Directory**: `dist`
+- **Env Var**: `EXPO_PUBLIC_API_URL` = staging Railway URL
+
+### vercel.json (not yet created)
+Needs `vercel.json` in repo root or `frontend/` for proper SPA routing.
