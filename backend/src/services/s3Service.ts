@@ -6,7 +6,7 @@ import {
 import { randomUUID } from 'crypto';
 
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: process.env.AWS_REGION || 'auto',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
@@ -24,7 +24,7 @@ export async function uploadPhoto(
 ): Promise<string> {
   try {
     const fileName = `${userId}/${randomUUID()}.${getFileExtension(file.mimetype)}`;
-    const bucket = process.env.S3_BUCKET || 'freematch-dev';
+    const bucket = process.env.AWS_S3_BUCKET || 'freematch-dev';
 
     const command = new PutObjectCommand({
       Bucket: bucket,
@@ -57,7 +57,7 @@ export async function uploadPhoto(
 
 export async function deletePhotoFromS3(photoUrl: string): Promise<void> {
   try {
-    const bucket = process.env.S3_BUCKET || 'freematch-dev';
+    const bucket = process.env.AWS_S3_BUCKET || 'freematch-dev';
     const key = photoUrl.split(`/${bucket}/`)[1];
 
     if (!key) {
