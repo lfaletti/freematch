@@ -2,6 +2,7 @@ import { query } from '../database/connection';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+import { createHash } from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
@@ -40,6 +41,7 @@ export interface AuthResponse {
   born_date: string;
   phone_number?: string;
   photo_url?: string;
+  emailVerified?: boolean;
   token: string;
   refreshToken: string;
 }
@@ -101,7 +103,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
 
   const user = result.rows[0];
   const token = generateToken(user.id, user.email);
-  const refreshToken = generateRefreshToken(user.id, user.email);
+  const refreshToken = await generateAndStoreRefreshToken(user.id, user.email);
 
   return {
     userId: user.id,
@@ -111,6 +113,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     born_date: user.born_date,
     phone_number: user.phone_number,
     photo_url: user.photo_url,
+    emailVerified: user.email_verified ?? false,
     token,
     refreshToken,
   };
@@ -118,7 +121,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
 
 export async function loginUser(input: LoginInput): Promise<AuthResponse | null> {
   const result = await query(
-    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url
+    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified
      FROM users WHERE email = $1 AND is_mock = false`,
     [input.email]
   );
@@ -137,7 +140,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse | null>
   await query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
 
   const token = generateToken(user.id, user.email);
-  const refreshToken = generateRefreshToken(user.id, user.email);
+  const refreshToken = await generateAndStoreRefreshToken(user.id, user.email);
 
   return {
     userId: user.id,
@@ -147,6 +150,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse | null>
     born_date: user.born_date,
     phone_number: user.phone_number,
     photo_url: user.photo_url,
+    emailVerified: user.email_verified ?? false,
     token,
     refreshToken,
   };
@@ -158,10 +162,100 @@ export async function refreshUserToken(refreshToken: string): Promise<{ token: s
     return null;
   }
 
+  // Check if the token hash exists in DB and is not revoked
+  const tokenHash = sha256(refreshToken);
+  const stored = await query(
+    `SELECT id, revoked_at, replaced_by, expires_at FROM refresh_tokens
+     WHERE token_hash = $1 AND user_id = $2`,
+    [tokenHash, decoded.userId]
+  );
+
+  if (stored.rows.length === 0) {
+    // Token not found or never issued — possible theft, revoke family
+    await revokeUserTokens(decoded.userId);
+    return null;
+  }
+
+  const row = stored.rows[0];
+  if (row.revoked_at) {
+    // Already revoked — token reuse detected, revoke remaining tokens
+    await revokeUserTokens(decoded.userId);
+    return null;
+  }
+
+  // Rotation: revoke the old token, issue a new one
+  await query(
+    `UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1`,
+    [row.id]
+  );
+
   const token = generateToken(decoded.userId, decoded.email);
-  const newRefreshToken = generateRefreshToken(decoded.userId, decoded.email);
+  const newRefreshToken = await generateAndStoreRefreshToken(
+    decoded.userId,
+    decoded.email,
+    row.id
+  );
 
   return { token, refreshToken: newRefreshToken };
+}
+
+function sha256(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+async function generateAndStoreRefreshToken(
+  userId: string,
+  email: string,
+  replacedById?: string
+): Promise<string> {
+  const token = generateRefreshToken(userId, email);
+  const tokenHash = sha256(token);
+
+  const decoded = jwt.decode(token) as jwt.JwtPayload;
+  const expiresAt = decoded?.exp
+    ? new Date(decoded.exp * 1000)
+    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  await query(
+    `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, replaced_by)
+     VALUES ($1, $2, $3, $4)`,
+    [userId, tokenHash, expiresAt, replacedById ?? null]
+  );
+
+  return token;
+}
+
+async function revokeUserTokens(userId: string): Promise<void> {
+  await query(
+    `UPDATE refresh_tokens SET revoked_at = NOW()
+     WHERE user_id = $1 AND revoked_at IS NULL`,
+    [userId]
+  );
+}
+
+export async function verifyEmailToken(token: string): Promise<boolean> {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET_EFFECTIVE) as JWTPayload & { type: string };
+    if (decoded.type !== 'email_verify') return false;
+
+    await query(
+      `UPDATE users SET email_verified = true, email_verified_at = NOW()
+       WHERE id = $1 AND email_verified = false`,
+      [decoded.userId]
+    );
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function generateEmailVerificationToken(userId: string, email: string): Promise<string> {
+  return jwt.sign(
+    { userId, email, type: 'email_verify' } as JWTPayload & { type: string },
+    JWT_SECRET_EFFECTIVE,
+    { expiresIn: '24h' }
+  );
 }
 
 export async function loginByPhone(phone_number: string) {

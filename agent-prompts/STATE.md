@@ -7,9 +7,10 @@ Feature-complete MVP. Photo system (MinIO S3), profile editing, swipe reset, and
 
 ## Next up
 1. **Production readiness fixes** — security gaps identified in audit (auth enforcement, socket auth, CORS, rate limiting, password validation). See session notes for details.
-2. **Push notifications** — alert on new matches/messages.
-3. **Monitoring** — error tracking, analytics.
-4. **Deploy to production** (~40 min, human-driven) — blocked by #1 above.
+2. **Staging/dev environment** — non-local environment for testing (Railway preview, VPS with Docker, or Codespaces).
+3. **Push notifications** — alert on new matches/messages.
+4. **Monitoring** — error tracking, analytics.
+5. **Deploy to production** (~40 min, human-driven) — blocked by #1 and #2 above.
 
 ## How to verify any change
 - `npm run check` — typecheck backend + frontend + web build. Must pass.

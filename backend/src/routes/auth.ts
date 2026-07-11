@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadPhoto } from '../services/s3Service';
+import { query } from '../database/connection';
 import {
   registerUser,
   loginUser,
@@ -10,6 +11,8 @@ import {
   registerUserByPhone,
   RegisterInput,
   LoginInput,
+  verifyEmailToken,
+  generateEmailVerificationToken,
 } from '../services/authService';
 
 const router = Router();
@@ -105,6 +108,7 @@ router.post('/register', memoryUpload.single('photo'), async (req, res) => {
       bornDate: result.born_date,
       phoneNumber: result.phone_number,
       photo: result.photo_url ?? '',
+      emailVerified: result.emailVerified ?? false,
       token: result.token,
       refreshToken: result.refreshToken,
     });
@@ -144,6 +148,7 @@ router.post('/login', async (req, res) => {
         bornDate: result.born_date,
         phoneNumber: result.phone_number,
         photo: result.photo_url ?? '',
+        emailVerified: result.emailVerified ?? false,
         token: result.token,
         refreshToken: result.refreshToken,
       });
@@ -240,6 +245,62 @@ router.post('/register-phone', memoryUpload.single('photo'), async (req, res) =>
     }
     console.error('Register phone error:', err);
     res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+// GET /api/auth/verify-email?token=...
+// Marks the user's email as verified when given a valid signed token.
+router.get('/verify-email', async (req, res) => {
+  try {
+    const token = req.query.token as string;
+    if (!token) {
+      return res.status(400).json({ error: 'Verification token is required' });
+    }
+
+    const verified = await verifyEmailToken(token);
+    if (verified) {
+      return res.json({ success: true, message: 'Email verified successfully' });
+    }
+
+    return res.status(400).json({ error: 'Invalid or expired verification token' });
+  } catch (err) {
+    console.error('Email verification error:', err);
+    res.status(500).json({ error: 'Email verification failed' });
+  }
+});
+
+// POST /api/auth/resend-verification
+// Generates a new verification token. In production, this would also send it via email.
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email, userId } = req.body;
+    if (!email && !userId) {
+      return res.status(400).json({ error: 'email or userId is required' });
+    }
+
+    const lookup = await query(
+      `SELECT id, email FROM users WHERE ($1::text IS NOT NULL AND email = $1)
+       OR ($2::uuid IS NOT NULL AND id = $2) LIMIT 1`,
+      [email ?? null, userId ?? null]
+    );
+
+    if (lookup.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = lookup.rows[0];
+    const token = await generateEmailVerificationToken(user.id, user.email);
+
+    // In production, send the token via email here.
+    // For now, just return the token so the frontend can use it.
+    if (process.env.NODE_ENV === 'development') {
+      return res.json({ success: true, token, note: 'In production this would be sent via email' });
+    }
+
+    return res.json({ success: true, message: 'Verification email sent' });
+  } catch (err) {
+    console.error('Resend verification error:', err);
+    res.status(500).json({ error: 'Failed to resend verification' });
   }
 });
 
