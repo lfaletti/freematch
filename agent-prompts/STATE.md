@@ -1,6 +1,6 @@
 # FreeMatch — Project State
 
-_Last updated: 2026-07-10 · Session 12 (docs + prompts update)_
+_Last updated: 2026-07-11 · Session 13 (housekeeping + state sync)_
 
 ## Status
 Feature-complete MVP. Photo system (MinIO S3), profile editing, swipe reset, and photo carousel/viewer all working. Mock tests and test data removed. App runs with real user data only. Backend rebuilt in Docker with all changes. All changes committed and pushed to `origin/master`. **Not yet deployed to production.**
@@ -8,9 +8,8 @@ Feature-complete MVP. Photo system (MinIO S3), profile editing, swipe reset, and
 ## Next up
 1. **Deploy to production** (~40 min, human-driven) — Railway (PostgreSQL + Redis + backend)
    and Vercel (frontend). Needs dashboard access. Guide: `docs/deployment/PRODUCTION_DEPLOYMENT_GUIDE.md`
-2. **In-app photo upload** (~2–3 h) — allow users to upload photos during registration or from profile screen. Backend `POST /api/photos` exists; just need frontend UI.
-3. **Push notifications** — alert on new matches/messages.
-4. **Monitoring** — error tracking, analytics.
+2. **Push notifications** — alert on new matches/messages.
+3. **Monitoring** — error tracking, analytics.
 
 ## How to verify any change
 - `npm run check` — typecheck backend + frontend + web build. Must pass.
@@ -29,6 +28,7 @@ Feature-complete MVP. Photo system (MinIO S3), profile editing, swipe reset, and
 - Match existing code style; don't add dependencies without a clear reason.
 
 ## Log (newest first, one line per session)
+- **S13** (2026-07-11): Housekeeping — cleaned up `.qwen/`, `RootNavigator_copy.txt`, and stray files. Confirmed in-app photo upload is fully implemented (CreateAccountScreen + PhotoScreen with ImagePicker, backend POST /api/photos). Updated STATE.md to reflect photo upload as complete.
 - **S12** (2026-07-10): Docs + prompts update — rewrote README.md, CLAUDE.md, CHANGELOG.md, STATE.md to reflect all features. Profile photos (85% width, 4:5 ratio, max 480px), carousel with arrows/dots, full-screen viewer, EditProfile screen, reset left swipes, ⋮ dropdown menu, MinIO public bucket, mock cleanup.
 - **S11** (2026-07-10): Profile view — added `ProfileScreen` (carousel + info), `GET /api/users/:id/photos` endpoint, navigation from ChatScreen, MatchesScreen, SwipeCard.
 - **S10** (2026-06-27): Auth-flow cleanup — removed query-string impersonation; frontend is now token-only.
