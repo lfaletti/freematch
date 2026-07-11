@@ -16,6 +16,8 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.get('/:id/photos', async (req: Request, res: Response) => {
   try {
+    // Require auth to view photos — privacy consideration for a dating app
+    const userId = getUserId(req);
     const photos = await photoService.getUserPhotos(req.params.id);
     res.json(photos.map((p) => ({
       id: p.id,

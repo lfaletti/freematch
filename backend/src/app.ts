@@ -9,13 +9,20 @@ import matchesRouter from './routes/matches';
 import messagesRouter from './routes/messages';
 import authRouter from './routes/auth';
 import photosRouter from './routes/photos';
+import { apiLimiter, authLimiter, swipeLimiter } from './middleware/rateLimiter';
 
 export { getUserId, USER_SLOTS };
+
+function corsOrigin() {
+  const configured = process.env.CORS_ORIGIN;
+  if (!configured) return '*';
+  return configured.split(',').map((o) => o.trim());
+}
 
 export function createApp() {
   const app = express();
 
-  app.use(cors({ origin: '*' }));
+  app.use(cors({ origin: corsOrigin() }));
   app.use(express.json());
   app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
@@ -49,9 +56,9 @@ export function createApp() {
     }
   });
 
-  app.use('/api/auth', authRouter);
+  app.use('/api/auth', authLimiter, authRouter);
   app.use('/api/users', usersRouter);
-  app.use('/api/swipes', swipesRouter);
+  app.use('/api/swipes', swipeLimiter, swipesRouter);
   app.use('/api/matches', matchesRouter);
   app.use('/api/messages', messagesRouter);
   app.use('/api/photos', photosRouter);
