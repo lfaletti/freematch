@@ -7,7 +7,9 @@ const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const users = await userService.getAllUsers(getUserId(req));
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
+    const users = await userService.getAllUsers(getUserId(req), limit, offset);
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch users' });

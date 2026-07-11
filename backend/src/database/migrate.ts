@@ -117,6 +117,12 @@ export async function runMigrations() {
   const sql005 = fs.readFileSync(path.join(__dirname, 'migrations/005_remove_mock_users.sql'), 'utf8');
   await query(sql005);
 
+  const sql006 = fs.readFileSync(path.join(__dirname, 'migrations/006_refresh_tokens.sql'), 'utf8');
+  await query(sql006);
+
+  const sql007 = fs.readFileSync(path.join(__dirname, 'migrations/007_email_verification.sql'), 'utf8');
+  await query(sql007);
+
   console.log('Migrations ran successfully');
 }
 

@@ -6,7 +6,7 @@ export async function getOrCreateSessionUser(): Promise<string> {
   return SESSION_USER_ID;
 }
 
-export async function getAllUsers(sessionUserId: string) {
+export async function getAllUsers(sessionUserId: string, limit: number, offset: number) {
   const result = await query(
     `SELECT u.*,
        COALESCE(u.photo_url, (SELECT p.url FROM photos p WHERE p.user_id = u.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
@@ -16,8 +16,9 @@ export async function getAllUsers(sessionUserId: string) {
        AND u.id NOT IN (
          SELECT swiped_id FROM swipes WHERE swiper_id = $1
        )
-     ORDER BY RANDOM()`,
-    [sessionUserId]
+     ORDER BY RANDOM()
+     LIMIT $2 OFFSET $3`,
+    [sessionUserId, limit, offset]
   );
   return result.rows;
 }
