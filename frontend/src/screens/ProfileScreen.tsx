@@ -17,8 +17,11 @@ import { fetchUser, User } from '../services/userService';
 import { colors } from '../theme/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PHOTO_WIDTH = SCREEN_WIDTH * 0.85;
+const MAX_PHOTO_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 480);
+const PHOTO_WIDTH = MAX_PHOTO_WIDTH;
 const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
+const VIEWER_PHOTO_WIDTH = Math.min(SCREEN_WIDTH * 0.9, 720);
+const VIEWER_PHOTO_HEIGHT = VIEWER_PHOTO_WIDTH * (5 / 4);
 
 type ProfileParams = {
   Profile: {
@@ -112,15 +115,27 @@ const ProfileScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Main photo with navigation arrows */}
+      {/* Main photo with navigation */}
       <View style={styles.carouselContainer}>
-        {photoUrls.length > 1 && mainIndex > 0 && (
-          <TouchableOpacity
-            style={[styles.navArrow, styles.navArrowLeft]}
-            onPress={() => setMainIndex((i) => i - 1)}
-          >
-            <Text style={styles.navArrowText}>‹</Text>
-          </TouchableOpacity>
+        {/* Top nav bar */}
+        {photoUrls.length > 1 && (
+          <View style={styles.navBar}>
+            <TouchableOpacity
+              style={styles.navBtn}
+              onPress={() => setMainIndex((i) => Math.max(0, i - 1))}
+              disabled={mainIndex === 0}
+            >
+              <Text style={[styles.navBtnText, mainIndex === 0 && styles.navBtnDisabled]}>‹</Text>
+            </TouchableOpacity>
+            <Text style={styles.navCounter}>{mainIndex + 1} / {photoUrls.length}</Text>
+            <TouchableOpacity
+              style={styles.navBtn}
+              onPress={() => setMainIndex((i) => Math.min(photoUrls.length - 1, i + 1))}
+              disabled={mainIndex === photoUrls.length - 1}
+            >
+              <Text style={[styles.navBtnText, mainIndex === photoUrls.length - 1 && styles.navBtnDisabled]}>›</Text>
+            </TouchableOpacity>
+          </View>
         )}
         <TouchableOpacity
           activeOpacity={0.85}
@@ -132,14 +147,6 @@ const ProfileScreen = () => {
             resizeMode="cover"
           />
         </TouchableOpacity>
-        {photoUrls.length > 1 && mainIndex < photoUrls.length - 1 && (
-          <TouchableOpacity
-            style={[styles.navArrow, styles.navArrowRight]}
-            onPress={() => setMainIndex((i) => i + 1)}
-          >
-            <Text style={styles.navArrowText}>›</Text>
-          </TouchableOpacity>
-        )}
         {/* Page dots */}
         {photoUrls.length > 1 && (
           <View style={styles.dotsContainer}>
@@ -188,62 +195,60 @@ const ProfileScreen = () => {
         onRequestClose={() => setViewerOpen(false)}
       >
         <View style={styles.viewerContainer}>
-          {/* Close button */}
-          <TouchableOpacity
-            style={styles.closeBtn}
-            onPress={() => setViewerOpen(false)}
-          >
-            <Text style={styles.closeBtnText}>✕</Text>
-          </TouchableOpacity>
-
-          {/* Navigation left */}
-          {photoUrls.length > 1 && viewerIndex > 0 && (
+          {/* Top bar */}
+          <View style={styles.viewerTopBar}>
+            {photoUrls.length > 1 && (
+              <View style={styles.viewerNavRow}>
+                <TouchableOpacity
+                  style={styles.viewerBtn}
+                  onPress={() => setViewerIndex((i) => Math.max(0, i - 1))}
+                  disabled={viewerIndex === 0}
+                >
+                  <Text style={[styles.viewerBtnText, viewerIndex === 0 && styles.viewerBtnDisabled]}>‹</Text>
+                </TouchableOpacity>
+                <Text style={styles.viewerCounter}>{viewerIndex + 1} / {photoUrls.length}</Text>
+                <TouchableOpacity
+                  style={styles.viewerBtn}
+                  onPress={() => setViewerIndex((i) => Math.min(photoUrls.length - 1, i + 1))}
+                  disabled={viewerIndex === photoUrls.length - 1}
+                >
+                  <Text style={[styles.viewerBtnText, viewerIndex === photoUrls.length - 1 && styles.viewerBtnDisabled]}>›</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             <TouchableOpacity
-              style={[styles.viewerNav, styles.viewerNavLeft]}
-              onPress={() => setViewerIndex((i) => i - 1)}
+              style={styles.closeBtn}
+              onPress={() => setViewerOpen(false)}
             >
-              <Text style={styles.viewerNavText}>‹</Text>
+              <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
-          )}
+          </View>
 
           {/* Photo */}
-          <Image
-            source={{ uri: getPhotoUrl(viewerPhoto) }}
-            style={styles.viewerPhoto}
-            resizeMode="contain"
-          />
+          <View style={styles.viewerCenter}>
+            <Image
+              source={{ uri: getPhotoUrl(photoUrls[viewerIndex]) }}
+              style={styles.viewerPhoto}
+              resizeMode="contain"
+            />
+          </View>
 
-          {/* Navigation right */}
-          {photoUrls.length > 1 && viewerIndex < photoUrls.length - 1 && (
-            <TouchableOpacity
-              style={[styles.viewerNav, styles.viewerNavRight]}
-              onPress={() => setViewerIndex((i) => i + 1)}
-            >
-              <Text style={styles.viewerNavText}>›</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Counter + dots */}
+          {/* Dots */}
           {photoUrls.length > 1 && (
             <View style={styles.viewerBottom}>
-              <Text style={styles.viewerCounter}>
-                {viewerIndex + 1} / {photoUrls.length}
-              </Text>
-              <View style={styles.viewerDots}>
-                {photoUrls.map((_, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    onPress={() => setViewerIndex(i)}
-                  >
-                    <View
-                      style={[
-                        styles.viewerDot,
-                        i === viewerIndex && styles.viewerDotActive,
-                      ]}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {photoUrls.map((_, i) => (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => setViewerIndex(i)}
+                >
+                  <View
+                    style={[
+                      styles.viewerDot,
+                      i === viewerIndex && styles.viewerDotActive,
+                    ]}
+                  />
+                </TouchableOpacity>
+              ))}
             </View>
           )}
         </View>
@@ -294,34 +299,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
   },
+  navBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    marginBottom: 8,
+  },
+  navBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navBtnText: {
+    fontSize: 24,
+    color: colors.primary,
+    lineHeight: 28,
+    fontWeight: '700',
+  },
+  navBtnDisabled: {
+    color: colors.border,
+  },
+  navCounter: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
   mainPhoto: {
     width: PHOTO_WIDTH,
     height: PHOTO_HEIGHT,
     borderRadius: 16,
-  },
-  navArrow: {
-    position: 'absolute',
-    top: '50%',
-    zIndex: 5,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -18,
-  },
-  navArrowLeft: {
-    left: SCREEN_WIDTH * 0.04,
-  },
-  navArrowRight: {
-    right: SCREEN_WIDTH * 0.04,
-  },
-  navArrowText: {
-    fontSize: 24,
-    color: '#fff',
-    lineHeight: 28,
-    fontWeight: '700',
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -379,18 +391,45 @@ const styles = StyleSheet.create({
   viewerContainer: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  viewerTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 48,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+  },
+  viewerNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    flex: 1,
     justifyContent: 'center',
   },
-  closeBtn: {
-    position: 'absolute',
-    top: 48,
-    right: 20,
-    zIndex: 10,
+  viewerBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewerBtnText: {
+    fontSize: 24,
+    color: '#fff',
+    lineHeight: 28,
+    fontWeight: '700',
+  },
+  viewerBtnDisabled: {
+    color: 'rgba(255,255,255,0.2)',
+  },
+  closeBtn: {
+    marginLeft: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -399,47 +438,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
-  viewerPhoto: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH * (5 / 4),
-  },
-  viewerNav: {
-    position: 'absolute',
-    top: '50%',
-    zIndex: 10,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  viewerCenter: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -22,
   },
-  viewerNavLeft: {
-    left: 12,
-  },
-  viewerNavRight: {
-    right: 12,
-  },
-  viewerNavText: {
-    fontSize: 28,
-    color: '#fff',
-    lineHeight: 32,
-    fontWeight: '700',
+  viewerPhoto: {
+    width: VIEWER_PHOTO_WIDTH,
+    height: VIEWER_PHOTO_HEIGHT,
+    borderRadius: 8,
   },
   viewerBottom: {
-    position: 'absolute',
-    bottom: 30,
-    alignItems: 'center',
-  },
-  viewerCounter: {
-    color: '#fff',
-    fontSize: 13,
-    marginBottom: 10,
-  },
-  viewerDots: {
     flexDirection: 'row',
+    justifyContent: 'center',
     gap: 6,
+    paddingBottom: 30,
   },
   viewerDot: {
     width: 8,
