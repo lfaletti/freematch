@@ -24,3 +24,5 @@ web-build/
 
 # Uploaded user photos (runtime-generated)
 backend/uploads/
+
+.vercel
