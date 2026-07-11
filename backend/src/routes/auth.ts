@@ -82,9 +82,15 @@ router.post('/register', memoryUpload.single('photo'), async (req, res) => {
     const id = uuidv4();
 
     // Upload to S3/MinIO if a photo was provided; otherwise leave photo_url null.
+    // If the upload fails, continue without a photo rather than blocking registration.
     let photo_url: string | undefined;
     if (req.file) {
-      photo_url = await uploadPhoto(req.file, id);
+      try {
+        photo_url = await uploadPhoto(req.file, id);
+      } catch {
+        console.warn('S3 photo upload failed during registration, continuing without photo');
+        photo_url = undefined;
+      }
     }
 
     const input: RegisterInput = {
@@ -216,7 +222,12 @@ router.post('/register-phone', memoryUpload.single('photo'), async (req, res) =>
 
     let photo_url: string | null = null;
     if (req.file) {
-      photo_url = await uploadPhoto(req.file, id);
+      try {
+        photo_url = await uploadPhoto(req.file, id);
+      } catch {
+        console.warn('S3 photo upload failed during phone registration, continuing without photo');
+        photo_url = null;
+      }
     }
 
     const user = await registerUserByPhone({
