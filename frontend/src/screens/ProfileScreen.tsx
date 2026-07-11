@@ -3,8 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  FlatList,
   Image,
   TouchableOpacity,
   ActivityIndicator,
@@ -21,8 +19,6 @@ import { colors } from '../theme/colors';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PHOTO_WIDTH = SCREEN_WIDTH * 0.85;
 const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
-const VIEWER_PHOTO_WIDTH = SCREEN_WIDTH;
-const VIEWER_PHOTO_HEIGHT = SCREEN_WIDTH * (5 / 4);
 
 type ProfileParams = {
   Profile: {
@@ -47,8 +43,9 @@ const ProfileScreen = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [user, setUser] = useState<Partial<User> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [fullScreenPhoto, setFullScreenPhoto] = useState<string | null>(null);
-  const [viewIndex, setViewIndex] = useState(0);
+  const [mainIndex, setMainIndex] = useState(0);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,12 +84,14 @@ const ProfileScreen = () => {
     ? photos.map((p) => p.url)
     : [photo];
 
-  const fullScreenUrls = photoUrls.length > 0 ? photoUrls : [];
+  const mainPhoto = photoUrls[mainIndex];
 
-  const openFullScreen = (url: string) => {
-    setViewIndex(fullScreenUrls.indexOf(url));
-    setFullScreenPhoto(url);
+  const openViewer = (url: string) => {
+    setViewerIndex(photoUrls.indexOf(url));
+    setViewerOpen(true);
   };
+
+  const viewerPhoto = photoUrls[viewerIndex];
 
   if (loading) {
     return (
@@ -113,56 +112,54 @@ const ProfileScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Main photo carousel — tap any photo to open viewer */}
-      <View style={styles.mainPhotoContainer}>
+      {/* Main photo with navigation arrows */}
+      <View style={styles.carouselContainer}>
+        {photoUrls.length > 1 && mainIndex > 0 && (
+          <TouchableOpacity
+            style={[styles.navArrow, styles.navArrowLeft]}
+            onPress={() => setMainIndex((i) => i - 1)}
+          >
+            <Text style={styles.navArrowText}>‹</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => openFullScreen(photoUrls[0])}
+          onPress={() => openViewer(photoUrls[mainIndex])}
         >
-          <FlatList
-            data={photoUrls}
-            keyExtractor={(url) => url}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={PHOTO_WIDTH}
-            decelerationRate="fast"
-            renderItem={({ item }) => (
-              <View style={styles.mainPhotoWrapper}>
-                <Image
-                  source={{ uri: getPhotoUrl(item) }}
-                  style={styles.mainPhoto}
-                  resizeMode="cover"
-                />
-              </View>
-            )}
+          <Image
+            source={{ uri: getPhotoUrl(mainPhoto) }}
+            style={styles.mainPhoto}
+            resizeMode="cover"
           />
         </TouchableOpacity>
-        {fullScreenUrls.length > 1 && (
-          <View style={styles.photoCountBadge}>
-            <Text style={styles.photoCountText}>📷 {fullScreenUrls.length}</Text>
+        {photoUrls.length > 1 && mainIndex < photoUrls.length - 1 && (
+          <TouchableOpacity
+            style={[styles.navArrow, styles.navArrowRight]}
+            onPress={() => setMainIndex((i) => i + 1)}
+          >
+            <Text style={styles.navArrowText}>›</Text>
+          </TouchableOpacity>
+        )}
+        {/* Page dots */}
+        {photoUrls.length > 1 && (
+          <View style={styles.dotsContainer}>
+            {photoUrls.map((_, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.dot}
+                onPress={() => setMainIndex(i)}
+              >
+                <View
+                  style={[
+                    styles.dotInner,
+                    i === mainIndex && styles.dotInnerActive,
+                  ]}
+                />
+              </TouchableOpacity>
+            ))}
           </View>
         )}
       </View>
-
-      {/* Thumbnail strip for extra photos */}
-      {fullScreenUrls.length > 1 && (
-        <View style={styles.thumbRow}>
-          {fullScreenUrls.map((url, i) => (
-            <TouchableOpacity
-              key={url}
-              style={styles.thumb}
-              onPress={() => openFullScreen(url)}
-            >
-              <Image
-                source={{ uri: getPhotoUrl(url) }}
-                style={styles.thumbImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
 
       {/* Info section */}
       <View style={styles.info}>
@@ -185,51 +182,68 @@ const ProfileScreen = () => {
 
       {/* Full-screen photo viewer */}
       <Modal
-        visible={fullScreenPhoto !== null}
+        visible={viewerOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setFullScreenPhoto(null)}
+        onRequestClose={() => setViewerOpen(false)}
       >
-        <View style={styles.fullScreenContainer}>
+        <View style={styles.viewerContainer}>
+          {/* Close button */}
           <TouchableOpacity
-            style={styles.fullScreenClose}
-            onPress={() => setFullScreenPhoto(null)}
+            style={styles.closeBtn}
+            onPress={() => setViewerOpen(false)}
           >
-            <Text style={styles.fullScreenCloseText}>✕</Text>
+            <Text style={styles.closeBtnText}>✕</Text>
           </TouchableOpacity>
-          <FlatList
-            data={fullScreenUrls}
-            keyExtractor={(url) => url}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            snapToAlignment="center"
-            decelerationRate="fast"
-            onMomentumScrollEnd={(e) => {
-              const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-              setViewIndex(idx);
-            }}
-            renderItem={({ item }) => (
-              <View style={styles.fullScreenPhotoWrapper}>
-                <Image
-                  source={{ uri: getPhotoUrl(item) }}
-                  style={styles.fullScreenImage}
-                  resizeMode="contain"
-                />
-              </View>
-            )}
+
+          {/* Navigation left */}
+          {photoUrls.length > 1 && viewerIndex > 0 && (
+            <TouchableOpacity
+              style={[styles.viewerNav, styles.viewerNavLeft]}
+              onPress={() => setViewerIndex((i) => i - 1)}
+            >
+              <Text style={styles.viewerNavText}>‹</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Photo */}
+          <Image
+            source={{ uri: getPhotoUrl(viewerPhoto) }}
+            style={styles.viewerPhoto}
+            resizeMode="contain"
           />
-          {fullScreenUrls.length > 1 && (
-            <View style={styles.fullScreenIndicator}>
-              {fullScreenUrls.map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.fullScreenDot,
-                    i === viewIndex && styles.fullScreenDotActive,
-                  ]}
-                />
-              ))}
+
+          {/* Navigation right */}
+          {photoUrls.length > 1 && viewerIndex < photoUrls.length - 1 && (
+            <TouchableOpacity
+              style={[styles.viewerNav, styles.viewerNavRight]}
+              onPress={() => setViewerIndex((i) => i + 1)}
+            >
+              <Text style={styles.viewerNavText}>›</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Counter + dots */}
+          {photoUrls.length > 1 && (
+            <View style={styles.viewerBottom}>
+              <Text style={styles.viewerCounter}>
+                {viewerIndex + 1} / {photoUrls.length}
+              </Text>
+              <View style={styles.viewerDots}>
+                {photoUrls.map((_, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    onPress={() => setViewerIndex(i)}
+                  >
+                    <View
+                      style={[
+                        styles.viewerDot,
+                        i === viewerIndex && styles.viewerDotActive,
+                      ]}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           )}
         </View>
@@ -274,54 +288,62 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background,
   },
-  // Main photo
-  mainPhotoContainer: {
+
+  // Carousel
+  carouselContainer: {
     alignItems: 'center',
     paddingVertical: 12,
   },
-  mainPhotoWrapper: {
+  mainPhoto: {
     width: PHOTO_WIDTH,
     height: PHOTO_HEIGHT,
-  },
-  mainPhoto: {
-    width: '100%',
-    height: '100%',
     borderRadius: 16,
   },
-  photoCountBadge: {
+  navArrow: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  photoCountText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  // Thumbnail strip
-  thumbRow: {
-    flexDirection: 'row',
+    top: '50%',
+    zIndex: 5,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
     justifyContent: 'center',
+    marginTop: -18,
+  },
+  navArrowLeft: {
+    left: SCREEN_WIDTH * 0.04,
+  },
+  navArrowRight: {
+    right: SCREEN_WIDTH * 0.04,
+  },
+  navArrowText: {
+    fontSize: 24,
+    color: '#fff',
+    lineHeight: 28,
+    fontWeight: '700',
+  },
+  dotsContainer: {
+    flexDirection: 'row',
     gap: 8,
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    marginTop: 12,
   },
-  thumb: {
-    width: 56,
-    height: 56,
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: colors.border,
+  dot: {
+    padding: 4,
   },
-  thumbImage: {
-    width: '100%',
-    height: '100%',
+  dotInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
   },
+  dotInnerActive: {
+    backgroundColor: colors.primary,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+
   // Info
   info: {
     padding: 20,
@@ -352,56 +374,80 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
   },
-  // Photo viewer modal
-  fullScreenContainer: {
+
+  // Viewer
+  viewerContainer: {
     flex: 1,
     backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  fullScreenClose: {
+  closeBtn: {
     position: 'absolute',
     top: 48,
     right: 20,
     zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     width: 36,
     height: 36,
     borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fullScreenCloseText: {
+  closeBtnText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
   },
-  fullScreenList: {
-    flex: 1,
-  },
-  fullScreenPhotoWrapper: {
+  viewerPhoto: {
     width: SCREEN_WIDTH,
-    height: VIEWER_PHOTO_HEIGHT,
+    height: SCREEN_WIDTH * (5 / 4),
+  },
+  viewerNav: {
+    position: 'absolute',
+    top: '50%',
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
     justifyContent: 'center',
+    marginTop: -22,
+  },
+  viewerNavLeft: {
+    left: 12,
+  },
+  viewerNavRight: {
+    right: 12,
+  },
+  viewerNavText: {
+    fontSize: 28,
+    color: '#fff',
+    lineHeight: 32,
+    fontWeight: '700',
+  },
+  viewerBottom: {
+    position: 'absolute',
+    bottom: 30,
     alignItems: 'center',
   },
-  fullScreenImage: {
-    width: VIEWER_PHOTO_WIDTH,
-    height: VIEWER_PHOTO_HEIGHT,
-    resizeMode: 'contain',
+  viewerCounter: {
+    color: '#fff',
+    fontSize: 13,
+    marginBottom: 10,
   },
-  fullScreenIndicator: {
-    position: 'absolute',
-    bottom: 40,
-    alignSelf: 'center',
+  viewerDots: {
     flexDirection: 'row',
     gap: 6,
   },
-  fullScreenDot: {
+  viewerDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: 'rgba(255,255,255,0.4)',
   },
-  fullScreenDotActive: {
+  viewerDotActive: {
     backgroundColor: '#fff',
     width: 10,
     height: 10,
