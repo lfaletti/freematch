@@ -3,7 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET environment variable is required in production');
+}
+const JWT_SECRET_EFFECTIVE = JWT_SECRET || 'dev-secret-do-not-use-in-production';
 const JWT_EXPIRY = '24h';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
@@ -52,7 +56,7 @@ export async function comparePassword(password: string, hash: string): Promise<b
 export function generateToken(userId: string, email: string): string {
   return jwt.sign(
     { userId, email } as JWTPayload,
-    JWT_SECRET,
+    JWT_SECRET_EFFECTIVE,
     { expiresIn: JWT_EXPIRY }
   );
 }
@@ -60,14 +64,14 @@ export function generateToken(userId: string, email: string): string {
 export function generateRefreshToken(userId: string, email: string): string {
   return jwt.sign(
     { userId, email, type: 'refresh' } as JWTPayload & { type: string },
-    JWT_SECRET,
+    JWT_SECRET_EFFECTIVE,
     { expiresIn: REFRESH_TOKEN_EXPIRY }
   );
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, JWT_SECRET_EFFECTIVE) as JWTPayload;
     return decoded;
   } catch (err) {
     return null;

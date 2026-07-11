@@ -15,6 +15,7 @@ import {
 const router = Router();
 
 const MIN_AGE = 18;
+const MIN_PASSWORD_LENGTH = 6;
 
 // Memory storage for registration photos — forwarded to S3/MinIO, never
 // written to disk so they survive container restarts.
@@ -56,6 +57,11 @@ router.post('/register', memoryUpload.single('photo'), async (req, res) => {
 
     if (!name || !email || !password || !born_date) {
       res.status(400).json({ error: 'name, email, password, and born_date are required' });
+      return;
+    }
+
+    if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+      res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` });
       return;
     }
 
