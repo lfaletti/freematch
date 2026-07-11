@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   FlatList,
   Image,
   TouchableOpacity,
@@ -17,9 +18,11 @@ import { fetchUserPhotos, Photo } from '../services/photoService';
 import { fetchUser, User } from '../services/userService';
 import { colors } from '../theme/colors';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PHOTO_WIDTH = SCREEN_WIDTH * 0.85;
 const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
+const VIEWER_PHOTO_WIDTH = SCREEN_WIDTH;
+const VIEWER_PHOTO_HEIGHT = SCREEN_WIDTH * (5 / 4);
 
 type ProfileParams = {
   Profile: {
@@ -110,23 +113,37 @@ const ProfileScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Main photo — tap to open full-screen viewer */}
-      <TouchableOpacity
-        style={styles.mainPhotoContainer}
-        activeOpacity={0.85}
-        onPress={() => openFullScreen(photoUrls[0])}
-      >
-        <Image
-          source={{ uri: getPhotoUrl(photoUrls[0]) }}
-          style={styles.mainPhoto}
-          resizeMode="cover"
-        />
+      {/* Main photo carousel — tap any photo to open viewer */}
+      <View style={styles.mainPhotoContainer}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => openFullScreen(photoUrls[0])}
+        >
+          <FlatList
+            data={photoUrls}
+            keyExtractor={(url) => url}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={PHOTO_WIDTH}
+            decelerationRate="fast"
+            renderItem={({ item }) => (
+              <View style={styles.mainPhotoWrapper}>
+                <Image
+                  source={{ uri: getPhotoUrl(item) }}
+                  style={styles.mainPhoto}
+                  resizeMode="cover"
+                />
+              </View>
+            )}
+          />
+        </TouchableOpacity>
         {fullScreenUrls.length > 1 && (
           <View style={styles.photoCountBadge}>
             <Text style={styles.photoCountText}>📷 {fullScreenUrls.length}</Text>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
 
       {/* Thumbnail strip for extra photos */}
       {fullScreenUrls.length > 1 && (
@@ -193,11 +210,13 @@ const ProfileScreen = () => {
               setViewIndex(idx);
             }}
             renderItem={({ item }) => (
-              <Image
-                source={{ uri: getPhotoUrl(item) }}
-                style={styles.fullScreenImage}
-                resizeMode="contain"
-              />
+              <View style={styles.fullScreenPhotoWrapper}>
+                <Image
+                  source={{ uri: getPhotoUrl(item) }}
+                  style={styles.fullScreenImage}
+                  resizeMode="contain"
+                />
+              </View>
             )}
           />
           {fullScreenUrls.length > 1 && (
@@ -260,9 +279,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
   },
-  mainPhoto: {
+  mainPhotoWrapper: {
     width: PHOTO_WIDTH,
     height: PHOTO_HEIGHT,
+  },
+  mainPhoto: {
+    width: '100%',
+    height: '100%',
     borderRadius: 16,
   },
   photoCountBadge: {
@@ -329,7 +352,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
   },
-  // Full-screen viewer
+  // Photo viewer modal
   fullScreenContainer: {
     flex: 1,
     backgroundColor: '#000',
@@ -351,9 +374,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
-  fullScreenImage: {
+  fullScreenList: {
+    flex: 1,
+  },
+  fullScreenPhotoWrapper: {
     width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
+    height: VIEWER_PHOTO_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: VIEWER_PHOTO_WIDTH,
+    height: VIEWER_PHOTO_HEIGHT,
+    resizeMode: 'contain',
   },
   fullScreenIndicator: {
     position: 'absolute',
