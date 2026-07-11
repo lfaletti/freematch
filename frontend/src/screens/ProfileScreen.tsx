@@ -36,8 +36,10 @@ type ProfileParams = {
 type ProfileRouteProp = RouteProp<ProfileParams, 'Profile'>;
 type ProfileNavProp = NativeStackNavigationProp<ProfileParams, 'Profile'>;
 
-const HEADER_HEIGHT = 68;
 const STATUS_BAR_HEIGHT = 24;
+const HEADER_PT = STATUS_BAR_HEIGHT + 12;
+const HEADER_PB = 12;
+const HEADER_H = HEADER_PT + HEADER_PB; // 48px
 
 const ProfileScreen = () => {
   const route = useRoute<ProfileRouteProp>();
@@ -101,7 +103,7 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header — absolutely positioned above content */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backIcon}>‹</Text>
@@ -110,92 +112,93 @@ const ProfileScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Scrollable content — padded to avoid header overlap */}
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Main photo with tap zones */}
-        <View style={styles.carouselContainer}>
-          <View style={styles.photoWrapper}>
-            <Image
-              source={{ uri: getPhotoUrl(mainPhoto) }}
-              style={styles.mainPhoto}
-              resizeMode="cover"
-            />
+      {/* Content area below header — uses marginTop instead of flex */}
+      <View style={styles.contentArea}>
+        <ScrollView
+          style={styles.scroll}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Main photo with tap zones */}
+          <View style={styles.carouselContainer}>
+            <View style={styles.photoWrapper}>
+              <Image
+                source={{ uri: getPhotoUrl(mainPhoto) }}
+                style={styles.mainPhoto}
+                resizeMode="cover"
+              />
+              {photoUrls.length > 1 && (
+                <>
+                  {/* Left tap zone → previous */}
+                  <TouchableOpacity
+                    style={[styles.tapZone, styles.tapZoneLeft]}
+                    activeOpacity={0.15}
+                    onPress={goPrev}
+                    disabled={mainIndex === 0}
+                  />
+                  {/* Right tap zone → next */}
+                  <TouchableOpacity
+                    style={[styles.tapZone, styles.tapZoneRight]}
+                    activeOpacity={0.15}
+                    onPress={goNext}
+                    disabled={mainIndex === photoUrls.length - 1}
+                  />
+                  {/* Arrow indicators at edges */}
+                  {mainIndex > 0 && (
+                    <Text style={[styles.overlayArrow, styles.overlayArrowLeft]}>‹</Text>
+                  )}
+                  {mainIndex < photoUrls.length - 1 && (
+                    <Text style={[styles.overlayArrow, styles.overlayArrowRight]}>›</Text>
+                  )}
+                </>
+              )}
+              {/* Counter badge */}
+              {photoUrls.length > 1 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{mainIndex + 1} / {photoUrls.length}</Text>
+                </View>
+              )}
+            </View>
+            {/* Page dots */}
             {photoUrls.length > 1 && (
-              <>
-                {/* Left tap zone → previous */}
-                <TouchableOpacity
-                  style={[styles.tapZone, styles.tapZoneLeft]}
-                  activeOpacity={0.15}
-                  onPress={goPrev}
-                  disabled={mainIndex === 0}
-                />
-                {/* Right tap zone → next */}
-                <TouchableOpacity
-                  style={[styles.tapZone, styles.tapZoneRight]}
-                  activeOpacity={0.15}
-                  onPress={goNext}
-                  disabled={mainIndex === photoUrls.length - 1}
-                />
-                {/* Arrow indicators at edges */}
-                {mainIndex > 0 && (
-                  <Text style={[styles.overlayArrow, styles.overlayArrowLeft]}>‹</Text>
-                )}
-                {mainIndex < photoUrls.length - 1 && (
-                  <Text style={[styles.overlayArrow, styles.overlayArrowRight]}>›</Text>
-                )}
-              </>
-            )}
-            {/* Counter badge */}
-            {photoUrls.length > 1 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{mainIndex + 1} / {photoUrls.length}</Text>
+              <View style={styles.dotsContainer}>
+                {photoUrls.map((_, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.dot}
+                    onPress={() => setMainIndex(i)}
+                  >
+                    <View
+                      style={[
+                        styles.dotInner,
+                        i === mainIndex && styles.dotInnerActive,
+                      ]}
+                    />
+                  </TouchableOpacity>
+                ))}
               </View>
             )}
           </View>
-          {/* Page dots */}
-          {photoUrls.length > 1 && (
-            <View style={styles.dotsContainer}>
-              {photoUrls.map((_, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={styles.dot}
-                  onPress={() => setMainIndex(i)}
-                >
-                  <View
-                    style={[
-                      styles.dotInner,
-                      i === mainIndex && styles.dotInnerActive,
-                    ]}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
 
-        {/* Info section */}
-        <View style={styles.info}>
-          {displayLocation && (
-            <Text style={styles.location}>📍 {displayLocation}</Text>
-          )}
-          {displayBio && (
-            <Text style={styles.bio}>{displayBio}</Text>
-          )}
-          {displayInterests && displayInterests.length > 0 && (
-            <View style={styles.interests}>
-              {displayInterests.map((interest) => (
-                <View key={interest} style={styles.tag}>
-                  <Text style={styles.tagText}>{interest}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-      </ScrollView>
+          {/* Info section */}
+          <View style={styles.info}>
+            {displayLocation && (
+              <Text style={styles.location}>📍 {displayLocation}</Text>
+            )}
+            {displayBio && (
+              <Text style={styles.bio}>{displayBio}</Text>
+            )}
+            {displayInterests && displayInterests.length > 0 && (
+              <View style={styles.interests}>
+                {displayInterests.map((interest) => (
+                  <View key={interest} style={styles.tag}>
+                    <Text style={styles.tagText}>{interest}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -206,20 +209,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: STATUS_BAR_HEIGHT + 12,
-    paddingBottom: 12,
+    paddingTop: HEADER_PT,
+    paddingBottom: HEADER_PB,
     paddingHorizontal: 16,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    zIndex: 10,
-    elevation: 4,
   },
   backBtn: {
     padding: 4,
@@ -238,6 +235,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginLeft: 12,
   },
+  contentArea: {
+    marginTop: HEADER_H,
+    flex: 1,
+  },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -247,21 +248,17 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
-  scrollContent: {
-    paddingTop: HEADER_HEIGHT + STATUS_BAR_HEIGHT,
-    paddingBottom: 40,
-  },
 
   // Carousel
   carouselContainer: {
     alignItems: 'center',
     paddingTop: 16,
     paddingBottom: 12,
+    paddingHorizontal: 16,
   },
   photoWrapper: {
     position: 'relative',
     alignItems: 'center',
-    paddingHorizontal: 16,
   },
   mainPhoto: {
     width: PHOTO_WIDTH,
