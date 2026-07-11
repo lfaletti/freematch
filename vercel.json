@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd frontend && npx expo export --platform web --output-dir ../frontend-dist",
+  "buildCommand": "cd frontend && npm install && npx expo export --platform web --output-dir ../frontend-dist",
   "outputDirectory": "frontend-dist",
   "framework": null,
   "rewrites": [
