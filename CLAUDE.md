@@ -92,8 +92,20 @@ users → swipes (swiper_id, swiped_id) → matches (user1_id < user2_id) → me
 ```
 `swipes` uses `ON CONFLICT ... DO UPDATE`; `matches` uses `ON CONFLICT DO NOTHING` — both are safe to call repeatedly.
 
-### No Seeded Profiles
-`backend/src/database/migrate.ts` runs migrations on startup but **does not seed any users** — the app only ever contains accounts created manually via registration (`is_mock = false`). The old mock-user seeding (`seedUsers`/`insertSeedData`) was removed, and migration `005_remove_mock_users.sql` deletes any pre-existing mock rows (`is_mock = true`) plus their swipes/matches on every boot (idempotent). `TEST_USERS` survives only as the dev/test slot map for the legacy `X-User-Id` header and the `/api/session` slot label; those slot IDs are no longer present in the database, so the `X-User-Id` testing path needs a real registered account instead.
+### Photo System (July 2026)
+Photos are stored in **MinIO** (S3-compatible) with a local bucket `freematch-dev` on port 9000. The backend returns URLs using `S3_PUBLIC_ENDPOINT=http://127.0.0.1:9000` so the browser can reach them. The bucket is publicly readable (`mc anonymous set download`). `users.photo_url` may be empty — the `getAllUsers` query uses `COALESCE` to fall back to the `photos` table. `getPhotoUrl()` in `frontend/src/services/api.ts` replaces `localhost` with `127.0.0.1` for MinIO URLs.
+
+**Display sizing**: Profile photos at **85% viewport width with 4:5 aspect ratio**, capped at **480px** on wide screens (notebooks). The ProfileScreen has a carousel with arrow navigation (‹/›) and dot indicators. Tapping any photo opens a full-screen viewer modal with navigation, counter (`1 / N`), and dot indicators.
+
+**SwipeCard**: Photos use explicit pixel heights (`height: Math.round(CARD_HEIGHT * 0.65)`) instead of percentage values, which is required for correct rendering in React Native Web.
+
+### Profile Features (July 2026)
+- **Edit Profile** (`PATCH /api/users/me`): Partial updates of `name`, `bio`, `location`, `interests`. Email, phone, and birth date are locked (credentials).
+- **Reset Left Swipes** (`POST /api/swipes/reset-left`): Deletes all left swipes for the user, restoring skipped users to the deck. Does NOT affect right swipes or existing matches. Shows confirmation dialog before execution.
+- **Navigation menu**: `⋮` button (3-dot, top-right) with dropdown — "Editar perfil" and "Salir" options. Replaced the old confusing logout button.
+
+### Mock Test Cleanup (July 2026)
+All mock unit tests (`__tests__/` directories) and testing dependencies (`jest`, `@testing-library/*`, etc.) were removed from `package.json` files. 30 mock test user records were deleted from the database. The app now runs with real data only.
 
 ### Starting the app after a reboot
 Only the Docker stack (postgres + redis + backend) comes back automatically — the **Expo web frontend runs natively, not in Docker** (there is no frontend service in `docker-compose.yml`), so it must be started by hand after every reboot. `npm run start:app` (root) runs `start-app.ps1`, which brings up the Docker stack detached, waits for the backend `/health` check, then starts Expo web on `:8081`. Then open `http://localhost:8081/` and log in (or create an account).

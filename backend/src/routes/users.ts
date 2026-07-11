@@ -37,4 +37,37 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
+router.patch('/me', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const { name, bio, photo_url, interests, location } = req.body;
+
+    if (name !== undefined && (!name || typeof name !== 'string' || name.trim().length === 0)) {
+      return res.status(400).json({ error: 'Name cannot be empty' });
+    }
+
+    const updated = await userService.updateUserProfile(userId, {
+      name: name?.trim(),
+      bio,
+      photo_url,
+      interests,
+      location: location?.trim(),
+    });
+
+    if (!updated) return res.status(400).json({ error: 'No fields to update' });
+
+    res.json({
+      userId: updated.id,
+      name: updated.name,
+      photo: updated.photo_url,
+      bio: updated.bio,
+      bornDate: updated.born_date,
+      phoneNumber: updated.phone_number,
+      email: updated.email,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
 export default router;

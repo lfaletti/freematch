@@ -44,6 +44,10 @@ npm run docker:up
 - ✅ **Scaling**: Horizontal scaling ready (multi-instance)
 - ✅ **Docker**: Production-optimized containers
 - ✅ **Deployment**: Railway, Fly.io, Vercel configs
+- ✅ **Auth**: JWT with email/password + bcrypt
+- ✅ **Photos**: S3/MinIO upload + viewer + carousel
+- ✅ **Profile Edit**: Name, bio, location, interests
+- ✅ **Swipe Reset**: Restore left-swiped profiles
 
 ## 📖 Documentation
 
@@ -166,6 +170,14 @@ Optional:
 - Concurrent users: 50k-1M+
 - Features: Sharding, multi-region, custom
 
+## 🚀 Latest Updates (July 2026)
+
+- **Photo system**: MinIO bucket with public access, carousel navigation, full-screen viewer
+- **Profile editing**: Edit name, bio, location, interests from the app
+- **Reset swipes**: Undo left swipes without losing matches
+- **Navigation**: Clean ⋮ dropdown menu replaces old logout button
+- **Cleanup**: Removed all mock tests and test data — app runs with real data only
+
 ## 🐛 Troubleshooting
 
 ### Docker issues
@@ -208,9 +220,13 @@ See [`agent-prompts/STATE.md`](./agent-prompts/STATE.md) for current status and 
    - Verify Socket.io working
 
 3. **Enhance** (1-2 weeks)
-   - Implement JWT authentication
-   - Add photo upload system
+   - ~~Implement JWT authentication~~ ✅
+   - ~~Add photo upload system~~ ✅
+   - ~~Profile editing~~ ✅
+   - ~~Photo viewer~~ ✅
    - Configure monitoring
+   - Push notifications
+   - In-app photo upload during registration
 
 See [`agent-prompts/STATE.md`](./agent-prompts/STATE.md) for the up-to-date roadmap.
 
