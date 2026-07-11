@@ -10,14 +10,34 @@
 
 ## Current Working Config (as of 2026-07-11)
 
+### `Dockerfile` (repo root) — Multi-stage build
+```dockerfile
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY backend/package*.json ./
+RUN npm ci && npm cache clean --force
+COPY backend/ ./
+RUN npm run build
+RUN mkdir -p dist/database/migrations && \
+    cp src/database/migrations/*.sql dist/database/migrations/
+
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
 ### `railway.toml` (repo root)
 ```toml
 [build]
-builder = "nixpacks"
-rootDirectory = "backend"
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "cd backend && npm start"
+startCommand = "npm start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 ```
@@ -62,19 +82,21 @@ CORS_ORIGIN=http://localhost:8081
 **Fix:** Add `rootDirectory = "backend"` to `[build]` section
 **PR:** #2 (merged)
 
-### Failed Attempt 4: Missing `start` Script
-**Error:** `npm error Missing script: "start"`
-**Root cause:** `startCommand = "npm start"` runs from repo root, not `backend/` where `package.json` lives
-**Fix:** Change to `startCommand = "cd backend && npm start"`
-**PR:** Manual commit (no PR)
+### Failed Attempt 5: Nixpacks didn't run build
+**Error:** `Missing script: "start"` / `Cannot find module '/app/backend/dist/index.js'`
+**Root cause:** Nixpacks with rootDirectory detected the project but skipped `npm run build`, so dist/ never existed
+**Fix:** Switch to Dockerfile builder with multi-stage build that explicitly runs `npm ci`, `npm run build`, and copies SQL migrations
+**Commit:** Multi-stage Dockerfile in repo root
 
 ## Key Lessons
 
 1. **Railway TOML is strict** — bare values without keys cause parse errors
-2. **Dockerfile builder** looks for `Dockerfile` in repo root, not relative paths
-3. **`rootDirectory`** only affects Nixpacks build context, not `startCommand` working directory
-4. **`startCommand`** runs from repo root — must `cd` into subdirectory if needed
-5. **Nixpacks** is better than Dockerfile builder for monorepos — auto-detects language/framework
+2. **Dockerfile builder** looks for `Dockerfile` in repo root by default
+3. **`rootDirectory`** with Nixpacks sets build context but may skip expected build steps
+4. **`startCommand`** runs from repo root — must use correct paths
+5. **TypeScript doesn't copy .sql files** — must explicitly copy migration files to dist/
+6. **Multi-stage Dockerfile** is the most reliable approach for monorepos
+7. **Always test the Dockerfile locally first** before pushing to Railway
 
 ## CLI Commands Reference
 
@@ -101,12 +123,14 @@ gh pr diff <number>
 
 ## Deployment Checklist
 
-- [ ] `railway.toml` has correct builder, rootDirectory, and startCommand
+- [ ] `Dockerfile` exists at repo root with multi-stage build
+- [ ] `Dockerfile` copies SQL migrations to dist/
+- [ ] `railway.toml` uses builder = "dockerfile"
 - [ ] `backend/package-lock.json` exists
 - [ ] Environment variables are set (DATABASE_URL, REDIS_URL, JWT_SECRET, etc.)
 - [ ] Postgres and Redis services are online in Railway
 - [ ] Push to `master` triggers auto-deploy
-- [ ] Check logs for successful startup
+- [ ] Check logs for: "Migrations ran successfully" + "Redis adapter connected"
 - [ ] Test health endpoint: `curl https://<railway-domain>/health`
 
 ## Adding a New Production Environment
