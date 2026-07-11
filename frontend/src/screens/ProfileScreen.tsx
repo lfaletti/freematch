@@ -124,22 +124,21 @@ const ProfileScreen = () => {
                 activeOpacity={0.15}
                 onPress={goPrev}
                 disabled={mainIndex === 0}
-              >
-                {mainIndex > 0 && (
-                  <Text style={styles.overlayArrow}>‹</Text>
-                )}
-              </TouchableOpacity>
+              />
               {/* Right tap zone → next */}
               <TouchableOpacity
                 style={[styles.tapZone, styles.tapZoneRight]}
                 activeOpacity={0.15}
                 onPress={goNext}
                 disabled={mainIndex === photoUrls.length - 1}
-              >
-                {mainIndex < photoUrls.length - 1 && (
-                  <Text style={styles.overlayArrow}>›</Text>
-                )}
-              </TouchableOpacity>
+              />
+              {/* Arrow indicators at edges */}
+              {mainIndex > 0 && (
+                <Text style={[styles.overlayArrow, styles.overlayArrowLeft]}>‹</Text>
+              )}
+              {mainIndex < photoUrls.length - 1 && (
+                <Text style={[styles.overlayArrow, styles.overlayArrowRight]}>›</Text>
+              )}
             </>
           )}
           {/* Counter badge */}
@@ -262,6 +261,21 @@ const styles = StyleSheet.create({
     fontSize: 48,
     color: 'rgba(255,255,255,0.7)',
     fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: 0 },
+  },
+  overlayArrowLeft: {
+    position: 'absolute',
+    left: 16,
+    top: '50%',
+    transform: [{ translateY: -24 }],
+  },
+  overlayArrowRight: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{ translateY: -24 }],
   },
   badge: {
     position: 'absolute',
