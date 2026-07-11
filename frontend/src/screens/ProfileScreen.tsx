@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -108,6 +109,8 @@ const ProfileScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
+      {/* Scrollable content */}
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
       {/* Main photo with tap zones */}
       <View style={styles.carouselContainer}>
         <View style={styles.photoWrapper}>
@@ -187,6 +190,7 @@ const ProfileScreen = () => {
           </View>
         )}
       </View>
+      </ScrollView>
 
     </View>
   );
@@ -196,6 +200,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  scroll: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -237,6 +244,7 @@ const styles = StyleSheet.create({
   photoWrapper: {
     position: 'relative',
     alignItems: 'center',
+    paddingVertical: 24, // extend tap area above and below photo
   },
   mainPhoto: {
     width: PHOTO_WIDTH,
