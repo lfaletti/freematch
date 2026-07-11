@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,8 +17,7 @@ import { fetchUserPhotos, Photo } from '../services/photoService';
 import { fetchUser, User } from '../services/userService';
 import { colors } from '../theme/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-// Photo carousel: portrait ratio (4:5) centered, so it doesn't fill the entire screen
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PHOTO_WIDTH = SCREEN_WIDTH * 0.85;
 const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
 
@@ -44,6 +44,8 @@ const ProfileScreen = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [user, setUser] = useState<Partial<User> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fullScreenPhoto, setFullScreenPhoto] = useState<string | null>(null);
+  const [viewIndex, setViewIndex] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +61,6 @@ const ProfileScreen = () => {
         if (photosRes.status === 'fulfilled') {
           setPhotos(photosRes.value);
         }
-
         if (userRes.status === 'fulfilled') {
           setUser(userRes.value);
         }
@@ -73,25 +74,22 @@ const ProfileScreen = () => {
     return () => { cancelled = true; };
   }, [partnerId]);
 
-  // Merge API data with params for display
   const displayName = user?.name ?? name;
   const displayAge = user?.age ?? age;
   const displayBio = user?.bio ?? bio;
   const displayLocation = user?.location ?? location;
   const displayInterests = user?.interests ?? interests;
 
-  // Build photo URLs: use API photos if available, fall back to single param photo
   const photoUrls = photos.length > 0
     ? photos.map((p) => p.url)
     : [photo];
 
-  const renderPhoto = ({ item: url }: { item: string }) => (
-    <Image
-      source={{ uri: getPhotoUrl(url) }}
-      style={styles.photo}
-      resizeMode="cover"
-    />
-  );
+  const fullScreenUrls = photoUrls.length > 0 ? photoUrls : [];
+
+  const openFullScreen = (url: string) => {
+    setViewIndex(fullScreenUrls.indexOf(url));
+    setFullScreenPhoto(url);
+  };
 
   if (loading) {
     return (
@@ -103,6 +101,7 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backIcon}>‹</Text>
@@ -111,28 +110,44 @@ const ProfileScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.carouselContainer}>
-        <FlatList
-          data={photoUrls}
-          renderItem={renderPhoto}
-          keyExtractor={(url) => url}
-          horizontal
-          pagingEnabled
-          snapToInterval={PHOTO_WIDTH}
-          decelerationRate="fast"
-          showsHorizontalScrollIndicator={false}
-          style={styles.carousel}
+      {/* Main photo — tap to open full-screen viewer */}
+      <TouchableOpacity
+        style={styles.mainPhotoContainer}
+        activeOpacity={0.85}
+        onPress={() => openFullScreen(photoUrls[0])}
+      >
+        <Image
+          source={{ uri: getPhotoUrl(photoUrls[0]) }}
+          style={styles.mainPhoto}
+          resizeMode="cover"
         />
-      </View>
+        {fullScreenUrls.length > 1 && (
+          <View style={styles.photoCountBadge}>
+            <Text style={styles.photoCountText}>📷 {fullScreenUrls.length}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
 
-      {photoUrls.length > 1 && (
-        <View style={styles.photoIndicator}>
-          <Text style={styles.photoIndicatorText}>
-            {photoUrls.length} photos · swipe to see more
-          </Text>
+      {/* Thumbnail strip for extra photos */}
+      {fullScreenUrls.length > 1 && (
+        <View style={styles.thumbRow}>
+          {fullScreenUrls.map((url, i) => (
+            <TouchableOpacity
+              key={url}
+              style={styles.thumb}
+              onPress={() => openFullScreen(url)}
+            >
+              <Image
+                source={{ uri: getPhotoUrl(url) }}
+                style={styles.thumbImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          ))}
         </View>
       )}
 
+      {/* Info section */}
       <View style={styles.info}>
         {displayLocation && (
           <Text style={styles.location}>📍 {displayLocation}</Text>
@@ -150,6 +165,56 @@ const ProfileScreen = () => {
           </View>
         )}
       </View>
+
+      {/* Full-screen photo viewer */}
+      <Modal
+        visible={fullScreenPhoto !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFullScreenPhoto(null)}
+      >
+        <View style={styles.fullScreenContainer}>
+          <TouchableOpacity
+            style={styles.fullScreenClose}
+            onPress={() => setFullScreenPhoto(null)}
+          >
+            <Text style={styles.fullScreenCloseText}>✕</Text>
+          </TouchableOpacity>
+          <FlatList
+            data={fullScreenUrls}
+            keyExtractor={(url) => url}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            snapToAlignment="center"
+            decelerationRate="fast"
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+              setViewIndex(idx);
+            }}
+            renderItem={({ item }) => (
+              <Image
+                source={{ uri: getPhotoUrl(item) }}
+                style={styles.fullScreenImage}
+                resizeMode="contain"
+              />
+            )}
+          />
+          {fullScreenUrls.length > 1 && (
+            <View style={styles.fullScreenIndicator}>
+              {fullScreenUrls.map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.fullScreenDot,
+                    i === viewIndex && styles.fullScreenDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -190,30 +255,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background,
   },
-  carousel: {
-    maxHeight: PHOTO_HEIGHT,
-  },
-  carouselContainer: {
+  // Main photo
+  mainPhotoContainer: {
     alignItems: 'center',
     paddingVertical: 12,
   },
-  carousel: {
-    maxWidth: PHOTO_WIDTH,
-  },
-  photo: {
+  mainPhoto: {
     width: PHOTO_WIDTH,
     height: PHOTO_HEIGHT,
     borderRadius: 16,
   },
-  photoIndicator: {
-    paddingVertical: 8,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
+  photoCountBadge: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  photoIndicatorText: {
+  photoCountText: {
+    color: '#fff',
     fontSize: 12,
-    color: colors.textMuted,
+    fontWeight: '600',
   },
+  // Thumbnail strip
+  thumbRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  thumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  thumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  // Info
   info: {
     padding: 20,
   },
@@ -242,6 +328,51 @@ const styles = StyleSheet.create({
   tagText: {
     color: colors.textSecondary,
     fontSize: 13,
+  },
+  // Full-screen viewer
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  fullScreenClose: {
+    position: 'absolute',
+    top: 48,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullScreenCloseText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  fullScreenImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+  },
+  fullScreenIndicator: {
+    position: 'absolute',
+    bottom: 40,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  fullScreenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+  },
+  fullScreenDotActive: {
+    backgroundColor: '#fff',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 });
 
