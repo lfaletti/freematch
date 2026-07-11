@@ -8,8 +8,6 @@ import {
   ActivityIndicator,
   Dimensions,
   ScrollView,
-  SafeAreaView,
-  StatusBar,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,8 +20,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MAX_PHOTO_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 480);
 const PHOTO_WIDTH = MAX_PHOTO_WIDTH;
 const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
-const VIEWER_PHOTO_WIDTH = Math.min(SCREEN_WIDTH * 0.9, 720);
-const VIEWER_PHOTO_HEIGHT = VIEWER_PHOTO_WIDTH * (5 / 4);
 
 type ProfileParams = {
   Profile: {
@@ -39,6 +35,8 @@ type ProfileParams = {
 
 type ProfileRouteProp = RouteProp<ProfileParams, 'Profile'>;
 type ProfileNavProp = NativeStackNavigationProp<ProfileParams, 'Profile'>;
+
+const HEADER_HEIGHT = 68;
 
 const ProfileScreen = () => {
   const route = useRoute<ProfileRouteProp>();
@@ -101,9 +99,8 @@ const ProfileScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.surface} />
-      {/* Header */}
+    <View style={styles.root}>
+      {/* Header — fixed top */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backIcon}>‹</Text>
@@ -112,109 +109,111 @@ const ProfileScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Scrollable content */}
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-      {/* Main photo with tap zones */}
-      <View style={styles.carouselContainer}>
-        <View style={styles.photoWrapper}>
-          <Image
-            source={{ uri: getPhotoUrl(mainPhoto) }}
-            style={styles.mainPhoto}
-            resizeMode="cover"
-          />
+      {/* Scrollable content below header */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Main photo with tap zones */}
+        <View style={styles.carouselContainer}>
+          <View style={styles.photoWrapper}>
+            <Image
+              source={{ uri: getPhotoUrl(mainPhoto) }}
+              style={styles.mainPhoto}
+              resizeMode="cover"
+            />
+            {photoUrls.length > 1 && (
+              <>
+                {/* Left tap zone → previous */}
+                <TouchableOpacity
+                  style={[styles.tapZone, styles.tapZoneLeft]}
+                  activeOpacity={0.15}
+                  onPress={goPrev}
+                  disabled={mainIndex === 0}
+                />
+                {/* Right tap zone → next */}
+                <TouchableOpacity
+                  style={[styles.tapZone, styles.tapZoneRight]}
+                  activeOpacity={0.15}
+                  onPress={goNext}
+                  disabled={mainIndex === photoUrls.length - 1}
+                />
+                {/* Arrow indicators at edges */}
+                {mainIndex > 0 && (
+                  <Text style={[styles.overlayArrow, styles.overlayArrowLeft]}>‹</Text>
+                )}
+                {mainIndex < photoUrls.length - 1 && (
+                  <Text style={[styles.overlayArrow, styles.overlayArrowRight]}>›</Text>
+                )}
+              </>
+            )}
+            {/* Counter badge */}
+            {photoUrls.length > 1 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{mainIndex + 1} / {photoUrls.length}</Text>
+              </View>
+            )}
+          </View>
+          {/* Page dots */}
           {photoUrls.length > 1 && (
-            <>
-              {/* Left tap zone → previous */}
-              <TouchableOpacity
-                style={[styles.tapZone, styles.tapZoneLeft]}
-                activeOpacity={0.15}
-                onPress={goPrev}
-                disabled={mainIndex === 0}
-              />
-              {/* Right tap zone → next */}
-              <TouchableOpacity
-                style={[styles.tapZone, styles.tapZoneRight]}
-                activeOpacity={0.15}
-                onPress={goNext}
-                disabled={mainIndex === photoUrls.length - 1}
-              />
-              {/* Arrow indicators at edges */}
-              {mainIndex > 0 && (
-                <Text style={[styles.overlayArrow, styles.overlayArrowLeft]}>‹</Text>
-              )}
-              {mainIndex < photoUrls.length - 1 && (
-                <Text style={[styles.overlayArrow, styles.overlayArrowRight]}>›</Text>
-              )}
-            </>
-          )}
-          {/* Counter badge */}
-          {photoUrls.length > 1 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{mainIndex + 1} / {photoUrls.length}</Text>
+            <View style={styles.dotsContainer}>
+              {photoUrls.map((_, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.dot}
+                  onPress={() => setMainIndex(i)}
+                >
+                  <View
+                    style={[
+                      styles.dotInner,
+                      i === mainIndex && styles.dotInnerActive,
+                    ]}
+                  />
+                </TouchableOpacity>
+              ))}
             </View>
           )}
         </View>
-        {/* Page dots */}
-        {photoUrls.length > 1 && (
-          <View style={styles.dotsContainer}>
-            {photoUrls.map((_, i) => (
-              <TouchableOpacity
-                key={i}
-                style={styles.dot}
-                onPress={() => setMainIndex(i)}
-              >
-                <View
-                  style={[
-                    styles.dotInner,
-                    i === mainIndex && styles.dotInnerActive,
-                  ]}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
 
-      {/* Info section */}
-      <View style={styles.info}>
-        {displayLocation && (
-          <Text style={styles.location}>📍 {displayLocation}</Text>
-        )}
-        {displayBio && (
-          <Text style={styles.bio}>{displayBio}</Text>
-        )}
-        {displayInterests && displayInterests.length > 0 && (
-          <View style={styles.interests}>
-            {displayInterests.map((interest) => (
-              <View key={interest} style={styles.tag}>
-                <Text style={styles.tagText}>{interest}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
+        {/* Info section */}
+        <View style={styles.info}>
+          {displayLocation && (
+            <Text style={styles.location}>📍 {displayLocation}</Text>
+          )}
+          {displayBio && (
+            <Text style={styles.bio}>{displayBio}</Text>
+          )}
+          {displayInterests && displayInterests.length > 0 && (
+            <View style={styles.interests}>
+              {displayInterests.map((interest) => (
+                <View key={interest} style={styles.tag}>
+                  <Text style={styles.tagText}>{interest}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  scroll: {
-    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 12,
     paddingHorizontal: 16,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    zIndex: 10,
   },
   backBtn: {
     padding: 4,
@@ -239,16 +238,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background,
   },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingTop: 0,
+    paddingBottom: 40,
+  },
 
   // Carousel
   carouselContainer: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   photoWrapper: {
     position: 'relative',
     alignItems: 'center',
-    paddingVertical: 24, // extend tap area above and below photo
+    paddingHorizontal: 16,
   },
   mainPhoto: {
     width: PHOTO_WIDTH,
@@ -260,8 +267,6 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: '50%',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   tapZoneLeft: {
     left: 0,
@@ -273,9 +278,6 @@ const styles = StyleSheet.create({
     fontSize: 48,
     color: 'rgba(255,255,255,0.7)',
     fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowRadius: 4,
-    textShadowOffset: { width: 0, height: 0 },
   },
   overlayArrowLeft: {
     position: 'absolute',
