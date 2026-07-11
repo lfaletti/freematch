@@ -1,0 +1,110 @@
+# Staging environment — mirrors production with a persistent MinIO
+# (instead of AWS S3) so uploads work without external credentials.
+#
+# Usage:
+#   docker compose -f docker-compose.staging.yml up -d
+#   docker compose -f docker-compose.staging.yml logs -f backend
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: freematch-staging-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-freematch}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-staging_pass_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-freematch_staging}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-freematch} -d ${POSTGRES_DB:-freematch_staging}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: freematch-staging-redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: freematch-staging-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-staging_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-staging_minio_pass_2024}
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    volumes:
+      - minio_staging_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: freematch-staging-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-staging_minio} ${MINIO_ROOT_PASSWORD:-staging_minio_pass_2024} &&
+      mc mb --ignore-existing local/freematch-staging &&
+      mc anonymous set download local/freematch-staging
+      "
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: freematch-staging-backend
+    environment:
+      PORT: ${PORT:-3000}
+      NODE_ENV: staging
+      DATABASE_URL: postgresql://${POSTGRES_USER:-freematch}:${POSTGRES_PASSWORD:-staging_pass_2024}@postgres:5432/${POSTGRES_DB:-freematch_staging}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-staging-jwt-secret-change-me}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8081}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-staging_minio}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-staging_minio_pass_2024}
+      AWS_S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9002}
+      S3_BUCKET: freematch-staging
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_staging_data:
+  minio_staging_data:

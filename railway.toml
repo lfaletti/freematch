@@ -1,20 +1,11 @@
+[project-name]
+freematch-workspace
+
 [build]
-builder = "dockerfile"
-dockerfilePath = "backend/Dockerfile"
-
-[[services]]
-name = "backend"
-startCommand = "npm start --prefix backend"
-
-[[services]]
-name = "postgres"
-image = "postgres:15-alpine"
-
-[[services]]
-name = "redis"
-image = "redis:7-alpine"
+rootDirectory = backend
+command = npm ci && npm run build
 
 [deploy]
-startCommand = "npm start"
-restartPolicyType = "on-failure"
-restartPolicyMaxRetries = 5
+command = npm start
+restartPolicyType = ON_FAILURE
+restartPolicyMaxRetries = 10
