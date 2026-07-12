@@ -2,10 +2,10 @@ import { registerRootComponent } from 'expo';
 
 import App from './App';
 
-// Fix: ensure root element uses flex-direction column on web (RN default is column, CSS default is row)
+// Fix: ensure root element uses flex-direction column on web and fills the viewport
 if (typeof document !== 'undefined') {
   const style = document.createElement('style');
-  style.textContent = '#root { flex-direction: column !important; }';
+  style.textContent = 'html, body, #root { height: 100%; margin: 0; padding: 0; } #root { display: flex !important; flex-direction: column !important; }';
   document.head.appendChild(style);
 }
 
