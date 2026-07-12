@@ -22,8 +22,7 @@ const MAX_PHOTO_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 480);
 const PHOTO_WIDTH = MAX_PHOTO_WIDTH;
 const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
 
-const STATUS_BAR_HEIGHT = Platform.OS === 'web' ? 0 : 24;
-const HEADER_HEIGHT = STATUS_BAR_HEIGHT + 12 + 12;
+const HEADER_TOP_PADDING = Platform.OS === 'web' ? 16 : 48;
 
 type ProfileParams = {
   Profile: {
@@ -100,18 +99,16 @@ const ProfileScreen = () => {
     );
   }
 
-  // If only one photo, no navigation needed
   const hasMultiple = photoUrls.length > 1;
 
   return (
     <View style={styles.root}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: HEADER_TOP_PADDING }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Text style={styles.backIcon}>‹</Text>
           </TouchableOpacity>
@@ -119,10 +116,34 @@ const ProfileScreen = () => {
           <View style={styles.headerSpacer} />
         </View>
 
-        {/* Spacer */}
-        <View style={{ height: HEADER_HEIGHT }} />
+        {/* Photo area */}
+        <View style={styles.carouselContainer}>
+          <Image
+            source={{ uri: getPhotoUrl(mainPhoto) }}
+            style={styles.mainPhoto}
+            resizeMode="cover"
+          />
+          {hasMultiple && (
+            <View style={styles.dotsContainer}>
+              {photoUrls.map((_, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.dot}
+                  onPress={() => setMainIndex(i)}
+                >
+                  <View
+                    style={[
+                      styles.dotInner,
+                      i === mainIndex && styles.dotInnerActive,
+                    ]}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
 
-        {/* Navigation controls — ABOVE the photo (no absolute positioning) */}
+        {/* Nav row */}
         {hasMultiple && (
           <View style={styles.navRow}>
             <TouchableOpacity
@@ -144,34 +165,6 @@ const ProfileScreen = () => {
             </TouchableOpacity>
           </View>
         )}
-
-        {/* Main photo — NO position:relative wrapper */}
-        <View style={styles.carouselContainer}>
-          <Image
-            source={{ uri: getPhotoUrl(mainPhoto) }}
-            style={styles.mainPhoto}
-            resizeMode="cover"
-          />
-          {/* Page dots */}
-          {hasMultiple && (
-            <View style={styles.dotsContainer}>
-              {photoUrls.map((_, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={styles.dot}
-                  onPress={() => setMainIndex(i)}
-                >
-                  <View
-                    style={[
-                      styles.dotInner,
-                      i === mainIndex && styles.dotInnerActive,
-                    ]}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
 
         {/* Info section */}
         <View style={styles.info}>
@@ -204,13 +197,9 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: 40,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: STATUS_BAR_HEIGHT + 12,
     paddingBottom: 12,
     paddingHorizontal: 16,
     backgroundColor: colors.surface,
@@ -240,44 +229,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background,
   },
-
-  // Navigation row — above photo, NO absolute positioning
-  navRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  navBtn: {
-    padding: 8,
-  },
-  navIcon: {
-    fontSize: 32,
-    color: colors.primary,
-    lineHeight: 32,
-  },
-  navIconDisabled: {
-    opacity: 0.3,
-  },
-  badgeInline: {
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  // Carousel
   carouselContainer: {
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingTop: 16,
     paddingBottom: 12,
   },
   mainPhoto: {
@@ -305,8 +260,36 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
   },
-
-  // Info
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  navBtn: {
+    padding: 8,
+  },
+  navIcon: {
+    fontSize: 32,
+    color: colors.primary,
+    lineHeight: 32,
+  },
+  navIconDisabled: {
+    opacity: 0.3,
+  },
+  badgeInline: {
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   info: {
     padding: 20,
   },
