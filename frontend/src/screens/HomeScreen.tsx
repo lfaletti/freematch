@@ -20,7 +20,11 @@ import { navigate } from '../navigation/navigationRef';
 import { resetLeftSwipes } from '../services/userService';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CARD_HEIGHT = Math.min(SCREEN_HEIGHT * 0.68, 580);
+const HEADER_H = 80;
+const BUTTONS_H = 120;
+const CARD_AREA_H = Platform.OS === 'web'
+  ? SCREEN_HEIGHT - HEADER_H - BUTTONS_H
+  : undefined;
 
 const HomeScreen = () => {
   const dispatch = useAppDispatch();
@@ -236,24 +240,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    ...(Platform.OS === 'web' ? { height: SCREEN_HEIGHT } : {}),
-  },
-  cardArea: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    zIndex: 1,
-    minHeight: CARD_HEIGHT,
-  },
-  buttons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 40,
-    paddingBottom: 36,
-    paddingTop: Platform.OS === 'web' ? 16 : 12,
-    zIndex: 3,
-    flexShrink: 0,
   },
   header: {
     flexDirection: 'row',
@@ -263,7 +249,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: colors.background,
     zIndex: 2,
-    flexShrink: 0,
+    ...Platform.select({
+      web: { position: 'relative' as const },
+    }),
   },
   headerCenter: {
     flex: 1,
@@ -271,7 +259,6 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     width: 38,
-    position: 'relative',
   },
   menuBtn: {
     padding: 8,
@@ -314,6 +301,28 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 38,
+  },
+  cardArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    zIndex: 1,
+    minHeight: 0,
+    ...Platform.select({
+      web: { height: CARD_AREA_H },
+    }),
+  },
+  buttons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 40,
+    paddingBottom: 36,
+    paddingTop: 12,
+    zIndex: 3,
+    ...Platform.select({
+      web: { height: BUTTONS_H },
+    }),
   },
   logo: {
     fontSize: 28,
@@ -458,4 +467,3 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
-
