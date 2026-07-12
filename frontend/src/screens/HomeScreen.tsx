@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  Platform,
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { loadUsers, advanceCard, recordSwipe } from '../redux/slices/usersSlice';
@@ -18,7 +19,7 @@ import { storageService } from '../services/storageService';
 import { navigate } from '../navigation/navigationRef';
 import { resetLeftSwipes } from '../services/userService';
 
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_HEIGHT = Math.min(SCREEN_HEIGHT * 0.68, 580);
 
 const HomeScreen = () => {
@@ -235,6 +236,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    ...(Platform.OS === 'web' ? { minHeight: '100vh', maxHeight: '100vh' } : {}),
   },
   cardArea: {
     flex: 1,
@@ -243,17 +245,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     zIndex: 1,
     minHeight: 0,
-    // no maxHeight — let flex: 1 fill remaining space
+    ...(Platform.OS === 'web' ? { maxHeight: SCREEN_HEIGHT - 260 } : {}),
   },
   buttons: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 40,
     paddingBottom: 36,
-    paddingTop: 12,
+    paddingTop: Platform.OS === 'web' ? 16 : 12,
     zIndex: 3,
     flexShrink: 0,
-    marginTop: 'auto',
   },
   header: {
     flexDirection: 'row',
@@ -263,6 +264,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: colors.background,
     zIndex: 2,
+    flexShrink: 0,
   },
   headerCenter: {
     flex: 1,
@@ -457,8 +459,3 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
-
-
-
-
-
