@@ -11,6 +11,8 @@ export interface AuthResponse {
   email: string;
   token?: string;
   refreshToken?: string;
+  gender?: string;
+  seekingGender?: string[];
 }
 
 export const register = async (formData: FormData): Promise<AuthResponse> => {
@@ -24,7 +26,9 @@ export const registerWithPassword = async (
   password: string,
   bornDate: string,
   bio?: string,
-  phoneNumber?: string
+  phoneNumber?: string,
+  gender?: string,
+  seekingGender?: string[]
 ): Promise<AuthResponse> => {
   const res = await api.post('/api/auth/register', {
     name,
@@ -33,6 +37,8 @@ export const registerWithPassword = async (
     born_date: bornDate,
     bio,
     phone_number: phoneNumber,
+    gender,
+    seekingGender,
   });
   return res.data;
 };
@@ -54,6 +60,8 @@ export const registerWithPhoto = async (
     bornDate: string;
     bio?: string;
     phoneNumber?: string;
+    gender?: string;
+    seekingGender?: string[];
   },
   photo: RegisterPhotoFile,
 ): Promise<AuthResponse> => {
@@ -64,6 +72,10 @@ export const registerWithPhoto = async (
   formData.append('born_date', fields.bornDate);
   if (fields.bio) formData.append('bio', fields.bio);
   if (fields.phoneNumber) formData.append('phone_number', fields.phoneNumber);
+  if (fields.gender) formData.append('gender', fields.gender);
+  if (fields.seekingGender && fields.seekingGender.length > 0) {
+    formData.append('seekingGender', JSON.stringify(fields.seekingGender));
+  }
 
   if (Platform.OS === 'web') {
     // On web FormData needs real bytes — the RN { uri, type, name } object would

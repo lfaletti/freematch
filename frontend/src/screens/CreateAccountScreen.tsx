@@ -34,6 +34,16 @@ interface PickedImage {
 
 const MAX_PHOTOS = 6;
 
+const GENDER_OPTIONS = ['man', 'woman', 'other'] as const;
+
+type GenderOption = typeof GENDER_OPTIONS[number];
+
+const GENDER_LABELS: Record<GenderOption, string> = {
+  man: 'Man',
+  woman: 'Woman',
+  other: 'Other',
+};
+
 export default function CreateAccountScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const [name, setName] = useState('');
@@ -42,6 +52,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [gender, setGender] = useState<GenderOption | null>(null);
+  const [seekingGenders, setSeekingGenders] = useState<GenderOption[]>([]);
   const [photos, setPhotos] = useState<PickedImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +96,12 @@ export default function CreateAccountScreen({ navigation }: Props) {
     setPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const toggleSeeking = (option: GenderOption) => {
+    setSeekingGenders((prev) =>
+      prev.includes(option) ? prev.filter((g) => g !== option) : [...prev, option],
+    );
+  };
+
   const validate = (): string | null => {
     if (photos.length === 0) return 'Please add at least one photo.';
     if (!name.trim()) return 'Name is required.';
@@ -103,6 +121,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
     const age = Math.floor((Date.now() - parsed.getTime()) / (365.25 * 24 * 3600 * 1000));
     if (age < 18) return 'You must be at least 18 years old.';
     if (age > 120) return 'Please enter a valid date of birth.';
+    if (!gender) return 'Please select your gender.';
+    if (seekingGenders.length === 0) return 'Please select at least one gender you\'re interested in.';
     return null;
   };
 
@@ -125,6 +145,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
           password: password.trim(),
           bornDate: bornDate.trim(),
           bio: bio.trim() || undefined,
+          gender: gender ?? undefined,
+          seekingGender: seekingGenders.length > 0 ? seekingGenders : undefined,
         },
         { uri: profile.uri, type: profile.mimeType, name: profile.fileName },
       );
@@ -148,6 +170,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
         token: user.token ?? '',
         refreshToken: user.refreshToken ?? '',
         slot: '',
+        gender: user.gender,
+        seekingGender: user.seekingGender,
       }));
 
       // Extra photos go to the gallery. The request interceptor reads the token
@@ -316,6 +340,58 @@ export default function CreateAccountScreen({ navigation }: Props) {
           returnKeyType="next"
           textAlignVertical="top"
         />
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>I am <Text style={styles.required}>*</Text></Text>
+        <View style={styles.chipRow}>
+          {GENDER_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option}
+              style={[
+                styles.chip,
+                gender === option && styles.chipSelected,
+              ]}
+              onPress={() => setGender(option)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  gender === option && styles.chipTextSelected,
+                ]}
+              >
+                {GENDER_LABELS[option]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Interested in <Text style={styles.required}>*</Text></Text>
+        <View style={styles.chipRow}>
+          {GENDER_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option}
+              style={[
+                styles.chip,
+                seekingGenders.includes(option) && styles.chipSelected,
+              ]}
+              onPress={() => toggleSeeking(option)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  seekingGenders.includes(option) && styles.chipTextSelected,
+                ]}
+              >
+                {GENDER_LABELS[option]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {error && <Text style={styles.error}>{error}</Text>}
@@ -514,5 +590,30 @@ const styles = StyleSheet.create({
   switchLinkHighlight: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  chipTextSelected: {
+    color: colors.white,
   },
 });

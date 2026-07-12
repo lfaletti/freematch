@@ -21,6 +21,15 @@ type Props = {
   navigation: NativeStackNavigationProp<any>;
 };
 
+const GENDER_OPTIONS = ['man', 'woman', 'other'] as const;
+type GenderOption = typeof GENDER_OPTIONS[number];
+
+const GENDER_LABELS: Record<GenderOption, string> = {
+  man: 'Hombre',
+  woman: 'Mujer',
+  other: 'Otro',
+};
+
 export default function EditProfileScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const session = useAppSelector((s) => s.session);
@@ -30,6 +39,12 @@ export default function EditProfileScreen({ navigation }: Props) {
   const [location, setLocation] = useState(session.location ?? '');
   const [interestsText, setInterestsText] = useState(
     (session.interests ?? []).join(', '),
+  );
+  const [gender, setGender] = useState<GenderOption | null>(
+    (session.gender as GenderOption | null) ?? null,
+  );
+  const [seekingGenders, setSeekingGenders] = useState<GenderOption[]>(
+    (session.seekingGender as GenderOption[]) ?? [],
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +69,8 @@ export default function EditProfileScreen({ navigation }: Props) {
         bio: bio.trim() || undefined,
         location: location.trim() || undefined,
         interests: interests.length > 0 ? interests : undefined,
+        gender: gender ?? undefined,
+        seekingGender: seekingGenders.length > 0 ? seekingGenders : undefined,
       });
 
       // Update Redux session so the UI reflects changes immediately
@@ -71,6 +88,8 @@ export default function EditProfileScreen({ navigation }: Props) {
           slot: session.slot,
           location: location.trim(),
           interests,
+          gender: updated.gender ?? gender,
+          seekingGender: updated.seekingGender ?? seekingGenders,
         }),
       );
 
@@ -82,6 +101,12 @@ export default function EditProfileScreen({ navigation }: Props) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleSeeking = (option: GenderOption) => {
+    setSeekingGenders((prev) =>
+      prev.includes(option) ? prev.filter((g) => g !== option) : [...prev, option],
+    );
   };
 
   return (

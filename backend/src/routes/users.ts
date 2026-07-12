@@ -44,7 +44,17 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.patch('/me', async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
-    const { name, bio, photo_url, interests, location } = req.body;
+    const { name, bio, photo_url, interests, location, gender, seekingGender } = req.body;
+
+    const validGenders = ['man', 'woman', 'other'];
+    if (gender !== undefined && !validGenders.includes(gender)) {
+      return res.status(400).json({ error: 'gender must be man, woman, or other' });
+    }
+    if (seekingGender !== undefined) {
+      if (!Array.isArray(seekingGender) || !seekingGender.every((g: string) => validGenders.includes(g))) {
+        return res.status(400).json({ error: 'seekingGender must be an array of: man, woman, other' });
+      }
+    }
 
     if (name !== undefined && (!name || typeof name !== 'string' || name.trim().length === 0)) {
       return res.status(400).json({ error: 'Name cannot be empty' });
@@ -56,6 +66,8 @@ router.patch('/me', async (req: Request, res: Response) => {
       photo_url,
       interests,
       location: location?.trim(),
+      gender,
+      seekingGender,
     });
 
     if (!updated) return res.status(400).json({ error: 'No fields to update' });

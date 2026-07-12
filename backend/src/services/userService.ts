@@ -16,6 +16,14 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
        AND u.id NOT IN (
          SELECT swiped_id FROM swipes WHERE swiper_id = $1
        )
+       AND (
+         u.gender = ANY(COALESCE(
+           (SELECT seeking_gender FROM users WHERE id = $1),
+           '{}'::text[]
+         ))
+         OR
+         (SELECT seeking_gender FROM users WHERE id = $1) = '{}'::text[]
+       )
      ORDER BY RANDOM()
      LIMIT $2 OFFSET $3`,
     [sessionUserId, limit, offset]
@@ -40,6 +48,8 @@ export async function updateUserProfile(userId: string, updates: {
   photo_url?: string | null;
   interests?: string[];
   location?: string;
+  gender?: 'man' | 'woman' | 'other';
+  seekingGender?: ('man' | 'woman' | 'other')[];
 }) {
   const fields: string[] = [];
   const values: any[] = [];
@@ -68,6 +78,16 @@ export async function updateUserProfile(userId: string, updates: {
   if (updates.location !== undefined) {
     fields.push(`location = $${idx}`);
     values.push(updates.location);
+    idx++;
+  }
+  if (updates.gender !== undefined) {
+    fields.push(`gender = $${idx}`);
+    values.push(updates.gender);
+    idx++;
+  }
+  if (updates.seekingGender !== undefined) {
+    fields.push(`seeking_gender = $${idx}`);
+    values.push(updates.seekingGender);
     idx++;
   }
 

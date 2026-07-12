@@ -12,6 +12,8 @@ const JWT_SECRET_EFFECTIVE = JWT_SECRET || 'dev-secret-do-not-use-in-production'
 const JWT_EXPIRY = '24h';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
+export type GenderValue = 'man' | 'woman' | 'other';
+
 export interface RegisterInput {
   name: string;
   email: string;
@@ -21,6 +23,8 @@ export interface RegisterInput {
   phone_number?: string;
   photo_url?: string;
   id?: string; // Pre-generated UUID for S3 upload; falls back to internal generation.
+  gender?: GenderValue;
+  seekingGender?: GenderValue[];
 }
 
 export interface LoginInput {
@@ -42,6 +46,8 @@ export interface AuthResponse {
   phone_number?: string;
   photo_url?: string;
   emailVerified?: boolean;
+  gender?: string;
+  seekingGender?: string[];
   token: string;
   refreshToken: string;
 }
@@ -86,9 +92,10 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
 
   const result = await query(
     `INSERT INTO users (
-      id, name, email, password_hash, bio, born_date, phone_number, photo_url, is_mock
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)
-    RETURNING id, name, email, bio, born_date, phone_number, photo_url`,
+      id, name, email, password_hash, bio, born_date, phone_number, photo_url, is_mock,
+      gender, seeking_gender
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10)
+    RETURNING id, name, email, bio, born_date, phone_number, photo_url, gender, seeking_gender`,
     [
       id,
       input.name,
@@ -98,6 +105,8 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
       input.born_date,
       input.phone_number ?? null,
       input.photo_url ?? null,
+      input.gender ?? null,
+      input.seekingGender ?? [],
     ]
   );
 
@@ -114,6 +123,8 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     phone_number: user.phone_number,
     photo_url: user.photo_url,
     emailVerified: user.email_verified ?? false,
+    gender: user.gender,
+    seekingGender: user.seeking_gender,
     token,
     refreshToken,
   };
@@ -121,7 +132,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
 
 export async function loginUser(input: LoginInput): Promise<AuthResponse | null> {
   const result = await query(
-    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified
+    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, gender, seeking_gender
      FROM users WHERE email = $1 AND is_mock = false`,
     [input.email]
   );
@@ -151,6 +162,8 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse | null>
     phone_number: user.phone_number,
     photo_url: user.photo_url,
     emailVerified: user.email_verified ?? false,
+    gender: user.gender,
+    seekingGender: user.seeking_gender,
     token,
     refreshToken,
   };

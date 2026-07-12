@@ -14,6 +14,8 @@ interface SessionState {
   isAuthenticated: boolean;
   location?: string;
   interests?: string[];
+  gender?: string;
+  seekingGender?: string[];
 }
 
 const initialState: SessionState = {
