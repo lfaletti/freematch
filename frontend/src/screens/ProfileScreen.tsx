@@ -22,6 +22,9 @@ const MAX_PHOTO_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 480);
 const PHOTO_WIDTH = MAX_PHOTO_WIDTH;
 const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
 
+const STATUS_BAR_HEIGHT = 24;
+const HEADER_HEIGHT = STATUS_BAR_HEIGHT + 12 + 12; // paddingTop + paddingBottom = 48px
+
 type ProfileParams = {
   Profile: {
     partnerId: string;
@@ -36,10 +39,6 @@ type ProfileParams = {
 
 type ProfileRouteProp = RouteProp<ProfileParams, 'Profile'>;
 type ProfileNavProp = NativeStackNavigationProp<ProfileParams, 'Profile'>;
-
-const STATUS_BAR_HEIGHT = 24;
-const HEADER_PT = STATUS_BAR_HEIGHT + 12;
-const HEADER_PB = 12;
 
 const ProfileScreen = () => {
   const route = useRoute<ProfileRouteProp>();
@@ -102,38 +101,23 @@ const ProfileScreen = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Entire content in one ScrollView — header scrolls with content but uses sticky on web */}
+    <View style={styles.root}>
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          minHeight: '100%',
-          paddingBottom: 40,
-        }}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        // On web, use CSS sticky header via scrollComponent override
-        {...(Platform.OS === 'web' ? {
-          renderHeader: () => null,
-          style: [{ flex: 1 }, { position: 'relative' } as any],
-        } : {})}
       >
         {/* Header */}
-        <View
-          style={styles.header}
-          {...(Platform.OS === 'web' ? {
-            style: [{
-              position: 'sticky' as const,
-              top: 0,
-              zIndex: 1000,
-            }] as any,
-          } : {})}
-        >
+        <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Text style={styles.backIcon}>‹</Text>
           </TouchableOpacity>
           <Text style={styles.headerName}>{displayName}, {displayAge}</Text>
           <View style={styles.headerSpacer} />
         </View>
+
+        {/* Spacer to prevent photo from overlapping header on web */}
+        <View style={{ height: HEADER_HEIGHT }} />
 
         {/* Main photo with tap zones */}
         <View style={styles.carouselContainer}>
@@ -145,21 +129,18 @@ const ProfileScreen = () => {
             />
             {photoUrls.length > 1 && (
               <>
-                {/* Left tap zone → previous */}
                 <TouchableOpacity
                   style={[styles.tapZone, styles.tapZoneLeft]}
                   activeOpacity={0.15}
                   onPress={goPrev}
                   disabled={mainIndex === 0}
                 />
-                {/* Right tap zone → next */}
                 <TouchableOpacity
                   style={[styles.tapZone, styles.tapZoneRight]}
                   activeOpacity={0.15}
                   onPress={goNext}
                   disabled={mainIndex === photoUrls.length - 1}
                 />
-                {/* Arrow indicators at edges */}
                 {mainIndex > 0 && (
                   <Text style={[styles.overlayArrow, styles.overlayArrowLeft]}>‹</Text>
                 )}
@@ -168,14 +149,12 @@ const ProfileScreen = () => {
                 )}
               </>
             )}
-            {/* Counter badge */}
             {photoUrls.length > 1 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{mainIndex + 1} / {photoUrls.length}</Text>
               </View>
             )}
           </View>
-          {/* Page dots */}
           {photoUrls.length > 1 && (
             <View style={styles.dotsContainer}>
               {photoUrls.map((_, i) => (
@@ -220,16 +199,25 @@ const ProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: HEADER_PT,
-    paddingBottom: HEADER_PB,
+    paddingTop: STATUS_BAR_HEIGHT + 12,
+    paddingBottom: 12,
     paddingHorizontal: 16,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    zIndex: 999,
   },
   backBtn: {
     padding: 4,
@@ -254,13 +242,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background,
   },
-
-  // Carousel
   carouselContainer: {
     alignItems: 'center',
+    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 12,
-    paddingHorizontal: 16,
   },
   photoWrapper: {
     position: 'relative',
@@ -334,8 +320,6 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
   },
-
-  // Info
   info: {
     padding: 20,
   },
