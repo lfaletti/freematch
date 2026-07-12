@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Dimensions,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -39,7 +40,6 @@ type ProfileNavProp = NativeStackNavigationProp<ProfileParams, 'Profile'>;
 const STATUS_BAR_HEIGHT = 24;
 const HEADER_PT = STATUS_BAR_HEIGHT + 12;
 const HEADER_PB = 12;
-const HEADER_H = HEADER_PT + HEADER_PB; // 48px
 
 const ProfileScreen = () => {
   const route = useRoute<ProfileRouteProp>();
@@ -102,112 +102,124 @@ const ProfileScreen = () => {
   }
 
   return (
-    <View style={styles.root}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerName}>{displayName}, {displayAge}</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      {/* Content area below header — uses marginTop instead of flex */}
-      <View style={styles.contentArea}>
-        <ScrollView
-          style={styles.scroll}
-          showsVerticalScrollIndicator={false}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Entire content in one ScrollView — header scrolls with content but uses sticky on web */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          minHeight: '100%',
+          paddingBottom: 40,
+        }}
+        showsVerticalScrollIndicator={false}
+        // On web, use CSS sticky header via scrollComponent override
+        {...(Platform.OS === 'web' ? {
+          renderHeader: () => null,
+          style: [{ flex: 1 }, { position: 'relative' } as any],
+        } : {})}
+      >
+        {/* Header */}
+        <View
+          style={styles.header}
+          {...(Platform.OS === 'web' ? {
+            style: [{
+              position: 'sticky' as const,
+              top: 0,
+              zIndex: 1000,
+            }] as any,
+          } : {})}
         >
-          {/* Main photo with tap zones */}
-          <View style={styles.carouselContainer}>
-            <View style={styles.photoWrapper}>
-              <Image
-                source={{ uri: getPhotoUrl(mainPhoto) }}
-                style={styles.mainPhoto}
-                resizeMode="cover"
-              />
-              {photoUrls.length > 1 && (
-                <>
-                  {/* Left tap zone → previous */}
-                  <TouchableOpacity
-                    style={[styles.tapZone, styles.tapZoneLeft]}
-                    activeOpacity={0.15}
-                    onPress={goPrev}
-                    disabled={mainIndex === 0}
-                  />
-                  {/* Right tap zone → next */}
-                  <TouchableOpacity
-                    style={[styles.tapZone, styles.tapZoneRight]}
-                    activeOpacity={0.15}
-                    onPress={goNext}
-                    disabled={mainIndex === photoUrls.length - 1}
-                  />
-                  {/* Arrow indicators at edges */}
-                  {mainIndex > 0 && (
-                    <Text style={[styles.overlayArrow, styles.overlayArrowLeft]}>‹</Text>
-                  )}
-                  {mainIndex < photoUrls.length - 1 && (
-                    <Text style={[styles.overlayArrow, styles.overlayArrowRight]}>›</Text>
-                  )}
-                </>
-              )}
-              {/* Counter badge */}
-              {photoUrls.length > 1 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{mainIndex + 1} / {photoUrls.length}</Text>
-                </View>
-              )}
-            </View>
-            {/* Page dots */}
-            {photoUrls.length > 1 && (
-              <View style={styles.dotsContainer}>
-                {photoUrls.map((_, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={styles.dot}
-                    onPress={() => setMainIndex(i)}
-                  >
-                    <View
-                      style={[
-                        styles.dotInner,
-                        i === mainIndex && styles.dotInnerActive,
-                      ]}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Text style={styles.backIcon}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerName}>{displayName}, {displayAge}</Text>
+          <View style={styles.headerSpacer} />
+        </View>
 
-          {/* Info section */}
-          <View style={styles.info}>
-            {displayLocation && (
-              <Text style={styles.location}>📍 {displayLocation}</Text>
+        {/* Main photo with tap zones */}
+        <View style={styles.carouselContainer}>
+          <View style={styles.photoWrapper}>
+            <Image
+              source={{ uri: getPhotoUrl(mainPhoto) }}
+              style={styles.mainPhoto}
+              resizeMode="cover"
+            />
+            {photoUrls.length > 1 && (
+              <>
+                {/* Left tap zone → previous */}
+                <TouchableOpacity
+                  style={[styles.tapZone, styles.tapZoneLeft]}
+                  activeOpacity={0.15}
+                  onPress={goPrev}
+                  disabled={mainIndex === 0}
+                />
+                {/* Right tap zone → next */}
+                <TouchableOpacity
+                  style={[styles.tapZone, styles.tapZoneRight]}
+                  activeOpacity={0.15}
+                  onPress={goNext}
+                  disabled={mainIndex === photoUrls.length - 1}
+                />
+                {/* Arrow indicators at edges */}
+                {mainIndex > 0 && (
+                  <Text style={[styles.overlayArrow, styles.overlayArrowLeft]}>‹</Text>
+                )}
+                {mainIndex < photoUrls.length - 1 && (
+                  <Text style={[styles.overlayArrow, styles.overlayArrowRight]}>›</Text>
+                )}
+              </>
             )}
-            {displayBio && (
-              <Text style={styles.bio}>{displayBio}</Text>
-            )}
-            {displayInterests && displayInterests.length > 0 && (
-              <View style={styles.interests}>
-                {displayInterests.map((interest) => (
-                  <View key={interest} style={styles.tag}>
-                    <Text style={styles.tagText}>{interest}</Text>
-                  </View>
-                ))}
+            {/* Counter badge */}
+            {photoUrls.length > 1 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{mainIndex + 1} / {photoUrls.length}</Text>
               </View>
             )}
           </View>
-        </ScrollView>
-      </View>
+          {/* Page dots */}
+          {photoUrls.length > 1 && (
+            <View style={styles.dotsContainer}>
+              {photoUrls.map((_, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.dot}
+                  onPress={() => setMainIndex(i)}
+                >
+                  <View
+                    style={[
+                      styles.dotInner,
+                      i === mainIndex && styles.dotInnerActive,
+                    ]}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Info section */}
+        <View style={styles.info}>
+          {displayLocation && (
+            <Text style={styles.location}>📍 {displayLocation}</Text>
+          )}
+          {displayBio && (
+            <Text style={styles.bio}>{displayBio}</Text>
+          )}
+          {displayInterests && displayInterests.length > 0 && (
+            <View style={styles.interests}>
+              {displayInterests.map((interest) => (
+                <View key={interest} style={styles.tag}>
+                  <Text style={styles.tagText}>{interest}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -217,6 +229,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    zIndex: 999,
   },
   backBtn: {
     padding: 4,
@@ -235,18 +248,11 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginLeft: 12,
   },
-  contentArea: {
-    marginTop: HEADER_H,
-    flex: 1,
-  },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
-  },
-  scroll: {
-    flex: 1,
   },
 
   // Carousel
