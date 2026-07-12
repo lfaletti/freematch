@@ -123,6 +123,9 @@ export async function runMigrations() {
   const sql007 = fs.readFileSync(path.join(__dirname, 'migrations/007_email_verification.sql'), 'utf8');
   await query(sql007);
 
+  const sql008 = fs.readFileSync(path.join(__dirname, 'migrations/008_gender_fields.sql'), 'utf8');
+  await query(sql008);
+
   console.log('Migrations ran successfully');
 }
 
