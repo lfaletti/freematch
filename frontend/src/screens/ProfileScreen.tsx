@@ -23,7 +23,7 @@ const PHOTO_WIDTH = MAX_PHOTO_WIDTH;
 const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
 
 const STATUS_BAR_HEIGHT = Platform.OS === 'web' ? 0 : 24;
-const HEADER_HEIGHT = STATUS_BAR_HEIGHT + 12 + 12; // paddingTop + paddingBottom
+const HEADER_HEIGHT = STATUS_BAR_HEIGHT + 12 + 12;
 
 type ProfileParams = {
   Profile: {
@@ -100,6 +100,9 @@ const ProfileScreen = () => {
     );
   }
 
+  // If only one photo, no navigation needed
+  const hasMultiple = photoUrls.length > 1;
+
   return (
     <View style={styles.root}>
       <ScrollView
@@ -116,46 +119,41 @@ const ProfileScreen = () => {
           <View style={styles.headerSpacer} />
         </View>
 
-        {/* Spacer to prevent photo from overlapping header on web */}
+        {/* Spacer */}
         <View style={{ height: HEADER_HEIGHT }} />
 
-        {/* Main photo with tap zones */}
-        <View style={styles.carouselContainer}>
-          <View style={styles.photoWrapper}>
-            <Image
-              source={{ uri: getPhotoUrl(mainPhoto) }}
-              style={styles.mainPhoto}
-              resizeMode="cover"
-            />
-            {photoUrls.length > 1 && (
-              <>
-                <TouchableOpacity
-                  style={[styles.tapZone, styles.tapZoneLeft]}
-                  activeOpacity={0.15}
-                  onPress={goPrev}
-                  disabled={mainIndex === 0}
-                />
-                <TouchableOpacity
-                  style={[styles.tapZone, styles.tapZoneRight]}
-                  activeOpacity={0.15}
-                  onPress={goNext}
-                  disabled={mainIndex === photoUrls.length - 1}
-                />
-                {mainIndex > 0 && (
-                  <Text style={[styles.overlayArrow, styles.overlayArrowLeft]}>‹</Text>
-                )}
-                {mainIndex < photoUrls.length - 1 && (
-                  <Text style={[styles.overlayArrow, styles.overlayArrowRight]}>›</Text>
-                )}
-              </>
-            )}
-            {photoUrls.length > 1 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{mainIndex + 1} / {photoUrls.length}</Text>
-              </View>
-            )}
+        {/* Navigation controls — ABOVE the photo (no absolute positioning) */}
+        {hasMultiple && (
+          <View style={styles.navRow}>
+            <TouchableOpacity
+              style={styles.navBtn}
+              onPress={goPrev}
+              disabled={mainIndex === 0}
+            >
+              <Text style={[styles.navIcon, mainIndex === 0 && styles.navIconDisabled]}>‹</Text>
+            </TouchableOpacity>
+            <View style={styles.badgeInline}>
+              <Text style={styles.badgeText}>{mainIndex + 1} / {photoUrls.length}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.navBtn}
+              onPress={goNext}
+              disabled={mainIndex === photoUrls.length - 1}
+            >
+              <Text style={[styles.navIcon, mainIndex === photoUrls.length - 1 && styles.navIconDisabled]}>›</Text>
+            </TouchableOpacity>
           </View>
-          {photoUrls.length > 1 && (
+        )}
+
+        {/* Main photo — NO position:relative wrapper */}
+        <View style={styles.carouselContainer}>
+          <Image
+            source={{ uri: getPhotoUrl(mainPhoto) }}
+            style={styles.mainPhoto}
+            resizeMode="cover"
+          />
+          {/* Page dots */}
+          {hasMultiple && (
             <View style={styles.dotsContainer}>
               {photoUrls.map((_, i) => (
                 <TouchableOpacity
@@ -218,7 +216,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    marginBottom: 2,
   },
   backBtn: {
     padding: 4,
@@ -243,53 +240,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background,
   },
-  carouselContainer: {
+
+  // Navigation row — above photo, NO absolute positioning
+  navRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  photoWrapper: {
-    alignItems: 'center',
+  navBtn: {
+    padding: 8,
   },
-  mainPhoto: {
-    width: PHOTO_WIDTH,
-    height: PHOTO_HEIGHT,
-    borderRadius: 16,
+  navIcon: {
+    fontSize: 32,
+    color: colors.primary,
+    lineHeight: 32,
   },
-  tapZone: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: '50%',
+  navIconDisabled: {
+    opacity: 0.3,
   },
-  tapZoneLeft: {
-    left: 0,
-  },
-  tapZoneRight: {
-    right: 0,
-  },
-  overlayArrow: {
-    fontSize: 48,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '700',
-  },
-  overlayArrowLeft: {
-    position: 'absolute',
-    left: 16,
-    top: '50%',
-    transform: [{ translateY: -24 }],
-  },
-  overlayArrowRight: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
-    transform: [{ translateY: -24 }],
-  },
-  badge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
+  badgeInline: {
     backgroundColor: 'rgba(0,0,0,0.55)',
     borderRadius: 12,
     paddingHorizontal: 10,
@@ -299,6 +271,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
+  },
+
+  // Carousel
+  carouselContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 12,
+  },
+  mainPhoto: {
+    width: PHOTO_WIDTH,
+    height: PHOTO_HEIGHT,
+    borderRadius: 16,
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -320,6 +305,8 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
   },
+
+  // Info
   info: {
     padding: 20,
   },
