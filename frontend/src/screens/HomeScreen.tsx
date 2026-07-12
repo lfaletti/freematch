@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    ...(Platform.OS === 'web' ? { minHeight: '100vh', maxHeight: '100vh' } : {}),
+    ...(Platform.OS === 'web' ? { height: SCREEN_HEIGHT } : {}),
   },
   cardArea: {
     flex: 1,
@@ -244,8 +244,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     zIndex: 1,
-    minHeight: 0,
-    ...(Platform.OS === 'web' ? { maxHeight: SCREEN_HEIGHT - 260 } : {}),
+    minHeight: CARD_HEIGHT,
   },
   buttons: {
     flexDirection: 'row',
@@ -459,3 +458,4 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
+
