@@ -22,8 +22,8 @@ const MAX_PHOTO_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 480);
 const PHOTO_WIDTH = MAX_PHOTO_WIDTH;
 const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
 
-const STATUS_BAR_HEIGHT = 24;
-const HEADER_HEIGHT = STATUS_BAR_HEIGHT + 12 + 12; // paddingTop + paddingBottom = 48px
+const STATUS_BAR_HEIGHT = Platform.OS === 'web' ? 0 : 24;
+const HEADER_HEIGHT = STATUS_BAR_HEIGHT + 12 + 12; // paddingTop + paddingBottom
 
 type ProfileParams = {
   Profile: {
@@ -218,6 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    marginBottom: 2,
   },
   backBtn: {
     padding: 4,
@@ -249,7 +250,6 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   photoWrapper: {
-    position: 'relative',
     alignItems: 'center',
   },
   mainPhoto: {
