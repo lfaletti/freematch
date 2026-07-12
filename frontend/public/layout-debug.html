@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FreeMatch Layout Debug</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    #root {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #faf5f1;
+    }
+
+    .header {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 56px 16px 8px;
+      background: #faf5f1;
+      z-index: 2;
+      flex-shrink: 0;
+    }
+
+    .header-center {
+      flex: 1;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 900;
+      color: #8B5CF6;
+      letter-spacing: 1px;
+    }
+
+    .tagline {
+      font-size: 13px;
+      color: #8b8b8b;
+      margin-top: 2px;
+    }
+
+    .menu-btn {
+      font-size: 24px;
+      color: #8b8b8b;
+      cursor: pointer;
+      width: 38px;
+      padding: 8px;
+    }
+
+    .header-spacer {
+      width: 38px;
+    }
+
+    /* Card area with explicit height (current approach) */
+    .card-area {
+      height: calc(100vh - 144px - 140px);
+      max-height: calc(100vh - 144px - 140px);
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Simulated card with position: absolute */
+    .card {
+      position: absolute;
+      width: 90%;
+      max-width: 380px;
+      height: 580px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #666;
+    }
+
+    .card-back {
+      transform: scale(0.95) translateY(8px);
+      opacity: 0.5;
+      z-index: 1;
+    }
+
+    .card-front {
+      z-index: 2;
+    }
+
+    /* Buttons container */
+    .buttons {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 40px;
+      padding: 12px 0 36px;
+      flex-shrink: 0;
+      z-index: 3;
+    }
+
+    .btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .btn-nope {
+      background: #faf5f1;
+      border: 2px solid #ff4458;
+      color: #ff4458;
+    }
+
+    .btn-like {
+      background: #8B5CF6;
+    }
+
+    /* Controls panel */
+    .controls {
+      position: fixed;
+      top: 0;
+      right: 0;
+      background: white;
+      padding: 12px;
+      border-radius: 0 0 0 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 100;
+      font-size: 13px;
+    }
+
+    .controls label {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .controls input, .controls select {
+      margin-top: 4px;
+      display: block;
+      width: 180px;
+    }
+
+    .status {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-family: monospace;
+      z-index: 100;
+    }
+
+    .viewport-line {
+      position: fixed;
+      left: 0;
+      right: 0;
+      border-top: 1px dashed rgba(255, 0, 0, 0.3);
+      z-index: 99;
+      pointer-events: none;
+    }
+
+    /* Variant: flex: 1 on card area */
+    .card-area-flex {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      min-height: 0;
+    }
+
+    /* Variant: marginTop auto on buttons */
+    .buttons-auto {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 40px;
+      padding: 12px 0 36px;
+      flex-shrink: 0;
+      z-index: 3;
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="controls">
+    <h4 style="margin-bottom:8px">Layout Variants</h4>
+    <label>
+      Card Area Height:
+      <select id="variant" onchange="applyVariant()">
+        <option value="fixed">Fixed height (current)</option>
+        <option value="flex">flex: 1 (original)</option>
+        <option value="flex-auto">flex: 1 + marginTop: auto</option>
+      </select>
+    </label>
+    <button onclick="toggleGuide()" style="margin-top:4px; padding: 4px 8px; cursor:pointer">Toggle guide lines</button>
+  </div>
+
+  <div class="status" id="status">Variant: fixed | Scroll to see buttons ↓</div>
+
+  <div id="root">
+    <div class="header">
+      <div class="header-spacer"></div>
+      <div class="header-center">
+        <div class="logo">FreeMatch</div>
+        <div class="tagline">Connect freely ❤️</div>
+      </div>
+      <div class="menu-btn">⋮</div>
+    </div>
+
+    <div class="card-area" id="cardArea">
+      <div class="card card-back">Card BACK</div>
+      <div class="card card-front">Card FRONT<br/><small>(position: absolute)</small></div>
+    </div>
+
+    <div class="buttons" id="buttons">
+      <button class="btn btn-nope">✕</button>
+      <button class="btn btn-like">♥</button>
+    </div>
+  </div>
+
+  <div class="status" id="debug">Debug info appears here</div>
+
+  <script>
+    const root = document.getElementById('root');
+    const cardArea = document.getElementById('cardArea');
+    const buttons = document.getElementById('buttons');
+    const status = document.getElementById('status');
+    const debug = document.getElementById('debug');
+
+    function updateDebug() {
+      const vh = window.innerHeight;
+      const rootRect = root.getBoundingClientRect();
+      const cardRect = cardArea.getBoundingClientRect();
+      const btnRect = buttons.getBoundingClientRect();
+
+      status.textContent = `Viewport: ${window.innerWidth}×${vh} | CardArea: ${cardRect.height.toFixed(0)}px | Buttons at Y: ${btnRect.top.toFixed(0)}`;
+      debug.textContent = `Root: ${rootRect.height.toFixed(0)}px (${rootRect.bottom.toFixed(0)}) | CardArea height: ${cardRect.height.toFixed(0)}px | Buttons bottom: ${btnRect.bottom.toFixed(0)} (in viewport: ${btnRect.bottom <= vh}) | Root flexDirection: ${getComputedStyle(root).flexDirection}`;
+    }
+
+    function toggleGuide() {
+      const existing = document.querySelectorAll('.viewport-line');
+      if (existing.length > 0) {
+        existing.forEach(e => e.remove());
+        return;
+      }
+      // Line at buttons top
+      const cardRect = cardArea.getBoundingClientRect();
+      const btnRect = buttons.getBoundingClientRect();
+
+      const line1 = document.createElement('div');
+      line1.className = 'viewport-line';
+      line1.style.top = cardRect.top + 'px';
+      line1.style.borderColor = 'rgba(0, 100, 255, 0.4)';
+      document.body.appendChild(line1);
+
+      const line2 = document.createElement('div');
+      line2.className = 'viewport-line';
+      line2.style.top = cardRect.bottom + 'px';
+      line2.style.borderColor = 'rgba(0, 200, 100, 0.4)';
+      document.body.appendChild(line2);
+
+      const line3 = document.createElement('div');
+      line3.className = 'viewport-line';
+      line3.style.top = btnRect.top + 'px';
+      line3.style.borderColor = 'rgba(255, 200, 0, 0.6)';
+      document.body.appendChild(line3);
+
+      const line4 = document.createElement('div');
+      line4.className = 'viewport-line';
+      line4.style.top = btnRect.bottom + 'px';
+      line4.style.borderColor = 'rgba(255, 0, 0, 0.6)';
+      document.body.appendChild(line4);
+    }
+
+    function applyVariant() {
+      const variant = document.getElementById('variant').value;
+      // Reset
+      cardArea.className = 'card-area';
+      buttons.className = 'buttons';
+      cardArea.style.height = '';
+      cardArea.style.maxHeight = '';
+      cardArea.style.flex = '';
+      cardArea.style.minHeight = '';
+      buttons.style.marginTop = '';
+
+      if (variant === 'fixed') {
+        cardArea.className = 'card-area';
+        // Keep CSS class styles
+      } else if (variant === 'flex') {
+        cardArea.style.flex = '1';
+        cardArea.style.minHeight = '0';
+        cardArea.style.height = 'auto';
+        cardArea.style.maxHeight = 'none';
+      } else if (variant === 'flex-auto') {
+        cardArea.style.flex = '1';
+        cardArea.style.minHeight = '0';
+        cardArea.style.height = 'auto';
+        cardArea.style.maxHeight = 'none';
+        buttons.style.marginTop = 'auto';
+      }
+
+      status.textContent = `Variant: ${variant}`;
+      setTimeout(updateDebug, 50);
+    }
+
+    // Run on load
+    window.addEventListener('resize', updateDebug);
+    setTimeout(updateDebug, 100);
+    setTimeout(updateDebug, 500);
+    setTimeout(updateDebug, 1000);
+  </script>
+</body>
+</html>
