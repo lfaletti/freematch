@@ -241,6 +241,8 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 8,
     paddingHorizontal: 16,
+    backgroundColor: colors.background,
+    zIndex: 2,
   },
   headerCenter: {
     flex: 1,
@@ -307,6 +309,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+    zIndex: 1,
   },
   buttons: {
     flexDirection: 'row',
