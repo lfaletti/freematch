@@ -12,6 +12,8 @@ interface SessionState {
   token: string;
   refreshToken: string;
   isAuthenticated: boolean;
+  location?: string;
+  interests?: string[];
 }
 
 const initialState: SessionState = {

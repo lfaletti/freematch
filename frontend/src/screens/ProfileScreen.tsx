@@ -22,7 +22,8 @@ const MAX_PHOTO_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 480);
 const PHOTO_WIDTH = MAX_PHOTO_WIDTH;
 const PHOTO_HEIGHT = PHOTO_WIDTH * (5 / 4);
 
-const HEADER_TOP_PADDING = Platform.OS === 'web' ? 16 : 48;
+const HEADER_TOP = Platform.OS === 'web' ? 12 : 48;
+const HEADER_H = HEADER_TOP + 12;
 
 type ProfileParams = {
   Profile: {
@@ -57,20 +58,11 @@ const ProfileScreen = () => {
           fetchUserPhotos(partnerId),
           fetchUser(partnerId),
         ]);
-
         if (cancelled) return;
-
-        if (photosRes.status === 'fulfilled') {
-          setPhotos(photosRes.value);
-        }
-        if (userRes.status === 'fulfilled') {
-          setUser(userRes.value);
-        }
-      } catch {
-        // Fallback: use params data only
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+        if (photosRes.status === 'fulfilled') setPhotos(photosRes.value);
+        if (userRes.status === 'fulfilled') setUser(userRes.value);
+      } catch { /* ignore */ }
+      finally { if (!cancelled) setLoading(false); }
     };
     loadData();
     return () => { cancelled = true; };
@@ -81,244 +73,112 @@ const ProfileScreen = () => {
   const displayBio = user?.bio ?? bio;
   const displayLocation = user?.location ?? location;
   const displayInterests = user?.interests ?? interests;
-
-  const photoUrls = photos.length > 0
-    ? photos.map((p) => p.url)
-    : [photo];
-
+  const photoUrls = photos.length > 0 ? photos.map((p) => p.url) : [photo];
   const mainPhoto = photoUrls[mainIndex];
+  const hasMultiple = photoUrls.length > 1;
 
   const goPrev = () => setMainIndex((i) => Math.max(0, i - 1));
   const goNext = () => setMainIndex((i) => Math.min(photoUrls.length - 1, i + 1));
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={s.center}>
         <ActivityIndicator color={colors.primary} size="large" />
       </View>
     );
   }
 
-  const hasMultiple = photoUrls.length > 1;
-
   return (
-    <View style={styles.root}>
-      <ScrollView
-        style={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: HEADER_TOP_PADDING }]}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backIcon}>‹</Text>
+    <View style={s.root}>
+      {/* ====== HEADER: fixed at top ====== */}
+      <View style={{ paddingTop: HEADER_TOP, backgroundColor: colors.surface }}>
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+            <Text style={s.backIcon}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.headerName}>{displayName}, {displayAge}</Text>
-          <View style={styles.headerSpacer} />
+          <Text style={s.headerName}>{displayName}, {displayAge}</Text>
+          <View style={s.spacer} />
         </View>
+      </View>
 
-        {/* Photo area */}
-        <View style={styles.carouselContainer}>
-          <Image
-            source={{ uri: getPhotoUrl(mainPhoto) }}
-            style={styles.mainPhoto}
-            resizeMode="cover"
-          />
+      {/* ====== SCROLLABLE CONTENT: fills remaining space ====== */}
+      <View style={{ flex: 1 }}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Spacer so photo doesn't overlap fixed header */}
+        <View style={{ height: HEADER_TOP + 44 }} />
+        {/* Photo */}
+        <View style={s.carousel}>
+          <Image source={{ uri: getPhotoUrl(mainPhoto) }} style={s.photo} resizeMode="cover" />
           {hasMultiple && (
-            <View style={styles.dotsContainer}>
+            <View style={s.dots}>
               {photoUrls.map((_, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={styles.dot}
-                  onPress={() => setMainIndex(i)}
-                >
-                  <View
-                    style={[
-                      styles.dotInner,
-                      i === mainIndex && styles.dotInnerActive,
-                    ]}
-                  />
+                <TouchableOpacity key={i} style={s.dot} onPress={() => setMainIndex(i)}>
+                  <View style={[s.dotInner, i === mainIndex && s.dotActive]} />
                 </TouchableOpacity>
               ))}
             </View>
           )}
         </View>
 
-        {/* Nav row */}
+        {/* Nav */}
         {hasMultiple && (
-          <View style={styles.navRow}>
-            <TouchableOpacity
-              style={styles.navBtn}
-              onPress={goPrev}
-              disabled={mainIndex === 0}
-            >
-              <Text style={[styles.navIcon, mainIndex === 0 && styles.navIconDisabled]}>‹</Text>
+          <View style={s.nav}>
+            <TouchableOpacity style={s.navBtn} onPress={goPrev} disabled={mainIndex === 0}>
+              <Text style={[s.navIcon, mainIndex === 0 && s.navOff]}>‹</Text>
             </TouchableOpacity>
-            <View style={styles.badgeInline}>
-              <Text style={styles.badgeText}>{mainIndex + 1} / {photoUrls.length}</Text>
+            <View style={s.badge}>
+              <Text style={s.badgeTxt}>{mainIndex + 1} / {photoUrls.length}</Text>
             </View>
-            <TouchableOpacity
-              style={styles.navBtn}
-              onPress={goNext}
-              disabled={mainIndex === photoUrls.length - 1}
-            >
-              <Text style={[styles.navIcon, mainIndex === photoUrls.length - 1 && styles.navIconDisabled]}>›</Text>
+            <TouchableOpacity style={s.navBtn} onPress={goNext} disabled={mainIndex === photoUrls.length - 1}>
+              <Text style={[s.navIcon, mainIndex === photoUrls.length - 1 && s.navOff]}>›</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Info section */}
-        <View style={styles.info}>
-          {displayLocation && (
-            <Text style={styles.location}>📍 {displayLocation}</Text>
-          )}
-          {displayBio && (
-            <Text style={styles.bio}>{displayBio}</Text>
-          )}
+        {/* Info */}
+        <View style={s.info}>
+          {displayLocation && <Text style={s.loc}>📍 {displayLocation}</Text>}
+          {displayBio && <Text style={s.bio}>{displayBio}</Text>}
           {displayInterests && displayInterests.length > 0 && (
-            <View style={styles.interests}>
-              {displayInterests.map((interest) => (
-                <View key={interest} style={styles.tag}>
-                  <Text style={styles.tagText}>{interest}</Text>
-                </View>
+            <View style={s.tags}>
+              {displayInterests.map((t) => (
+                <View key={t} style={s.tag}><Text style={s.tagTxt}>{t}</Text></View>
               ))}
             </View>
           )}
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scroll: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingBottom: 12,
-    paddingHorizontal: 16,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backBtn: {
-    padding: 4,
-  },
-  backIcon: {
-    fontSize: 32,
-    color: colors.primary,
-    lineHeight: 32,
-  },
-  headerSpacer: {
-    flex: 1,
-  },
-  headerName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginLeft: 12,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  carouselContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  mainPhoto: {
-    width: PHOTO_WIDTH,
-    height: PHOTO_HEIGHT,
-    borderRadius: 16,
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  dot: {
-    padding: 4,
-  },
-  dotInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.border,
-  },
-  dotInnerActive: {
-    backgroundColor: colors.primary,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  navRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  navBtn: {
-    padding: 8,
-  },
-  navIcon: {
-    fontSize: 32,
-    color: colors.primary,
-    lineHeight: 32,
-  },
-  navIconDisabled: {
-    opacity: 0.3,
-  },
-  badgeInline: {
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  info: {
-    padding: 20,
-  },
-  location: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  bio: {
-    fontSize: 15,
-    color: colors.text,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  interests: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  tag: {
-    backgroundColor: colors.surfaceLight,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  tagText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-  },
+const s = StyleSheet.create({
+  root: { flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: colors.background },
+  header: { flexDirection: 'row', alignItems: 'center', paddingBottom: 12, paddingHorizontal: 16 },
+  backBtn: { padding: 4 },
+  backIcon: { fontSize: 32, color: colors.primary, lineHeight: 32 },
+  spacer: { flex: 1 },
+  headerName: { fontSize: 20, fontWeight: '700', color: colors.text, marginLeft: 12 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  carousel: { alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
+  photo: { width: PHOTO_WIDTH, height: PHOTO_HEIGHT, borderRadius: 16 },
+  dots: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  dot: { padding: 4 },
+  dotInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
+  dotActive: { backgroundColor: colors.primary, width: 10, height: 10, borderRadius: 5 },
+  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8 },
+  navBtn: { padding: 8 },
+  navIcon: { fontSize: 32, color: colors.primary, lineHeight: 32 },
+  navOff: { opacity: 0.3 },
+  badge: { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  badgeTxt: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  info: { padding: 20 },
+  loc: { fontSize: 15, color: colors.textSecondary, marginBottom: 8 },
+  bio: { fontSize: 15, color: colors.text, lineHeight: 22, marginBottom: 16 },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tag: { backgroundColor: colors.surfaceLight, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  tagTxt: { color: colors.textSecondary, fontSize: 13 },
 });
 
 export default ProfileScreen;

@@ -44,7 +44,7 @@ export default function EditProfileScreen({ navigation }: Props) {
 
     const interests = interestsText
       .split(',')
-      .map((i) => i.trim())
+      .map((i: string) => i.trim())
       .filter(Boolean);
 
     setLoading(true);
