@@ -20,10 +20,6 @@ import { resetLeftSwipes } from '../services/userService';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_HEIGHT = Math.min(SCREEN_HEIGHT * 0.68, 580);
-const HEADER_H = 80;
-const BUTTONS_H = 120;
-const CARD_AREA_H = Math.max(SCREEN_HEIGHT - HEADER_H - BUTTONS_H, 300);
-const BUTTONS_AREA_HEIGHT = 120;
 
 const HomeScreen = () => {
   const dispatch = useAppDispatch();
@@ -247,7 +243,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     zIndex: 1,
     minHeight: 0,
-    maxHeight: SCREEN_HEIGHT - 200,
+    // no maxHeight — let flex: 1 fill remaining space
   },
   buttons: {
     flexDirection: 'row',
@@ -257,7 +253,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     zIndex: 3,
     flexShrink: 0,
-    height: BUTTONS_AREA_HEIGHT,
+    marginTop: 'auto',
   },
   header: {
     flexDirection: 'row',
@@ -328,24 +324,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     marginTop: 2,
-  },
-  cardArea: {
-    flex: 1,
-    height: CARD_AREA_H,
-    maxHeight: CARD_AREA_H,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    zIndex: 1,
-    minHeight: 0,
-    flexShrink: 1,
-  },
-  buttons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 40,
-    paddingBottom: 36,
-    paddingTop: 12,
   },
   btn: {
     width: 64,
@@ -479,3 +457,8 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
+
+
+
+
+
