@@ -13,6 +13,8 @@ import {
   LoginInput,
   verifyEmailToken,
   generateEmailVerificationToken,
+  generatePasswordResetToken,
+  resetPassword,
 } from '../services/authService';
 
 const router = Router();
@@ -24,7 +26,7 @@ const MIN_PASSWORD_LENGTH = 6;
 // written to disk so they survive container restarts.
 const memoryUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
       cb(null, true);
@@ -318,6 +320,64 @@ router.post('/resend-verification', async (req, res) => {
   } catch (err) {
     console.error('Resend verification error:', err);
     res.status(500).json({ error: 'Failed to resend verification' });
+  }
+});
+
+// POST /api/auth/forgot-password
+// Generates a password-reset token (15 min expiry). In dev, returns the token directly.
+// In production this would email the link.
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'email is required' });
+    }
+
+    const result = await generatePasswordResetToken(email);
+    if (!result) {
+      // Don't leak whether the email exists
+      return res.json({ success: true, message: 'If that email is registered, you will receive a reset link.' });
+    }
+
+    // In development, return the token so the frontend can use it directly.
+    // In production, send the token via email (e.g. a link to /reset-password?token=...).
+    if (process.env.NODE_ENV === 'development') {
+      return res.json({
+        success: true,
+        token: result.token,
+        note: 'In production this token would be sent via email.',
+      });
+    }
+
+    return res.json({ success: true, message: 'If that email is registered, you will receive a reset link.' });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ error: 'Failed to process password reset request.' });
+  }
+});
+
+// POST /api/auth/reset-password
+// Consumes a reset token and sets a new password.
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'token and newPassword are required' });
+    }
+
+    if (typeof newPassword !== 'string' || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const ok = await resetPassword(token, newPassword);
+    if (!ok) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    return res.json({ success: true, message: 'Password updated. Please log in with your new password.' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Failed to reset password.' });
   }
 });
 

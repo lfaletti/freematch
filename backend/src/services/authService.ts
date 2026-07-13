@@ -300,3 +300,38 @@ export async function registerUserByPhone(input: any) {
   );
   return result.rows[0];
 }
+
+// ── Password reset ──────────────────────────────────────────────────
+
+export async function generatePasswordResetToken(email: string): Promise<{ token: string; userId: string } | null> {
+  const result = await query(
+    `SELECT id, email FROM users WHERE email = $1 AND is_mock = false`,
+    [email]
+  );
+  if (result.rows.length === 0) return null;
+
+  const user = result.rows[0];
+  const token = jwt.sign(
+    { userId: user.id, email: user.email, type: 'password_reset' } as JWTPayload & { type: string },
+    JWT_SECRET_EFFECTIVE,
+    { expiresIn: '15m' }
+  );
+  return { token, userId: user.id };
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<boolean> {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET_EFFECTIVE) as JWTPayload & { type: string };
+    if (decoded.type !== 'password_reset') return false;
+
+    const passwordHash = await hashPassword(newPassword);
+    await query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, decoded.userId]);
+
+    // Revoke all refresh tokens so the user must log in again
+    await revokeUserTokens(decoded.userId);
+
+    return true;
+  } catch {
+    return false;
+  }
+}
