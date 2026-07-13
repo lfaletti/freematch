@@ -5,9 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
   Modal,
-  Platform,
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { loadUsers, advanceCard, recordSwipe } from '../redux/slices/usersSlice';
@@ -18,13 +16,6 @@ import SwipeCard from '../components/SwipeCard';
 import { storageService } from '../services/storageService';
 import { navigate } from '../navigation/navigationRef';
 import { resetLeftSwipes } from '../services/userService';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const HEADER_H = 80;
-const BUTTONS_H = 120;
-const CARD_AREA_H = Platform.OS === 'web'
-  ? SCREEN_HEIGHT - HEADER_H - BUTTONS_H
-  : undefined;
 
 const HomeScreen = () => {
   const dispatch = useAppDispatch();
@@ -190,7 +181,6 @@ const HomeScreen = () => {
         </View>
       </View>
 
-      {/* Reset swipes confirmation dialog */}
       <Modal visible={resetDialog} transparent animationType="fade" onRequestClose={() => setResetDialog(false)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setResetDialog(false)}>
           <View style={styles.dialog}>
@@ -249,9 +239,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: colors.background,
     zIndex: 2,
-    ...Platform.select({
-      web: { position: 'relative' as const },
-    }),
   },
   headerCenter: {
     flex: 1,
@@ -309,9 +296,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     zIndex: 1,
     minHeight: 0,
-    ...Platform.select({
-      web: { height: CARD_AREA_H },
-    }),
   },
   buttons: {
     flexDirection: 'row',
@@ -320,9 +304,6 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
     paddingTop: 12,
     zIndex: 3,
-    ...Platform.select({
-      web: { height: BUTTONS_H },
-    }),
   },
   logo: {
     fontSize: 28,
