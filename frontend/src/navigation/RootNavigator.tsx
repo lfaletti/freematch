@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Text } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { navigationRef } from './navigationRef';
 import WelcomeScreen from '../screens/WelcomeScreen';
@@ -12,20 +13,22 @@ import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import PhotoScreen from '../screens/PhotoScreen';
+import RealtimeManager from '../components/RealtimeManager';
+import GlobalMatchModal from '../components/GlobalMatchModal';
+import GlobalUnmatchModal from '../components/GlobalUnmatchModal';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { setSession, clearSession } from '../redux/slices/sessionSlice';
-import { validateToken } from '../services/authService';
-import { getRefreshToken, clearTokens } from '../services/storageService';
-import { refreshToken } from '../services/authService';
+import { validateToken, refreshToken } from '../services/authService';
+import { storageService } from '../services/storageService';
 import { colors } from '../theme/colors';
-import { initializeSocket, disconnectSocket } from '../services/socketService';
 import { loadMatches } from '../redux/slices/matchesSlice';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 const initSession = async (dispatch: any) => {
   try {
-    const storedRefreshToken = await getRefreshToken();
+    const storedRefreshToken = await storageService.getRefreshToken();
     if (!storedRefreshToken) {
       dispatch(clearSession());
       return;
@@ -33,31 +36,124 @@ const initSession = async (dispatch: any) => {
 
     const data = await refreshToken(storedRefreshToken);
     if (data?.token && data.refreshToken) {
-      // Validate to get full user profile
+      // Persist the rotated tokens before validating so the interceptor
+      // and any subsequent request use the fresh credentials.
+      await storageService.setToken(data.token);
+      await storageService.setRefreshToken(data.refreshToken);
+
+      // Validate to get the full user profile.
       const profile = await validateToken(data.token);
       dispatch(
         setSession({
           userId: profile.userId,
           name: profile.name,
-          photo: profile.photo_url,
+          photo: profile.photo,
           bio: profile.bio,
-          bornDate: profile.born_date,
-          phoneNumber: profile.phone_number,
+          bornDate: profile.bornDate,
+          phoneNumber: profile.phoneNumber,
           email: profile.email,
           token: data.token,
           refreshToken: data.refreshToken,
-          slot: '',
-          gender: profile.gender,
-          seekingGender: profile.seekingGender,
+          slot: profile.slot ?? '',
         }),
       );
     } else {
+      await storageService.clearTokens();
       dispatch(clearSession());
     }
   } catch (err) {
+    await storageService.clearTokens();
     dispatch(clearSession());
   }
 };
+
+// The Matches tab is its own stack so the list, a conversation, and a
+// partner's profile can push on top of each other while the tab bar stays put.
+function MatchesStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MatchesList" component={MatchesScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen as React.ComponentType<any>} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// The bottom footer: Discover (swipe deck), Matches, and Photos.
+function TabNavigator() {
+  const unreadCount = useAppSelector((s) =>
+    Object.values(s.matches.unread).reduce((sum, n) => sum + n, 0)
+  );
+  const hasUnread = unreadCount > 0;
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          height: 64,
+          paddingBottom: 8,
+        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Discover',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🔥</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="Matches"
+        component={MatchesStack}
+        options={{
+          tabBarLabel: 'Matches',
+          tabBarBadge: hasUnread ? unreadCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.primary, color: colors.white },
+          // The heart turns into a love-letter while there are unread messages.
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 22, color }}>{hasUnread ? '💌' : '❤️'}</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Photos"
+        component={PhotoScreen}
+        options={{
+          tabBarLabel: 'Photos',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>📸</Text>,
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
+function AuthStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// EditProfile and (self) Profile live above the tabs so they cover the footer.
+function AppStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={TabNavigator} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'card' }} />
+    </Stack.Navigator>
+  );
+}
 
 function RootNavigator() {
   const dispatch = useAppDispatch();
@@ -68,18 +164,12 @@ function RootNavigator() {
     initSession(dispatch).finally(() => setInitializing(false));
   }, [dispatch]);
 
+  // Load the match list on login; RealtimeManager owns the socket lifecycle.
   useEffect(() => {
-    if (session.isAuthenticated && session.token) {
-      initializeSocket(session.token, session.userId);
-      dispatch(loadMatches(session.userId));
-    } else {
-      disconnectSocket();
+    if (session.isAuthenticated) {
+      dispatch(loadMatches());
     }
-
-    return () => {
-      disconnectSocket();
-    };
-  }, [session.isAuthenticated, session.token, session.userId, dispatch]);
+  }, [session.isAuthenticated, dispatch]);
 
   if (initializing) {
     return (
@@ -91,37 +181,16 @@ function RootNavigator() {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        {session.isAuthenticated ? (
-          <>
-            <Stack.Screen name="Home">
-              {(props) => (
-                <HomeScreen
-                  {...props}
-                  sessionName={session.name}
-                  sessionUserId={session.userId}
-                  sessionPhoto={session.photo}
-                />
-              )}
-            </Stack.Screen>
-            <Stack.Screen name="Matches" component={MatchesScreen} />
-            <Stack.Screen name="Chat" component={ChatScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-            <Stack.Screen name="Photos" component={PhotoScreen} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Welcome" component={WelcomeScreen} />
-            <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-          </>
-        )}
-      </Stack.Navigator>
+      {session.isAuthenticated ? (
+        <>
+          <RealtimeManager />
+          <AppStack />
+          <GlobalMatchModal />
+          <GlobalUnmatchModal />
+        </>
+      ) : (
+        <AuthStack />
+      )}
     </NavigationContainer>
   );
 }

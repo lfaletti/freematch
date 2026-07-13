@@ -105,3 +105,26 @@ export const refreshToken = async (refreshToken: string): Promise<{ token: strin
   const res = await api.post('/api/auth/refresh', { refreshToken });
   return res.data;
 };
+
+export interface SessionProfile {
+  userId: string;
+  slot: string;
+  name: string;
+  photo: string;
+  bio: string;
+  bornDate: string;
+  phoneNumber: string;
+  email: string;
+  token: string | null;
+}
+
+// Validates a JWT against GET /api/session and returns the user's session
+// profile. The token is passed explicitly because the request interceptor
+// reads it from Redux, which isn't populated yet during session restore
+// (e.g. right after a refresh), so the request would otherwise be unauthenticated.
+export const validateToken = async (token: string): Promise<SessionProfile> => {
+  const res = await api.get('/api/session', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};

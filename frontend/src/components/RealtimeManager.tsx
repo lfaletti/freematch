@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { store } from '../redux/store';
-import { getSocket, disconnectSocket } from '../services/socketService';
+import { initializeSocket, disconnectSocket } from '../services/socketService';
 import { addMessage, removeMatchMessages, Message } from '../redux/slices/messagesSlice';
 import { addMatch, updateLastMessage, incrementUnread, receiveUnmatch, Match } from '../redux/slices/matchesSlice';
 import { loadUsers } from '../redux/slices/usersSlice';
@@ -14,10 +14,14 @@ import { loadUsers } from '../redux/slices/usersSlice';
 export default function RealtimeManager() {
   const dispatch = useAppDispatch();
   const userId = useAppSelector((s) => s.session.userId);
+  const token = useAppSelector((s) => s.session.token);
 
   useEffect(() => {
-    if (!userId) return;
-    const socket = getSocket();
+    if (!userId || !token) return;
+    // initializeSocket (not getSocket) so the socket carries the JWT the
+    // backend requires; it's idempotent per-token, so calling it here owns
+    // the connection lifecycle for the whole authenticated session.
+    const socket = initializeSocket(token, userId);
 
     // Join (and re-join on every reconnect) our personal room.
     const joinUser = () => socket.emit('join_user', userId);
@@ -67,7 +71,7 @@ export default function RealtimeManager() {
       // the next login opens a fresh socket joined only to that user's room.
       disconnectSocket();
     };
-  }, [userId]);
+  }, [userId, token]);
 
   return null;
 }
