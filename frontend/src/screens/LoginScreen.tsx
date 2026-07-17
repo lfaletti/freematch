@@ -62,6 +62,8 @@ export default function LoginScreen({ navigation }: Props) {
         token: user.token ?? '',
         refreshToken: user.refreshToken ?? '',
         slot: '',
+        gender: user.gender,
+        seekingGender: user.seekingGender,
       }));
     } catch (err: any) {
       const status = err?.response?.status;

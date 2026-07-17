@@ -49,6 +49,10 @@ export function createApp() {
         bornDate: user.born_date ?? '',
         phoneNumber: user.phone_number ?? '',
         email: user.email ?? '',
+        location: user.location ?? '',
+        interests: user.interests ?? [],
+        gender: user.gender ?? undefined,
+        seekingGender: user.seeking_gender ?? [],
         token: token ?? null,
       });
     } catch (err) {

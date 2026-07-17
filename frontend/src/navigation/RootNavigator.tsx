@@ -55,6 +55,10 @@ const initSession = async (dispatch: any) => {
           token: data.token,
           refreshToken: data.refreshToken,
           slot: profile.slot ?? '',
+          location: profile.location,
+          interests: profile.interests,
+          gender: profile.gender,
+          seekingGender: profile.seekingGender,
         }),
       );
     } else {

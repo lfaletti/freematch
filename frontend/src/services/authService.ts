@@ -115,6 +115,10 @@ export interface SessionProfile {
   bornDate: string;
   phoneNumber: string;
   email: string;
+  location?: string;
+  interests?: string[];
+  gender?: string;
+  seekingGender?: string[];
   token: string | null;
 }
 
