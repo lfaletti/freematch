@@ -71,6 +71,8 @@ export interface ProfileUpdatePayload {
   location?: string;
   interests?: string[];
   photo_url?: string | null;
+  gender?: string;
+  seekingGender?: string[];
 }
 
 export const updateProfile = async (updates: ProfileUpdatePayload) => {
