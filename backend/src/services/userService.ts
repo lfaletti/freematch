@@ -19,15 +19,15 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
        AND (
          -- Mirror match: my gender is in their seeking list AND their gender is in my seeking list
          (
-           (SELECT gender FROM users WHERE id = $1) = ANY(u.seeking_gender)
-           OR u.seeking_gender = '{}'::text[]
+           u.seeking_gender = '{}'::text[]
+           OR (SELECT gender FROM users WHERE id = $1) = ANY(u.seeking_gender)
          )
          AND (
-           u.gender = ANY(COALESCE(
+           (SELECT seeking_gender FROM users WHERE id = $1) = '{}'::text[]
+           OR u.gender = ANY(COALESCE(
              (SELECT seeking_gender FROM users WHERE id = $1),
              '{}'::text[]
            ))
-           OR (SELECT seeking_gender FROM users WHERE id = $1) = '{}'::text[]
          )
        )
      ORDER BY RANDOM()
