@@ -8,27 +8,23 @@ export async function getOrCreateSessionUser(): Promise<string> {
 
 export async function getAllUsers(sessionUserId: string, limit: number, offset: number) {
   const result = await query(
-    `SELECT u.*,
+    `WITH my_user AS (
+      SELECT gender, seeking_gender FROM users WHERE id = $1
+    )
+    SELECT u.*,
        COALESCE(u.photo_url, (SELECT p.url FROM photos p WHERE p.user_id = u.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
        EXTRACT(YEAR FROM AGE(u.born_date))::integer AS age
-     FROM users u
+     FROM users u, my_user
      WHERE u.id != $1
        AND u.id NOT IN (
          SELECT swiped_id FROM swipes WHERE swiper_id = $1
        )
        AND (
-         -- Mirror match: my gender is in their seeking list AND their gender is in my seeking list
-         (
-           u.seeking_gender = '{}'::text[]
-           OR (SELECT gender FROM users WHERE id = $1) = ANY(u.seeking_gender)
-         )
-         AND (
-           (SELECT seeking_gender FROM users WHERE id = $1) = '{}'::text[]
-           OR u.gender = ANY(COALESCE(
-             (SELECT seeking_gender FROM users WHERE id = $1),
-             '{}'::text[]
-           ))
-         )
+         -- They must want my gender (or want everyone)
+         (u.seeking_gender = '{}'::text[] OR my_user.gender = ANY(u.seeking_gender))
+         AND
+         -- I must want their gender (or want everyone)
+         (my_user.seeking_gender = '{}'::text[] OR u.gender = ANY(my_user.seeking_gender))
        )
      ORDER BY RANDOM()
      LIMIT $2 OFFSET $3`,
