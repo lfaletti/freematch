@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -26,11 +27,21 @@ const HomeScreen = () => {
   const [resetDialog, setResetDialog] = useState(false);
   const swipingRef = useRef(false);
 
+  // Load users on mount and when coming back from EditProfile
   useEffect(() => {
     if (!sessionUserId) return;
     dispatch(loadUsers());
     dispatch(loadMatches());
   }, [sessionUserId]);
+
+  // Refresh users when returning to Home (e.g., after editing profile)
+  useFocusEffect(
+    useCallback(() => {
+      if (sessionUserId) {
+        dispatch(loadUsers());
+      }
+    }, [sessionUserId])
+  );
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (swipingRef.current) return;
