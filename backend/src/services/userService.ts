@@ -17,12 +17,18 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
          SELECT swiped_id FROM swipes WHERE swiper_id = $1
        )
        AND (
-         u.gender = ANY(COALESCE(
-           (SELECT seeking_gender FROM users WHERE id = $1),
-           '{}'::text[]
-         ))
-         OR
-         (SELECT seeking_gender FROM users WHERE id = $1) = '{}'::text[]
+         -- Mirror match: my gender is in their seeking list AND their gender is in my seeking list
+         (
+           (SELECT gender FROM users WHERE id = $1) = ANY(u.seeking_gender)
+           OR u.seeking_gender = '{}'::text[]
+         )
+         AND (
+           u.gender = ANY(COALESCE(
+             (SELECT seeking_gender FROM users WHERE id = $1),
+             '{}'::text[]
+           ))
+           OR (SELECT seeking_gender FROM users WHERE id = $1) = '{}'::text[]
+         )
        )
      ORDER BY RANDOM()
      LIMIT $2 OFFSET $3`,
