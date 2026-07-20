@@ -57,6 +57,16 @@ export default function EditProfileScreen({ navigation }: Props) {
       return;
     }
 
+    if (!gender) {
+      setError('Please select your gender.');
+      return;
+    }
+
+    if (seekingGenders.length === 0) {
+      setError('Please select at least one gender you are interested in.');
+      return;
+    }
+
     const interests = interestsText
       .split(',')
       .map((i: string) => i.trim())
