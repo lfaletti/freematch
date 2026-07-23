@@ -40,6 +40,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
   const [confirmUnmatch, setConfirmUnmatch] = useState(false);
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const flatListRef = useRef<FlatList>(null);
+  const lastTapRef = useRef<number>(0);
   const socket = getSocket();
 
   // Sync local state with Redux messages
@@ -100,6 +101,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
     socket.emit('send_message', { matchId: match.id, content: text, senderId: sessionUserId });
   };
 
+  // Double tap detection for likes
+  const handlePress = (message: Message) => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      // Double tap detected - call handleDoubleTap
+      handleDoubleTap(message);
+    }
+    lastTapRef.current = now;
+  };
+
   // Optimistic UI: toggle like immediately on local state BEFORE Redux dispatch
   const handleDoubleTap = (message: Message) => {
     const isLiked = message.liked_by?.includes(sessionUserId);
@@ -132,7 +143,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
     
     return (
       <TouchableOpacity
-        onLongPress={() => handleDoubleTap(item)}
+        onPress={() => handlePress(item)}
         activeOpacity={0.8}
       >
         <View style={[styles.msgRow, isOwn ? styles.ownRow : styles.theirRow]}>
