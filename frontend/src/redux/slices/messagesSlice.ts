@@ -35,14 +35,14 @@ export const loadMessages = createAsyncThunk(
 
 export const toggleLike = createAsyncThunk(
   'messages/toggleLike',
-  async ({ messageId, isLiked }: { messageId: string; isLiked: boolean }, { getState }) => {
+  async ({ messageId, matchId, like, userId }: { messageId: string; matchId: string; like: boolean; userId: string }, { getState }) => {
     let updatedMessage;
-    if (isLiked) {
-      updatedMessage = await unlikeMessage(messageId);
-    } else {
+    if (like) {
       updatedMessage = await likeMessage(messageId);
+    } else {
+      updatedMessage = await unlikeMessage(messageId);
     }
-    return updatedMessage;
+    return { updatedMessage, matchId };
   }
 );
 
@@ -81,13 +81,33 @@ const messagesSlice = createSlice({
         state.byMatchId[action.payload.matchId] = action.payload.messages;
         state.loading = false;
       })
+      .addCase(toggleLike.pending, (state, action) => {
+        // Optimistic UI: update immediately before API call
+        const { messageId, matchId, like, userId } = action.meta.arg;
+        const messages = state.byMatchId[matchId];
+        if (messages) {
+          const msgIndex = messages.findIndex((m) => m.id === messageId);
+          if (msgIndex !== -1) {
+            const message = messages[msgIndex];
+            if (like) {
+              // Add user to liked_by if not already present
+              if (!message.liked_by.includes(userId)) {
+                message.liked_by.push(userId);
+              }
+            } else {
+              // Remove user from liked_by
+              message.liked_by = message.liked_by.filter((id) => id !== userId);
+            }
+          }
+        }
+      })
       .addCase(toggleLike.fulfilled, (state, action) => {
-        const updated = action.payload;
+        const { updatedMessage } = action.payload;
         // Find and update the message in all match message arrays
         for (const matchId of Object.keys(state.byMatchId)) {
-          const msgIndex = state.byMatchId[matchId].findIndex((m) => m.id === updated.id);
+          const msgIndex = state.byMatchId[matchId].findIndex((m) => m.id === updatedMessage.id);
           if (msgIndex !== -1) {
-            state.byMatchId[matchId][msgIndex] = updated;
+            state.byMatchId[matchId][msgIndex] = updatedMessage;
             break;
           }
         }

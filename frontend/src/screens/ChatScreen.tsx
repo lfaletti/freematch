@@ -41,8 +41,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
   const flatListRef = useRef<FlatList>(null);
   const socket = getSocket();
 
-  // Incoming messages are handled globally (RealtimeManager) and land in the
-  // store; here we only load history and listen for typing indicators.
   useEffect(() => {
     dispatch(loadMessages(match.id));
 
@@ -60,8 +58,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
     };
   }, [match.id]);
 
-  // While this chat is focused, mark it active (suppresses its badge) and clear
-  // any pending unread count.
   useFocusEffect(
     useCallback(() => {
       dispatch(setActiveMatch(match.id));
@@ -78,9 +74,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
     }
   }, [messages]);
 
-  // Mirror of the swipe → match flow: hit the API, then update the store. The
-  // backend pushes the removal to the partner in realtime; we update locally and
-  // leave the now-empty chat.
   const handleUnmatch = async () => {
     setConfirmUnmatch(false);
     try {
@@ -90,8 +83,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
     }
     dispatch(removeMatch(match.id));
     dispatch(removeMatchMessages(match.id));
-    // Swipes are wiped on the backend, so refresh the deck to bring the partner
-    // back as a swipeable profile (re-match is possible again).
     dispatch(loadUsers());
     navigation.goBack();
   };
@@ -103,46 +94,48 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
     socket.emit('send_message', { matchId: match.id, content: text, senderId: sessionUserId });
   };
 
+  // Optimistic UI: toggle like immediately on client with double tap
+  const handleDoubleTap = (message: Message) => {
+    if (message.liked_by?.includes(sessionUserId)) {
+      dispatch(toggleLike({ messageId: message.id, matchId: match.id, like: false, userId: sessionUserId }));
+    } else {
+      dispatch(toggleLike({ messageId: message.id, matchId: match.id, like: true, userId: sessionUserId }));
+    }
+  };
+
   const isTyping = typingPartners.includes(match.partner_id);
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwn = item.sender_id === sessionUserId;
-    const isLiked = item.liked_by?.includes(sessionUserId);
-    const likeCount = item.liked_by?.length || 0;
-    const showLikes = likeCount > 0;
-    
-    const handleLike = () => {
-      dispatch(toggleLike({ messageId: item.id, isLiked: !!isLiked }));
-    };
+    const hasLikes = item.liked_by && item.liked_by.length > 0;
+    const isLikedByMe = item.liked_by?.includes(sessionUserId);
     
     return (
-      <View style={[styles.msgRow, isOwn ? styles.ownRow : styles.theirRow]}>
-        {!isOwn && (
-          <Image source={{ uri: getPhotoUrl(match.partner_photo) }} style={styles.msgAvatar} />
-        )}
-        <View style={[styles.msgContent, isOwn ? styles.ownMsgContent : styles.theirMsgContent]}>
+      <TouchableOpacity
+        onLongPress={() => handleDoubleTap(item)}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.msgRow, isOwn ? styles.ownRow : styles.theirRow]}>
+          {!isOwn && (
+            <Image source={{ uri: getPhotoUrl(match.partner_photo) }} style={styles.msgAvatar} />
+          )}
           <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.theirBubble]}>
             <Text style={[styles.msgText, isOwn ? styles.ownText : styles.theirText]}>
               {item.content}
             </Text>
+            {hasLikes && (
+              <View style={styles.likesRow}>
+                <Text style={styles.likesText}>
+                  {isLikedByMe ? '❤️' : '🤍'} {item.liked_by.length}
+                </Text>
+              </View>
+            )}
           </View>
-          {showLikes && (
-            <View style={[styles.likesContainer, isOwn ? styles.ownLikesContainer : styles.theirLikesContainer]}>
-              <Text style={styles.likeCount}>❤️ {likeCount}</Text>
-            </View>
+          {isOwn && (
+            <Image source={{ uri: sessionPhoto }} style={styles.msgAvatarOwn} />
           )}
-          <TouchableOpacity 
-            style={[styles.likeButton, isLiked && styles.likeButtonActive]} 
-            onPress={handleLike}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Text style={styles.likeIcon}>{isLiked ? '❤️' : '🤍'}</Text>
-          </TouchableOpacity>
         </View>
-        {isOwn && (
-          <Image source={{ uri: sessionPhoto }} style={styles.msgAvatarOwn} />
-        )}
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -335,16 +328,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginLeft: 8,
   },
-  msgContent: {
-    maxWidth: '72%',
-  },
-  ownMsgContent: {
-    alignItems: 'flex-end',
-  },
-  theirMsgContent: {
-    alignItems: 'flex-start',
-  },
   bubble: {
+    maxWidth: '72%',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 20,
@@ -367,33 +352,14 @@ const styles = StyleSheet.create({
   theirText: {
     color: colors.text,
   },
-  likesContainer: {
+  likesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
   },
-  ownLikesContainer: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginRight: 4,
-  },
-  theirLikesContainer: {
-    backgroundColor: colors.surfaceLight,
-    marginLeft: 4,
-  },
-  likeCount: {
+  likesText: {
     fontSize: 12,
-    color: colors.text,
-  },
-  likeButton: {
-    marginTop: 4,
-    padding: 4,
-  },
-  likeButtonActive: {
-    // Active state styling if needed
-  },
-  likeIcon: {
-    fontSize: 16,
+    color: colors.textMuted,
   },
   typingRow: {
     flexDirection: 'row',
