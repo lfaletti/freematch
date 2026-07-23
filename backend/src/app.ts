@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import fetch from 'node-fetch';
 import cors from 'cors';
 import path from 'path';
 import { getUserId, USER_SLOTS, extractBearerToken } from './utils/session';
@@ -21,6 +22,9 @@ function corsOrigin() {
 
 export function createApp() {
   const app = express();
+
+  // Trust proxy for correct IP detection behind load balancers (Railway, etc.)
+  app.set('trust proxy', 1);
 
   app.use(cors({ origin: corsOrigin() }));
   app.use(express.json());
@@ -66,6 +70,43 @@ export function createApp() {
   app.use('/api/matches', matchesRouter);
   app.use('/api/messages', messagesRouter);
   app.use('/api/photos', photosRouter);
+
+  // City autocomplete via Geoapify
+  app.get('/api/cities', async (req: Request, res: Response) => {
+    const query = (req.query.q as string)?.trim();
+    if (!query || query.length < 2) {
+      return res.json([]);
+    }
+
+    const apiKey = process.env.GEOAPIFY_API_KEY;
+    if (!apiKey) {
+      console.error('GEOAPIFY_API_KEY not configured');
+      return res.status(500).json({ error: 'City search unavailable' });
+    }
+
+    try {
+      const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&type=city&limit=10&format=json&apiKey=${apiKey}`;
+      const response = await fetch(url);
+      const data = await response.json() as any;
+
+      if (!data.results) {
+        return res.json([]);
+      }
+
+      const cities = data.results.map((r: any) => ({
+        name: r.name,
+        city: r.city,
+        state: r.state,
+        country: r.country,
+        display: [r.city || r.name, r.state, r.country].filter(Boolean).join(', '),
+      }));
+
+      res.json(cities);
+    } catch (err) {
+      console.error('Geoapify error:', err);
+      res.status(500).json({ error: 'Failed to fetch cities' });
+    }
+  });
 
   return app;
 }
