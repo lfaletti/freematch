@@ -1,7 +1,7 @@
 [build]
 builder = "dockerfile"
 dockerfilePath = "Dockerfile"
-src = "./backend"
+root = "./backend"
 
 [deploy]
 startCommand = "npm start"
