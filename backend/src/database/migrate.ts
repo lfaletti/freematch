@@ -117,8 +117,11 @@ export async function runMigrations() {
   const sql005 = fs.readFileSync(path.join(__dirname, 'migrations/005_remove_mock_users.sql'), 'utf8');
   await query(sql005);
 
-  const sql006 = fs.readFileSync(path.join(__dirname, 'migrations/006_refresh_tokens.sql'), 'utf8');
-  await query(sql006);
+  const sql009_likes = fs.readFileSync(path.join(__dirname, 'migrations/009_add_message_likes.sql'), 'utf8');
+  await query(sql009_likes);
+
+  const sql006_refresh = fs.readFileSync(path.join(__dirname, 'migrations/006_refresh_tokens.sql'), 'utf8');
+  await query(sql006_refresh);
 
   const sql007 = fs.readFileSync(path.join(__dirname, 'migrations/007_email_verification.sql'), 'utf8');
   await query(sql007);

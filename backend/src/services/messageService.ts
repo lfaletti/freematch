@@ -37,6 +37,11 @@ export async function addLike(messageId: string, userId: string) {
      RETURNING *`,
     [userId, messageId]
   );
+  if (!result.rows[0]) {
+    // Message not found or already liked - fetch current state
+    const existing = await query('SELECT * FROM messages WHERE id = $1', [messageId]);
+    return existing.rows[0];
+  }
   return result.rows[0];
 }
 
@@ -48,5 +53,10 @@ export async function removeLike(messageId: string, userId: string) {
      RETURNING *`,
     [userId, messageId]
   );
+  if (!result.rows[0]) {
+    // Message not found - fetch current state
+    const existing = await query('SELECT * FROM messages WHERE id = $1', [messageId]);
+    return existing.rows[0];
+  }
   return result.rows[0];
 }
