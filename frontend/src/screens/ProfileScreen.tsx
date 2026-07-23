@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getPhotoUrl } from '../services/api';
@@ -50,9 +51,11 @@ const ProfileScreen = () => {
   const [loading, setLoading] = useState(true);
   const [mainIndex, setMainIndex] = useState(0);
 
+  // Load profile data on mount and when returning to this screen
   useEffect(() => {
     let cancelled = false;
     const loadData = async () => {
+      setLoading(true);
       try {
         const [photosRes, userRes] = await Promise.allSettled([
           fetchUserPhotos(partnerId),
@@ -67,6 +70,23 @@ const ProfileScreen = () => {
     loadData();
     return () => { cancelled = true; };
   }, [partnerId]);
+
+  // Refresh when returning to this profile (e.g., partner updated their photos)
+  useFocusEffect(
+    useCallback(() => {
+      const refreshData = async () => {
+        try {
+          const [photosRes, userRes] = await Promise.allSettled([
+            fetchUserPhotos(partnerId),
+            fetchUser(partnerId),
+          ]);
+          if (photosRes.status === 'fulfilled') setPhotos(photosRes.value);
+          if (userRes.status === 'fulfilled') setUser(userRes.value);
+        } catch { /* ignore */ }
+      };
+      refreshData();
+    }, [partnerId])
+  );
 
   const displayName = user?.name ?? name;
   const displayAge = user?.age ?? age;
