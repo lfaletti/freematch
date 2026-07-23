@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadPhoto } from '../services/s3Service';
 import { query } from '../database/connection';
@@ -18,6 +19,48 @@ import {
 } from '../services/authService';
 
 const router = Router();
+
+// In-memory store para mínimo 5 segundos entre registros por IP
+const lastRegisterAttempt: Record<string, number> = {};
+
+// Middleware: mínimo 5 segundos entre intentos de registro por IP
+const registerIntervalMiddleware = (req: any, res: any, next: any) => {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const lastAttempt = lastRegisterAttempt[ip] || 0;
+  const timeSinceLastAttempt = now - lastAttempt;
+
+  if (timeSinceLastAttempt < 5000) {
+    const waitTime = Math.ceil((5000 - timeSinceLastAttempt) / 1000);
+    return res.status(429).json({
+      error: `Please wait ${waitTime} second(s) between registration attempts.`
+    });
+  }
+
+  lastRegisterAttempt[ip] = now;
+  next();
+};
+
+// Rate limiter para registro — previene registro masivo de bots
+// Máximo 5 registros por IP por hora
+const registerRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 5, // 5 registros por IP en la ventana
+  message: { error: 'Too many accounts created from this IP. Please try again in an hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiter para login — previene fuerza bruta
+// 10 intentos fallidos por IP por 15 minutos
+const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10,
+  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Solo cuenta intentos fallidos
+});
 
 const MIN_AGE = 18;
 const MIN_PASSWORD_LENGTH = 6;
@@ -56,7 +99,7 @@ function calculateAge(bornDate: string): number | null {
   return age;
 }
 
-router.post('/register', memoryUpload.single('photo'), async (req, res) => {
+router.post('/register', registerRateLimiter, registerIntervalMiddleware, memoryUpload.single('photo'), async (req, res) => {
   try {
     const { name, email, password, bio, born_date, phone_number, gender, seekingGender } = req.body;
 
@@ -139,7 +182,7 @@ router.post('/register', memoryUpload.single('photo'), async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginRateLimiter, async (req, res) => {
   try {
     const { email, password, phone_number } = req.body;
 
@@ -216,7 +259,7 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
-router.post('/register-phone', memoryUpload.single('photo'), async (req, res) => {
+router.post('/register-phone', registerRateLimiter, registerIntervalMiddleware, memoryUpload.single('photo'), async (req, res) => {
   try {
     const { name, bio, born_date, phone_number, email } = req.body;
 
