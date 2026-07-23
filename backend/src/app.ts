@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import fetch from 'node-fetch';
+// Use native fetch (Node 18+) instead of node-fetch
 import cors from 'cors';
 import path from 'path';
 import { getUserId, USER_SLOTS, extractBearerToken } from './utils/session';
