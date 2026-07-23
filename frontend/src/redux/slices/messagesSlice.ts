@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { fetchMessages } from '../../services/userService';
+import { fetchMessages, likeMessage, unlikeMessage } from '../../services/userService';
 
 export interface Message {
   id: string;
@@ -7,6 +7,7 @@ export interface Message {
   sender_id: string;
   content: string;
   created_at: string;
+  liked_by: string[]; // array of user IDs who liked this message
 }
 
 interface MessagesState {
@@ -29,6 +30,19 @@ export const loadMessages = createAsyncThunk(
   async (matchId: string) => {
     const messages = await fetchMessages(matchId);
     return { matchId, messages };
+  }
+);
+
+export const toggleLike = createAsyncThunk(
+  'messages/toggleLike',
+  async ({ messageId, isLiked }: { messageId: string; isLiked: boolean }, { getState }) => {
+    let updatedMessage;
+    if (isLiked) {
+      updatedMessage = await unlikeMessage(messageId);
+    } else {
+      updatedMessage = await likeMessage(messageId);
+    }
+    return updatedMessage;
   }
 );
 
@@ -66,6 +80,17 @@ const messagesSlice = createSlice({
       .addCase(loadMessages.fulfilled, (state, action) => {
         state.byMatchId[action.payload.matchId] = action.payload.messages;
         state.loading = false;
+      })
+      .addCase(toggleLike.fulfilled, (state, action) => {
+        const updated = action.payload;
+        // Find and update the message in all match message arrays
+        for (const matchId of Object.keys(state.byMatchId)) {
+          const msgIndex = state.byMatchId[matchId].findIndex((m) => m.id === updated.id);
+          if (msgIndex !== -1) {
+            state.byMatchId[matchId][msgIndex] = updated;
+            break;
+          }
+        }
       });
   },
 });

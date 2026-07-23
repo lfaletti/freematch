@@ -28,3 +28,25 @@ export async function saveMessage(matchId: string, senderId: string, content: st
   );
   return result.rows[0];
 }
+
+export async function addLike(messageId: string, userId: string) {
+  const result = await query(
+    `UPDATE messages 
+     SET liked_by = array_append(liked_by, $1)
+     WHERE id = $2 AND NOT ($1 = ANY(liked_by))
+     RETURNING *`,
+    [userId, messageId]
+  );
+  return result.rows[0];
+}
+
+export async function removeLike(messageId: string, userId: string) {
+  const result = await query(
+    `UPDATE messages 
+     SET liked_by = array_remove(liked_by, $1)
+     WHERE id = $2
+     RETURNING *`,
+    [userId, messageId]
+  );
+  return result.rows[0];
+}

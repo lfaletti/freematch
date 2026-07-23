@@ -79,3 +79,13 @@ export const updateProfile = async (updates: ProfileUpdatePayload) => {
   const res = await api.patch('/api/users/me', updates);
   return res.data;
 };
+
+export const likeMessage = async (messageId: string) => {
+  const res = await api.post(`/api/messages/${messageId}/like`);
+  return res.data;
+};
+
+export const unlikeMessage = async (messageId: string) => {
+  const res = await api.delete(`/api/messages/${messageId}/like`);
+  return res.data;
+};

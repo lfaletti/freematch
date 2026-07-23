@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
-import { loadMessages, setTyping, setActiveMatch, removeMatchMessages, Message } from '../redux/slices/messagesSlice';
+import { loadMessages, setTyping, setActiveMatch, removeMatchMessages, Message, toggleLike } from '../redux/slices/messagesSlice';
 import { clearUnread, removeMatch } from '../redux/slices/matchesSlice';
 import { loadUsers } from '../redux/slices/usersSlice';
 import { getSocket } from '../services/socketService';
@@ -107,15 +107,37 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwn = item.sender_id === sessionUserId;
+    const isLiked = item.liked_by?.includes(sessionUserId);
+    const likeCount = item.liked_by?.length || 0;
+    const showLikes = likeCount > 0;
+    
+    const handleLike = () => {
+      dispatch(toggleLike({ messageId: item.id, isLiked: !!isLiked }));
+    };
+    
     return (
       <View style={[styles.msgRow, isOwn ? styles.ownRow : styles.theirRow]}>
         {!isOwn && (
           <Image source={{ uri: getPhotoUrl(match.partner_photo) }} style={styles.msgAvatar} />
         )}
-        <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.theirBubble]}>
-          <Text style={[styles.msgText, isOwn ? styles.ownText : styles.theirText]}>
-            {item.content}
-          </Text>
+        <View style={[styles.msgContent, isOwn ? styles.ownMsgContent : styles.theirMsgContent]}>
+          <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.theirBubble]}>
+            <Text style={[styles.msgText, isOwn ? styles.ownText : styles.theirText]}>
+              {item.content}
+            </Text>
+          </View>
+          {showLikes && (
+            <View style={[styles.likesContainer, isOwn ? styles.ownLikesContainer : styles.theirLikesContainer]}>
+              <Text style={styles.likeCount}>❤️ {likeCount}</Text>
+            </View>
+          )}
+          <TouchableOpacity 
+            style={[styles.likeButton, isLiked && styles.likeButtonActive]} 
+            onPress={handleLike}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.likeIcon}>{isLiked ? '❤️' : '🤍'}</Text>
+          </TouchableOpacity>
         </View>
         {isOwn && (
           <Image source={{ uri: sessionPhoto }} style={styles.msgAvatarOwn} />
@@ -313,8 +335,16 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginLeft: 8,
   },
-  bubble: {
+  msgContent: {
     maxWidth: '72%',
+  },
+  ownMsgContent: {
+    alignItems: 'flex-end',
+  },
+  theirMsgContent: {
+    alignItems: 'flex-start',
+  },
+  bubble: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 20,
@@ -336,6 +366,34 @@ const styles = StyleSheet.create({
   },
   theirText: {
     color: colors.text,
+  },
+  likesContainer: {
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  ownLikesContainer: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginRight: 4,
+  },
+  theirLikesContainer: {
+    backgroundColor: colors.surfaceLight,
+    marginLeft: 4,
+  },
+  likeCount: {
+    fontSize: 12,
+    color: colors.text,
+  },
+  likeButton: {
+    marginTop: 4,
+    padding: 4,
+  },
+  likeButtonActive: {
+    // Active state styling if needed
+  },
+  likeIcon: {
+    fontSize: 16,
   },
   typingRow: {
     flexDirection: 'row',
