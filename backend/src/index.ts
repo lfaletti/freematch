@@ -103,7 +103,6 @@ async function bootstrap() {
         const message = await saveMessage(matchId, socketUserId, content);
         // Deliver to both participants' personal rooms so the message arrives
         // regardless of which screen they're on (chat list, home, etc.).
-        console.log('Emitting new_message to user:', match.user1_id, 'and user:', match.user2_id);
         io.to(`user:${match.user1_id}`).emit('new_message', message);
         io.to(`user:${match.user2_id}`).emit('new_message', message);
       } catch (err) {
