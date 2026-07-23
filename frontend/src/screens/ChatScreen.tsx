@@ -38,8 +38,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
   const loading = useAppSelector((s) => s.messages.loading);
   const [inputText, setInputText] = useState('');
   const [confirmUnmatch, setConfirmUnmatch] = useState(false);
+  const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const flatListRef = useRef<FlatList>(null);
   const socket = getSocket();
+
+  // Sync local state with Redux messages
+  useEffect(() => {
+    setLocalMessages(messages);
+  }, [messages]);
 
   useEffect(() => {
     dispatch(loadMessages(match.id));
@@ -94,13 +100,27 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
     socket.emit('send_message', { matchId: match.id, content: text, senderId: sessionUserId });
   };
 
-  // Optimistic UI: toggle like immediately on client with double tap
+  // Optimistic UI: toggle like immediately on local state BEFORE Redux dispatch
   const handleDoubleTap = (message: Message) => {
-    if (message.liked_by?.includes(sessionUserId)) {
-      dispatch(toggleLike({ messageId: message.id, matchId: match.id, like: false, userId: sessionUserId }));
-    } else {
-      dispatch(toggleLike({ messageId: message.id, matchId: match.id, like: true, userId: sessionUserId }));
-    }
+    const isLiked = message.liked_by?.includes(sessionUserId);
+    const newLikeStatus = !isLiked;
+    
+    // Update local state immediately for instant feedback
+    setLocalMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === message.id
+          ? {
+              ...msg,
+              liked_by: newLikeStatus
+                ? [...(msg.liked_by || []), sessionUserId]
+                : (msg.liked_by || []).filter((id) => id !== sessionUserId),
+            }
+          : msg
+      )
+    );
+    
+    // Then dispatch to Redux for API call
+    dispatch(toggleLike({ messageId: message.id, matchId: match.id, like: newLikeStatus, userId: sessionUserId }));
   };
 
   const isTyping = typingPartners.includes(match.partner_id);
@@ -191,7 +211,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
       ) : (
         <FlatList
           ref={flatListRef}
-          data={messages}
+          data={localMessages}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.messageList}
