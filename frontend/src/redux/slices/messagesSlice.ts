@@ -68,6 +68,17 @@ const messagesSlice = createSlice({
     setActiveMatch(state, action: PayloadAction<string | null>) {
       state.activeMatchId = action.payload;
     },
+    // Apply a realtime update (e.g. a like toggled by the other participant
+    // over Socket.io) by replacing the message at its id.
+    replaceMessage(state, action: PayloadAction<Message>) {
+      const msg = action.payload;
+      const list = state.byMatchId[msg.match_id];
+      if (!list) return;
+      const idx = list.findIndex((m) => m.id === msg.id);
+      if (idx !== -1) {
+        list[idx] = msg;
+      }
+    },
     // Drop a conversation from the cache when its match is removed (unmatch).
     removeMatchMessages(state, action: PayloadAction<string>) {
       delete state.byMatchId[action.payload];
@@ -115,5 +126,5 @@ const messagesSlice = createSlice({
   },
 });
 
-export const { addMessage, setTyping, setActiveMatch, removeMatchMessages } = messagesSlice.actions;
+export const { addMessage, setTyping, setActiveMatch, removeMatchMessages, replaceMessage } = messagesSlice.actions;
 export default messagesSlice.reducer;

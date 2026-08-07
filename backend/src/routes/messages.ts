@@ -45,6 +45,15 @@ router.post('/:id/like', async (req: Request, res: Response) => {
     }
     
     const updated = await messageService.addLike(messageId, userId);
+
+    // Push realtime update to both chat participants so the heart appears
+    // without a refresh, even for the user who didn't tap.
+    const io = (req.app as any).get('io');
+    if (io) {
+      io.to(`user:${message.user1_id}`).emit('message_liked', updated);
+      io.to(`user:${message.user2_id}`).emit('message_liked', updated);
+    }
+
     res.json(updated);
   } catch (err) {
     console.error('Error adding like:', err);
@@ -74,6 +83,15 @@ router.delete('/:id/like', async (req: Request, res: Response) => {
     }
     
     const updated = await messageService.removeLike(messageId, userId);
+
+    // Push realtime update to both chat participants so the heart disappears
+    // for the user who didn't tap too.
+    const io = (req.app as any).get('io');
+    if (io) {
+      io.to(`user:${message.user1_id}`).emit('message_unliked', updated);
+      io.to(`user:${message.user2_id}`).emit('message_unliked', updated);
+    }
+
     res.json(updated);
   } catch (err) {
     console.error('Error removing like:', err);

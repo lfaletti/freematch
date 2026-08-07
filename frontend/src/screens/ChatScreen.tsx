@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
-import { loadMessages, setTyping, setActiveMatch, removeMatchMessages, Message, toggleLike } from '../redux/slices/messagesSlice';
+import { loadMessages, setTyping, setActiveMatch, removeMatchMessages, Message, toggleLike, replaceMessage } from '../redux/slices/messagesSlice';
 import { clearUnread, removeMatch } from '../redux/slices/matchesSlice';
 import { loadUsers } from '../redux/slices/usersSlice';
 import { getSocket } from '../services/socketService';
@@ -55,13 +55,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
       dispatch(setTyping({ userId, typing: true }));
     const onTypingStop = ({ userId }: { userId: string }) =>
       dispatch(setTyping({ userId, typing: false }));
+    // Realtime like updates: when the other participant likes/unlikes a message,
+    // replace it so the heart count reflects immediately without a refresh.
+    const onMessageLiked = (message: Message) => dispatch(replaceMessage(message));
+    const onMessageUnliked = (message: Message) => dispatch(replaceMessage(message));
 
     socket.on('typing_start', onTypingStart);
     socket.on('typing_stop', onTypingStop);
+    socket.on('message_liked', onMessageLiked);
+    socket.on('message_unliked', onMessageUnliked);
 
     return () => {
       socket.off('typing_start', onTypingStart);
       socket.off('typing_stop', onTypingStop);
+      socket.off('message_liked', onMessageLiked);
+      socket.off('message_unliked', onMessageUnliked);
     };
   }, [match.id]);
 
