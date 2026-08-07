@@ -27,3 +27,6 @@ web-build/
 backend/uploads/
 
 .vercel
+
+.vercel
+.env*

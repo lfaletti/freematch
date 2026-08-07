@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { setSession } from '../redux/slices/sessionSlice';
 import { updateProfile } from '../services/userService';
 import { colors } from '../theme/colors';
+import CityPicker from '../components/CityPicker';
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
@@ -213,12 +214,10 @@ export default function EditProfileScreen({ navigation }: Props) {
 
         <View style={styles.field}>
           <Text style={styles.label}>Location</Text>
-          <TextInput
-            style={styles.input}
+          <CityPicker
             value={location}
-            onChangeText={setLocation}
-            placeholder="e.g. Buenos Aires, Argentina"
-            placeholderTextColor={colors.textMuted}
+            onChange={setLocation}
+            placeholder="Search city..."
           />
         </View>
 
