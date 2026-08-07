@@ -84,7 +84,9 @@ services:
       # (use 127.0.0.1, not localhost — Windows resolves localhost to IPv6 ::1).
       S3_PUBLIC_ENDPOINT: http://127.0.0.1:9000
       S3_BUCKET: freematch-dev
-      GEOAPIFY_API_KEY: 495ab4b788834f64b5884057a34ffdab
+      # Geoapify key comes from repo-root .env (gitignored) so the secret
+      # isn't committed. Fails loudly if missing.
+      GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:?}
     ports:
       - "3000:3000"
     depends_on:
