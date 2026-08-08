@@ -9,6 +9,7 @@ import { saveMessage } from './services/messageService';
 import { getMatchById } from './services/matchService';
 import { createApp } from './app';
 import { verifyToken, JWTPayload } from './services/authService';
+import { preloadNsfwModel } from './services/nsfwService';
 
 dotenv.config();
 
@@ -27,6 +28,14 @@ async function bootstrap() {
 
   const app = createApp();
   const server = http.createServer(app);
+
+  // Warm up the NSFW moderation model (downloads weights once on first ever
+  // boot, then reuses the singleton). Done eagerly so the first photo upload
+  // doesn't stall on cold-start. Failures are logged but don't kill the server;
+  // checkImage will retry loading the model lazily on demand.
+  preloadNsfwModel().catch((err) =>
+    console.error('NSFW model preload failed (will retry lazily):', err)
+  );
 
   const io = new Server(server, {
     cors: { origin: corsOrigin(), methods: ['GET', 'POST'] },

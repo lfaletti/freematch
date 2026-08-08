@@ -8,6 +8,7 @@ import {
   deletePhoto,
 } from '../services/photoService';
 import { getUserId } from '../utils/session';
+import { checkImage } from '../services/nsfwService';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -19,6 +20,17 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     }
 
     const userId = getUserId(req);
+
+    // Content moderation: reject nudity/adult content before storing anything.
+    // The upload uses memoryStorage, so req.file.buffer is available here.
+    const verdict = await checkImage(req.file.buffer, req.file.mimetype);
+    if (!verdict.allowed) {
+      return res.status(400).json({
+        error: 'Photo rejected: inappropriate content detected',
+        reason: verdict.classification,
+        confidence: verdict.confidence,
+      });
+    }
 
     const photoUrl = await uploadPhoto(req.file, userId);
     const photo = await savePhotoUrl(userId, photoUrl);
