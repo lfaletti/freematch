@@ -57,6 +57,7 @@ export function createApp() {
         interests: user.interests ?? [],
         gender: user.gender ?? undefined,
         seekingGender: user.seeking_gender ?? [],
+        language: user.language ?? 'es',
         token: token ?? null,
       });
     } catch (err) {

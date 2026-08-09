@@ -16,6 +16,7 @@ interface SessionState {
   interests?: string[];
   gender?: string;
   seekingGender?: string[];
+  language?: 'es' | 'en';
 }
 
 const initialState: SessionState = {
@@ -43,11 +44,14 @@ const sessionSlice = createSlice({
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken;
     },
+    setLanguage(state, action: PayloadAction<'es' | 'en'>) {
+      state.language = action.payload;
+    },
     clearSession() {
       return initialState;
     },
   },
 });
 
-export const { setSession, setToken, clearSession } = sessionSlice.actions;
+export const { setSession, setToken, setLanguage, clearSession } = sessionSlice.actions;
 export default sessionSlice.reducer;

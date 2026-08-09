@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
@@ -22,6 +23,7 @@ import { validateToken, refreshToken } from '../services/authService';
 import { storageService } from '../services/storageService';
 import { colors } from '../theme/colors';
 import { loadMatches } from '../redux/slices/matchesSlice';
+import i18n, { loadSavedLanguage, Language } from '../i18n';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -41,8 +43,9 @@ const initSession = async (dispatch: any) => {
       await storageService.setToken(data.token);
       await storageService.setRefreshToken(data.refreshToken);
 
-      // Validate to get the full user profile.
       const profile = await validateToken(data.token);
+      const profileLang: Language = profile.language === 'en' ? 'en' : 'es';
+      await i18n.changeLanguage(profileLang);
       dispatch(
         setSession({
           userId: profile.userId,
@@ -59,6 +62,7 @@ const initSession = async (dispatch: any) => {
           interests: profile.interests,
           gender: profile.gender,
           seekingGender: profile.seekingGender,
+          language: profileLang,
         }),
       );
     } else {
@@ -89,6 +93,7 @@ function TabNavigator() {
     Object.values(s.matches.unread).reduce((sum, n) => sum + n, 0)
   );
   const hasUnread = unreadCount > 0;
+  const { t } = useTranslation();
 
   return (
     <Tab.Navigator
@@ -109,7 +114,7 @@ function TabNavigator() {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: 'Discover',
+          tabBarLabel: t('tabs.discover'),
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🔥</Text>,
         }}
       />
@@ -117,7 +122,7 @@ function TabNavigator() {
         name="Matches"
         component={MatchesStack}
         options={{
-          tabBarLabel: 'Matches',
+          tabBarLabel: t('tabs.matches'),
           tabBarBadge: hasUnread ? unreadCount : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.primary, color: colors.white },
           // The heart turns into a love-letter while there are unread messages.
@@ -130,7 +135,7 @@ function TabNavigator() {
         name="Photos"
         component={PhotoScreen}
         options={{
-          tabBarLabel: 'Photos',
+          tabBarLabel: t('tabs.photos'),
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>📸</Text>,
         }}
       />
@@ -165,7 +170,13 @@ function RootNavigator() {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    initSession(dispatch).finally(() => setInitializing(false));
+    (async () => {
+      // Apply the user's saved language before first render to avoid a flash.
+      const saved = await loadSavedLanguage();
+      await i18n.changeLanguage(saved);
+      await initSession(dispatch);
+      setInitializing(false);
+    })();
   }, [dispatch]);
 
   // Load the match list on login; RealtimeManager owns the socket lifecycle.

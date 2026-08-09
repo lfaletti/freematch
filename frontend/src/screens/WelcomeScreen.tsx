@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export default function WelcomeScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -19,8 +21,8 @@ export default function WelcomeScreen({ navigation }: Props) {
             <Text style={styles.logoHeartText}>❤</Text>
           </View>
         </View>
-        <Text style={styles.logoText}>FreeMatch</Text>
-        <Text style={styles.tagline}>Find your spark</Text>
+        <Text style={styles.logoText}>{t('welcome.title')}</Text>
+        <Text style={styles.tagline}>{t('welcome.tagline')}</Text>
       </View>
 
       <View style={styles.actions}>
@@ -29,7 +31,7 @@ export default function WelcomeScreen({ navigation }: Props) {
           onPress={() => navigation.navigate('CreateAccount')}
           activeOpacity={0.85}
         >
-          <Text style={styles.primaryButtonText}>Create Account</Text>
+          <Text style={styles.primaryButtonText}>{t('welcome.createAccount')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -37,13 +39,11 @@ export default function WelcomeScreen({ navigation }: Props) {
           onPress={() => navigation.navigate('Login')}
           activeOpacity={0.85}
         >
-          <Text style={styles.secondaryButtonText}>Log In</Text>
+          <Text style={styles.secondaryButtonText}>{t('welcome.login')}</Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.disclaimer}>
-        By continuing you agree to our Terms of Service
-      </Text>
+      <Text style={styles.disclaimer}>{t('welcome.disclaimer')}</Text>
     </View>
   );
 }

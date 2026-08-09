@@ -56,6 +56,7 @@ export async function updateUserProfile(userId: string, updates: {
   location?: string;
   gender?: 'man' | 'woman' | 'other';
   seekingGender?: ('man' | 'woman' | 'other')[];
+  language?: 'es' | 'en';
 }) {
   const fields: string[] = [];
   const values: any[] = [];
@@ -94,6 +95,11 @@ export async function updateUserProfile(userId: string, updates: {
   if (updates.seekingGender !== undefined) {
     fields.push(`seeking_gender = $${idx}`);
     values.push(updates.seekingGender);
+    idx++;
+  }
+  if (updates.language !== undefined) {
+    fields.push(`language = $${idx}`);
+    values.push(updates.language);
     idx++;
   }
 

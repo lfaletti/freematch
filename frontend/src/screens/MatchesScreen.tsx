@@ -12,9 +12,11 @@ import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { loadMatches, Match } from '../redux/slices/matchesSlice';
 import { colors } from '../theme/colors';
 import { getPhotoUrl } from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 const MatchesScreen = ({ navigation }: { navigation: any }) => {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const sessionUserId = useAppSelector((s) => s.session.userId);
   const { all: matches, loading } = useAppSelector((s) => s.matches);
 
@@ -46,7 +48,7 @@ const MatchesScreen = ({ navigation }: { navigation: any }) => {
       <View style={styles.info}>
         <Text style={styles.name}>{item.partner_name}, {item.partner_age}</Text>
         <Text style={styles.lastMsg} numberOfLines={1}>
-          {item.last_message || 'Say hello! 👋'}
+          {item.last_message || t('matches.sayHello')}
         </Text>
       </View>
       <Text style={styles.chevron}>›</Text>
@@ -64,14 +66,14 @@ const MatchesScreen = ({ navigation }: { navigation: any }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Matches</Text>
-        <Text style={styles.subtitle}>{matches.length} connections</Text>
+        <Text style={styles.title}>{t('matches.title')}</Text>
+        <Text style={styles.subtitle}>{t('matches.subtitle', { count: matches.length })}</Text>
       </View>
       {matches.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyEmoji}>💫</Text>
-          <Text style={styles.emptyText}>No matches yet</Text>
-          <Text style={styles.emptySubtext}>Start swiping to meet people!</Text>
+          <Text style={styles.emptyText}>{t('matches.empty')}</Text>
+          <Text style={styles.emptySubtext}>{t('matches.emptySubtext')}</Text>
         </View>
       ) : (
         <FlatList

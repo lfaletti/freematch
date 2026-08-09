@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { loadMessages, setTyping, setActiveMatch, removeMatchMessages, Message, toggleLike, replaceMessage } from '../redux/slices/messagesSlice';
 import { clearUnread, removeMatch } from '../redux/slices/matchesSlice';
@@ -31,6 +32,7 @@ interface ChatScreenProps {
 const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
   const { match } = route.params;
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const sessionUserId = useAppSelector((s) => s.session.userId);
   const sessionPhoto = useAppSelector((s) => s.session.photo);
   const messages = useAppSelector((s) => s.messages.byMatchId[match.id] || []);
@@ -253,7 +255,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
           style={styles.input}
           value={inputText}
           onChangeText={setInputText}
-          placeholder="Type a message..."
+          placeholder={t('matches.typeMessage')}
           placeholderTextColor={colors.textMuted}
           onSubmitEditing={sendMessage}
           returnKeyType="send"
@@ -277,10 +279,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
 
       <ConfirmModal
         visible={confirmUnmatch}
-        title="Unmatch"
-        message={`Unmatch ${match.partner_name}? This deletes your conversation for both of you.`}
-        confirmText="Unmatch"
-        cancelText="Cancel"
+        title={t('matches.unmatchTitle')}
+        message={t('matches.unmatchMessage', { name: match.partner_name })}
+        confirmText={t('matches.unmatchConfirm')}
+        cancelText={t('common.cancel')}
         destructive
         onConfirm={handleUnmatch}
         onCancel={() => setConfirmUnmatch(false)}

@@ -10,11 +10,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '../redux/hooks';
 import { setSession } from '../redux/slices/sessionSlice';
 import { loginWithPassword } from '../services/authService';
 import { storageService } from '../services/storageService';
 import { colors } from '../theme/colors';
+import i18n, { Language, saveLanguage } from '../i18n';
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
@@ -22,6 +24,7 @@ type Props = {
 
 export default function LoginScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,11 +36,11 @@ export default function LoginScreen({ navigation }: Props) {
 
     setError(null);
     if (!trimmedEmail) {
-      setError('Please enter your email address.');
+      setError(t('login.errEmail'));
       return;
     }
     if (!trimmedPassword) {
-      setError('Please enter your password.');
+      setError(t('login.errPassword'));
       return;
     }
 
@@ -51,6 +54,9 @@ export default function LoginScreen({ navigation }: Props) {
       if (user.refreshToken) {
         await storageService.setRefreshToken(user.refreshToken);
       }
+      const userLang: Language = user.language === 'en' ? 'en' : 'es';
+      await i18n.changeLanguage(userLang);
+      await saveLanguage(userLang);
       dispatch(setSession({
         userId: user.userId,
         name: user.name,
@@ -64,16 +70,17 @@ export default function LoginScreen({ navigation }: Props) {
         slot: '',
         gender: user.gender,
         seekingGender: user.seekingGender,
+        language: userLang,
       }));
     } catch (err: any) {
       const status = err?.response?.status;
       const message = err?.response?.data?.error;
       if (status === 401) {
-        setError('Email or password is incorrect.');
+        setError(t('login.errInvalid'));
       } else if (status === 404) {
-        setError('No account found with that email.');
+        setError(t('login.errNoAccount'));
       } else {
-        setError(message ?? 'Login failed. Please check your connection and try again.');
+        setError(message ?? t('login.errNetwork'));
       }
     } finally {
       setLoading(false);
@@ -86,18 +93,18 @@ export default function LoginScreen({ navigation }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
-        <Text style={styles.backText}>← Back</Text>
+        <Text style={styles.backText}>{t('common.back')}</Text>
       </TouchableOpacity>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.subtitle}>Log in with your email</Text>
+        <Text style={styles.title}>{t('login.welcomeBack')}</Text>
+        <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>{t('login.email')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="you@example.com"
+            placeholder={t('login.emailPlaceholder')}
             placeholderTextColor={colors.textMuted}
             value={email}
             onChangeText={setEmail}
@@ -110,10 +117,10 @@ export default function LoginScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Password</Text>
+          <Text style={styles.label}>{t('login.password')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter your password"
+            placeholder={t('login.passwordPlaceholder')}
             placeholderTextColor={colors.textMuted}
             value={password}
             onChangeText={setPassword}
@@ -134,14 +141,14 @@ export default function LoginScreen({ navigation }: Props) {
           {loading ? (
             <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.buttonText}>Log In</Text>
+            <Text style={styles.buttonText}>{t('login.login')}</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
           <Text style={styles.switchLink}>
-            Don't have an account?{' '}
-            <Text style={styles.switchLinkHighlight}>Create one</Text>
+            {t('login.needAccount')}{' '}
+            <Text style={styles.switchLinkHighlight}>{t('login.createOne')}</Text>
           </Text>
         </TouchableOpacity>
       </View>

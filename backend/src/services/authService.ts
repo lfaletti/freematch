@@ -25,6 +25,7 @@ export interface RegisterInput {
   id?: string; // Pre-generated UUID for S3 upload; falls back to internal generation.
   gender?: GenderValue;
   seekingGender?: GenderValue[];
+  language?: 'es' | 'en';
 }
 
 export interface LoginInput {
@@ -48,6 +49,7 @@ export interface AuthResponse {
   emailVerified?: boolean;
   gender?: string;
   seekingGender?: string[];
+  language?: 'es' | 'en';
   token: string;
   refreshToken: string;
 }
@@ -93,9 +95,9 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
   const result = await query(
     `INSERT INTO users (
       id, name, email, password_hash, bio, born_date, phone_number, photo_url, is_mock,
-      gender, seeking_gender
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10)
-    RETURNING id, name, email, bio, born_date, phone_number, photo_url, gender, seeking_gender`,
+      gender, seeking_gender, language
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11)
+    RETURNING id, name, email, bio, born_date, phone_number, photo_url, gender, seeking_gender, language`,
     [
       id,
       input.name,
@@ -107,6 +109,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
       input.photo_url ?? null,
       input.gender ?? null,
       input.seekingGender ?? [],
+      input.language ?? 'es',
     ]
   );
 
@@ -125,6 +128,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     emailVerified: user.email_verified ?? false,
     gender: user.gender,
     seekingGender: user.seeking_gender,
+    language: user.language ?? 'es',
     token,
     refreshToken,
   };
@@ -132,7 +136,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
 
 export async function loginUser(input: LoginInput): Promise<AuthResponse | null> {
   const result = await query(
-    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, gender, seeking_gender
+    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, gender, seeking_gender, language
      FROM users WHERE email = $1 AND is_mock = false`,
     [input.email]
   );
@@ -164,6 +168,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse | null>
     emailVerified: user.email_verified ?? false,
     gender: user.gender,
     seekingGender: user.seeking_gender,
+    language: user.language ?? 'es',
     token,
     refreshToken,
   };

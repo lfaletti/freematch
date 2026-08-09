@@ -12,12 +12,14 @@ import {
   Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../redux/hooks';
 import { colors } from '../theme/colors';
 import { uploadPhoto, getUserPhotos, deletePhoto, Photo } from '../services/photoService';
 import ConfirmModal from '../components/ConfirmModal';
 
 const PhotoScreen = () => {
+  const { t } = useTranslation();
   const userId = useAppSelector((s) => s.session.userId);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,7 +61,7 @@ const PhotoScreen = () => {
       }
     } catch (err) {
       console.error('Failed to pick image:', err);
-      Alert.alert('Error', 'Failed to pick image');
+      Alert.alert(t('common.error'), t('photos.errPick'));
     }
   };
 
@@ -76,11 +78,11 @@ const PhotoScreen = () => {
 
       const newPhoto = await uploadPhoto(file);
       setPhotos([newPhoto, ...photos]);
-      Alert.alert('Success', 'Photo uploaded successfully');
+      Alert.alert(t('common.success'), t('photos.successUpload'));
     } catch (err) {
       console.error('Upload failed:', err);
       setError('Failed to upload photo');
-      Alert.alert('Error', 'Failed to upload photo');
+      Alert.alert(t('common.error'), t('photos.errUpload'));
     } finally {
       setUploading(false);
     }
@@ -95,7 +97,7 @@ const PhotoScreen = () => {
       if (Platform.OS === 'web') {
         setError('Failed to delete photo');
       } else {
-        Alert.alert('Error', 'Failed to delete photo');
+        Alert.alert(t('common.error'), t('photos.errDelete'));
       }
     }
   };
@@ -126,7 +128,7 @@ const PhotoScreen = () => {
     return (
       <View style={styles.container}>
         <View style={styles.center}>
-          <Text style={styles.emptyText}>Please log in to manage photos</Text>
+          <Text style={styles.emptyText}>{t('photos.requireLogin')}</Text>
         </View>
       </View>
     );
@@ -135,7 +137,7 @@ const PhotoScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Photos</Text>
+        <Text style={styles.title}>{t('photos.title')}</Text>
       </View>
 
       <View style={styles.uploadSection}>
@@ -149,7 +151,7 @@ const PhotoScreen = () => {
           ) : (
             <>
               <Text style={styles.uploadBtnIcon}>+</Text>
-              <Text style={styles.uploadBtnText}>Upload Photo</Text>
+              <Text style={styles.uploadBtnText}>{t('photos.upload')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -159,13 +161,13 @@ const PhotoScreen = () => {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.loadingText}>Loading your photos...</Text>
+          <Text style={styles.loadingText}>{t('photos.loading')}</Text>
         </View>
       ) : photos.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyText}>No photos yet</Text>
+          <Text style={styles.emptyText}>{t('photos.noPhotos')}</Text>
           <Text style={styles.emptySubtext}>
-            Upload your first photo to get started
+            {t('photos.noPhotosSubtext')}
           </Text>
         </View>
       ) : (
@@ -182,10 +184,10 @@ const PhotoScreen = () => {
 
       <ConfirmModal
         visible={pendingDeleteId !== null}
-        title="Delete Photo"
-        message="Are you sure you want to delete this photo?"
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('photos.deleteTitle')}
+        message={t('photos.deleteMessage')}
+        confirmText={t('photos.deleteConfirm')}
+        cancelText={t('photos.deleteCancel')}
         destructive
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDeleteId(null)}

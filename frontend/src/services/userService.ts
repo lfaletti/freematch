@@ -73,6 +73,7 @@ export interface ProfileUpdatePayload {
   photo_url?: string | null;
   gender?: string;
   seekingGender?: string[];
+  language?: 'es' | 'en';
 }
 
 export const updateProfile = async (updates: ProfileUpdatePayload) => {

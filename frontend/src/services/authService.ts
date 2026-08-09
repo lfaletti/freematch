@@ -13,6 +13,7 @@ export interface AuthResponse {
   refreshToken?: string;
   gender?: string;
   seekingGender?: string[];
+  language?: 'es' | 'en';
 }
 
 export const register = async (formData: FormData): Promise<AuthResponse> => {
@@ -62,6 +63,7 @@ export const registerWithPhoto = async (
     phoneNumber?: string;
     gender?: string;
     seekingGender?: string[];
+    language?: 'es' | 'en';
   },
   photo: RegisterPhotoFile,
 ): Promise<AuthResponse> => {
@@ -76,6 +78,7 @@ export const registerWithPhoto = async (
   if (fields.seekingGender && fields.seekingGender.length > 0) {
     formData.append('seekingGender', JSON.stringify(fields.seekingGender));
   }
+  if (fields.language) formData.append('language', fields.language);
 
   if (Platform.OS === 'web') {
     // On web FormData needs real bytes — the RN { uri, type, name } object would
@@ -119,6 +122,7 @@ export interface SessionProfile {
   interests?: string[];
   gender?: string;
   seekingGender?: string[];
+  language?: 'es' | 'en';
   token: string | null;
 }
 

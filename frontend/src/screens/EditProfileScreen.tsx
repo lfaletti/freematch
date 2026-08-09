@@ -12,11 +12,14 @@ import {
   Platform,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
-import { setSession } from '../redux/slices/sessionSlice';
+import { setSession, setLanguage } from '../redux/slices/sessionSlice';
 import { updateProfile } from '../services/userService';
 import { colors } from '../theme/colors';
 import CityPicker from '../components/CityPicker';
+import LanguagePicker from '../components/LanguagePicker';
+import i18n, { Language, saveLanguage } from '../i18n';
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
@@ -25,15 +28,23 @@ type Props = {
 const GENDER_OPTIONS = ['man', 'woman', 'other'] as const;
 type GenderOption = typeof GENDER_OPTIONS[number];
 
-const GENDER_LABELS: Record<GenderOption, string> = {
-  man: 'Hombre',
-  woman: 'Mujer',
-  other: 'Otro',
-};
-
 export default function EditProfileScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const session = useAppSelector((s) => s.session);
+  const { t } = useTranslation();
+
+  // Inicializa el idioma desde la sesión (valor persistido del usuario).
+  const [language, setLanguageState] = useState<Language>(
+    session.language === 'en' ? 'en' : 'es',
+  );
+
+  const handleLanguageChange = (lang: Language) => {
+    setLanguageState(lang);
+    i18n.changeLanguage(lang);
+    saveLanguage(lang);
+    dispatch(setLanguage(lang));
+  };
+
 
   const [name, setName] = useState(session.name ?? '');
   const [bio, setBio] = useState(session.bio ?? '');
@@ -54,17 +65,17 @@ export default function EditProfileScreen({ navigation }: Props) {
     setError(null);
 
     if (!name.trim()) {
-      setError('Name is required.');
+      setError(t('editProfile.errName'));
       return;
     }
 
     if (!gender) {
-      setError('Please select your gender.');
+      setError(t('editProfile.errGender'));
       return;
     }
 
     if (seekingGenders.length === 0) {
-      setError('Please select at least one gender you are interested in.');
+      setError(t('editProfile.errSeeking'));
       return;
     }
 
@@ -82,6 +93,7 @@ export default function EditProfileScreen({ navigation }: Props) {
         interests: interests.length > 0 ? interests : undefined,
         gender: gender ?? undefined,
         seekingGender: seekingGenders.length > 0 ? seekingGenders : undefined,
+        language,
       });
 
       // Update Redux session so the UI reflects changes immediately
@@ -101,14 +113,15 @@ export default function EditProfileScreen({ navigation }: Props) {
           interests,
           gender: updated.gender ?? gender,
           seekingGender: updated.seekingGender ?? seekingGenders,
+          language,
         }),
       );
 
-      Alert.alert('Success', 'Profile updated!');
+      Alert.alert(t('common.success'), t('editProfile.updated'));
       navigation.goBack();
     } catch (err: any) {
       const message = err?.response?.data?.error;
-      setError(message ?? 'Failed to update profile.');
+      setError(message ?? t('editProfile.errUpdate'));
     } finally {
       setLoading(false);
     }
@@ -131,9 +144,9 @@ export default function EditProfileScreen({ navigation }: Props) {
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Edit Profile</Text>
+          <Text style={styles.title}>{t('editProfile.title')}</Text>
           <TouchableOpacity
             style={[styles.saveBtn, loading && styles.saveBtnDisabled]}
             onPress={handleSave}
@@ -142,16 +155,22 @@ export default function EditProfileScreen({ navigation }: Props) {
             {loading ? (
               <ActivityIndicator color={colors.white} size="small" />
             ) : (
-              <Text style={styles.saveText}>Save</Text>
+              <Text style={styles.saveText}>{t('common.save')}</Text>
             )}
           </TouchableOpacity>
         </View>
 
         {error && <Text style={styles.error}>{error}</Text>}
 
+        {/* Language */}
+        <View style={styles.field}>
+          <Text style={styles.label}>{t('language.label')}</Text>
+          <LanguagePicker value={language} onChange={handleLanguageChange} />
+        </View>
+
         {/* Gender */}
         <View style={styles.field}>
-          <Text style={styles.label}>I am</Text>
+          <Text style={styles.label}>{t('gender.iAm')}</Text>
           <View style={styles.chipRow}>
             {GENDER_OPTIONS.map((option) => (
               <TouchableOpacity
@@ -161,7 +180,7 @@ export default function EditProfileScreen({ navigation }: Props) {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.chipText, gender === option && styles.chipTextSelected]}>
-                  {GENDER_LABELS[option]}
+                  {t(`gender.${option}`)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -169,7 +188,7 @@ export default function EditProfileScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Interested in</Text>
+          <Text style={styles.label}>{t('gender.interestedIn')}</Text>
           <View style={styles.chipRow}>
             {GENDER_OPTIONS.map((option) => (
               <TouchableOpacity
@@ -179,7 +198,7 @@ export default function EditProfileScreen({ navigation }: Props) {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.chipText, seekingGenders.includes(option) && styles.chipTextSelected]}>
-                  {GENDER_LABELS[option]}
+                  {t(`gender.${option}`)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -187,24 +206,24 @@ export default function EditProfileScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Name</Text>
+          <Text style={styles.label}>{t('editProfile.name')}</Text>
           <TextInput
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="Your name"
+            placeholder={t('editProfile.namePlaceholder')}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="words"
           />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Bio</Text>
+          <Text style={styles.label}>{t('editProfile.bio')}</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             value={bio}
             onChangeText={setBio}
-            placeholder="Tell people about yourself…"
+            placeholder={t('editProfile.bioPlaceholder')}
             placeholderTextColor={colors.textMuted}
             multiline
             numberOfLines={4}
@@ -213,7 +232,7 @@ export default function EditProfileScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Location</Text>
+          <Text style={styles.label}>{t('editProfile.location')}</Text>
           <CityPicker
             value={location}
             onChange={setLocation}
@@ -222,15 +241,15 @@ export default function EditProfileScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Interests</Text>
+          <Text style={styles.label}>{t('editProfile.interests')}</Text>
           <TextInput
             style={styles.input}
             value={interestsText}
             onChangeText={setInterestsText}
-            placeholder="e.g. hiking, music, cooking"
+            placeholder={t('editProfile.interestsPlaceholder')}
             placeholderTextColor={colors.textMuted}
           />
-          <Text style={styles.hint}>Separate with commas</Text>
+          <Text style={styles.hint}>{t('editProfile.interestsHint')}</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

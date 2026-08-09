@@ -13,12 +13,16 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '../redux/hooks';
 import { setSession } from '../redux/slices/sessionSlice';
 import { registerWithPhoto } from '../services/authService';
 import { uploadPhoto } from '../services/photoService';
 import { storageService } from '../services/storageService';
 import { colors } from '../theme/colors';
+import LanguagePicker from '../components/LanguagePicker';
+import i18n from '../i18n';
+import { Language, saveLanguage } from '../i18n';
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
@@ -38,14 +42,9 @@ const GENDER_OPTIONS = ['man', 'woman', 'other'] as const;
 
 type GenderOption = typeof GENDER_OPTIONS[number];
 
-const GENDER_LABELS: Record<GenderOption, string> = {
-  man: 'Man',
-  woman: 'Woman',
-  other: 'Other',
-};
-
 export default function CreateAccountScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [bornDate, setBornDate] = useState('');
@@ -57,6 +56,13 @@ export default function CreateAccountScreen({ navigation }: Props) {
   const [photos, setPhotos] = useState<PickedImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [language, setLanguageState] = useState<Language>('es');
+
+  const handleLanguageChange = (lang: Language) => {
+    setLanguageState(lang);
+    i18n.changeLanguage(lang);
+    saveLanguage(lang);
+  };
 
   const pickPhoto = async () => {
     if (photos.length >= MAX_PHOTOS) return;
@@ -64,7 +70,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
     if (Platform.OS !== 'web') {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please allow access to your photo library.');
+        Alert.alert(t('createAccount.permissionNeeded'), t('createAccount.permissionMessage'));
         return;
       }
     }
@@ -103,26 +109,27 @@ export default function CreateAccountScreen({ navigation }: Props) {
   };
 
   const validate = (): string | null => {
-    if (photos.length === 0) return 'Please add at least one photo.';
-    if (!name.trim()) return 'Name is required.';
-    if (!email.trim()) return 'Email is required.';
+    const c = t;
+    if (photos.length === 0) return c('createAccount.errPhoto');
+    if (!name.trim()) return c('createAccount.errName');
+    if (!email.trim()) return c('createAccount.errEmail');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      return 'Please enter a valid email address.';
+      return c('createAccount.errEmailFormat');
     }
-    if (!password.trim()) return 'Password is required.';
-    if (password.length < 6) return 'Password must be at least 6 characters.';
-    if (password !== confirmPassword) return 'Passwords do not match.';
-    if (!bornDate.trim()) return 'Date of birth is required.';
+    if (!password.trim()) return c('createAccount.errPassword');
+    if (password.length < 6) return c('createAccount.errPasswordLength');
+    if (password !== confirmPassword) return c('createAccount.errPasswordMatch');
+    if (!bornDate.trim()) return c('createAccount.errBornDate');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(bornDate.trim())) {
-      return 'Date of birth must be in YYYY-MM-DD format.';
+      return c('createAccount.errBornDateFormat');
     }
     const parsed = new Date(bornDate.trim());
-    if (isNaN(parsed.getTime())) return 'Date of birth is not a valid date.';
+    if (isNaN(parsed.getTime())) return c('createAccount.errBornDateInvalid');
     const age = Math.floor((Date.now() - parsed.getTime()) / (365.25 * 24 * 3600 * 1000));
-    if (age < 18) return 'You must be at least 18 years old.';
-    if (age > 120) return 'Please enter a valid date of birth.';
-    if (!gender) return 'Please select your gender.';
-    if (seekingGenders.length === 0) return 'Please select at least one gender you\'re interested in.';
+    if (age < 18) return c('createAccount.errUnder18');
+    if (age > 120) return c('createAccount.errAgeInvalid');
+    if (!gender) return c('createAccount.errGender');
+    if (seekingGenders.length === 0) return c('createAccount.errSeeking');
     return null;
   };
 
@@ -147,6 +154,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
           bio: bio.trim() || undefined,
           gender: gender ?? undefined,
           seekingGender: seekingGenders.length > 0 ? seekingGenders : undefined,
+          language,
         },
         { uri: profile.uri, type: profile.mimeType, name: profile.fileName },
       );
@@ -186,9 +194,9 @@ export default function CreateAccountScreen({ navigation }: Props) {
       const status = err?.response?.status;
       const message = err?.response?.data?.error;
       if (status === 409) {
-        setError('That email is already linked to an account.');
+        setError(t('createAccount.errEmailTaken'));
       } else {
-        setError(message ?? 'Registration failed. Please try again.');
+        setError(message ?? t('createAccount.registrationFailed'));
       }
     } finally {
       setLoading(false);
@@ -202,28 +210,28 @@ export default function CreateAccountScreen({ navigation }: Props) {
       keyboardShouldPersistTaps="handled"
     >
       <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
-        <Text style={styles.backText}>← Back</Text>
+        <Text style={styles.backText}>{t('common.back')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Create your profile</Text>
-      <Text style={styles.subtitle}>Let's get you set up</Text>
+      <Text style={styles.title}>{t('createAccount.title')}</Text>
+      <Text style={styles.subtitle}>{t('createAccount.subtitle')}</Text>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Photos <Text style={styles.required}>*</Text></Text>
-        <Text style={styles.photoHint}>Add at least one photo. The first is your main photo.</Text>
+        <Text style={styles.label}>{t('createAccount.photos')} <Text style={styles.required}>{t('common.required')}</Text></Text>
+        <Text style={styles.photoHint}>{t('createAccount.addAtLeastOne')}</Text>
         <View style={styles.photoGrid}>
           {photos.map((p, index) => (
             <View key={`${p.uri}-${index}`} style={styles.photoTile}>
               <Image source={{ uri: p.uri }} style={styles.photoTileImage} />
               {index === 0 && (
                 <View style={styles.mainBadge}>
-                  <Text style={styles.mainBadgeText}>MAIN</Text>
+                  <Text style={styles.mainBadgeText}>{t('createAccount.main')}</Text>
                 </View>
               )}
               <TouchableOpacity
                 style={styles.removePhotoBtn}
                 onPress={() => removePhoto(index)}
-                accessibilityLabel="Remove photo"
+                accessibilityLabel={t('createAccount.removePhoto')}
               >
                 <Text style={styles.removePhotoText}>✕</Text>
               </TouchableOpacity>
@@ -232,17 +240,17 @@ export default function CreateAccountScreen({ navigation }: Props) {
           {photos.length < MAX_PHOTOS && (
             <TouchableOpacity style={styles.addPhotoTile} onPress={pickPhoto} activeOpacity={0.7}>
               <Text style={styles.addPhotoIcon}>＋</Text>
-              <Text style={styles.addPhotoText}>Add photo</Text>
+              <Text style={styles.addPhotoText}>{t('createAccount.addPhoto')}</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Name <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>{t('createAccount.name')} <Text style={styles.required}>{t('common.required')}</Text></Text>
         <TextInput
           style={styles.input}
-          placeholder="Your first name"
+          placeholder={t('createAccount.namePlaceholder')}
           placeholderTextColor={colors.textMuted}
           value={name}
           onChangeText={setName}
@@ -252,10 +260,10 @@ export default function CreateAccountScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Email <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>{t('createAccount.email')} <Text style={styles.required}>{t('common.required')}</Text></Text>
         <TextInput
           style={styles.input}
-          placeholder="you@example.com"
+          placeholder={t('createAccount.emailPlaceholder')}
           placeholderTextColor={colors.textMuted}
           value={email}
           onChangeText={setEmail}
@@ -266,10 +274,10 @@ export default function CreateAccountScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Password <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>{t('createAccount.password')} <Text style={styles.required}>{t('common.required')}</Text></Text>
         <TextInput
           style={styles.input}
-          placeholder="At least 6 characters"
+          placeholder={t('createAccount.passwordPlaceholder')}
           placeholderTextColor={colors.textMuted}
           value={password}
           onChangeText={setPassword}
@@ -279,10 +287,10 @@ export default function CreateAccountScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Confirm Password <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>{t('createAccount.confirmPassword')} <Text style={styles.required}>{t('common.required')}</Text></Text>
         <TextInput
           style={styles.input}
-          placeholder="Re-enter your password"
+          placeholder={t('createAccount.confirmPasswordPlaceholder')}
           placeholderTextColor={colors.textMuted}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -292,7 +300,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Date of Birth <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>{t('createAccount.dateOfBirth')} <Text style={styles.required}>{t('common.required')}</Text></Text>
         {Platform.OS === 'web' ? (
           // @ts-ignore - native web date input
           <input
@@ -316,7 +324,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
         ) : (
           <TextInput
             style={styles.input}
-            placeholder="YYYY-MM-DD"
+            placeholder={t('createAccount.dateOfBirthPlaceholder')}
             placeholderTextColor={colors.textMuted}
             value={bornDate}
             onChangeText={setBornDate}
@@ -328,10 +336,10 @@ export default function CreateAccountScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>About you</Text>
+        <Text style={styles.label}>{t('createAccount.aboutYou')}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="Write a short bio…"
+          placeholder={t('createAccount.aboutYouPlaceholder')}
           placeholderTextColor={colors.textMuted}
           value={bio}
           onChangeText={setBio}
@@ -343,7 +351,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>I am <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>{t('gender.iAm')} <Text style={styles.required}>{t('common.required')}</Text></Text>
         <View style={styles.chipRow}>
           {GENDER_OPTIONS.map((option) => (
             <TouchableOpacity
@@ -361,7 +369,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
                   gender === option && styles.chipTextSelected,
                 ]}
               >
-                {GENDER_LABELS[option]}
+                {t(`gender.${option}`)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -369,7 +377,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Interested in <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>{t('gender.interestedIn')} <Text style={styles.required}>{t('common.required')}</Text></Text>
         <View style={styles.chipRow}>
           {GENDER_OPTIONS.map((option) => (
             <TouchableOpacity
@@ -387,11 +395,16 @@ export default function CreateAccountScreen({ navigation }: Props) {
                   seekingGenders.includes(option) && styles.chipTextSelected,
                 ]}
               >
-                {GENDER_LABELS[option]}
+                {t(`gender.${option}`)}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>{t('language.label')}</Text>
+        <LanguagePicker value={language} onChange={handleLanguageChange} />
       </View>
 
       {error && <Text style={styles.error}>{error}</Text>}
@@ -405,14 +418,14 @@ export default function CreateAccountScreen({ navigation }: Props) {
         {loading ? (
           <ActivityIndicator color={colors.white} />
         ) : (
-          <Text style={styles.buttonText}>Create Account</Text>
+          <Text style={styles.buttonText}>{t('createAccount.createAccount')}</Text>
         )}
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.switchRow}>
         <Text style={styles.switchLink}>
-          Already have an account?{' '}
-          <Text style={styles.switchLinkHighlight}>Log in</Text>
+          {t('createAccount.alreadyHaveAccount')}{' '}
+          <Text style={styles.switchLinkHighlight}>{t('createAccount.logIn')}</Text>
         </Text>
       </TouchableOpacity>
     </ScrollView>

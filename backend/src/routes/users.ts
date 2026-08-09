@@ -44,7 +44,11 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.patch('/me', async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
-    const { name, bio, photo_url, interests, location, gender, seekingGender } = req.body;
+    const { name, bio, photo_url, interests, location, gender, seekingGender, language } = req.body;
+
+    if (language !== undefined && language !== 'es' && language !== 'en') {
+      return res.status(400).json({ error: 'language must be es or en' });
+    }
 
     const validGenders = ['man', 'woman', 'other'];
     if (gender !== undefined && !validGenders.includes(gender)) {
@@ -68,6 +72,7 @@ router.patch('/me', async (req: Request, res: Response) => {
       location: location?.trim(),
       gender,
       seekingGender,
+      language,
     });
 
     if (!updated) return res.status(400).json({ error: 'No fields to update' });
@@ -80,6 +85,7 @@ router.patch('/me', async (req: Request, res: Response) => {
       bornDate: updated.born_date,
       phoneNumber: updated.phone_number,
       email: updated.email,
+      language: updated.language ?? 'es',
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update profile' });

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { loadUsers, advanceCard, recordSwipe } from '../redux/slices/usersSlice';
 import { addMatch, loadMatches } from '../redux/slices/matchesSlice';
@@ -20,6 +21,7 @@ import { resetLeftSwipes } from '../services/userService';
 
 const HomeScreen = () => {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const sessionUserId = useAppSelector((s) => s.session.userId);
   const { all: users, currentIndex, loading, loaded, error } = useAppSelector((s) => s.users);
   const [swiping, setSwiping] = useState(false);
@@ -113,16 +115,16 @@ const HomeScreen = () => {
       return (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Finding people near you...</Text>
+          <Text style={styles.loadingText}>{t('home.loading')}</Text>
         </View>
       );
     }
     if (error) {
       return (
         <View style={styles.center}>
-          <Text style={styles.errorText}>Could not connect to server.</Text>
+          <Text style={styles.errorText}>{t('home.error')}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => dispatch(loadUsers())}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('home.retry')}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -131,8 +133,8 @@ const HomeScreen = () => {
       return (
         <View style={styles.center}>
           <Text style={styles.doneEmoji}>🎉</Text>
-          <Text style={styles.doneText}>That's all for now</Text>
-          <Text style={styles.doneSubtext}>You've seen everyone. Check your matches and start chatting.</Text>
+          <Text style={styles.doneText}>{t('home.done')}</Text>
+          <Text style={styles.doneSubtext}>{t('home.doneSubtext')}</Text>
         </View>
       );
     }
@@ -167,7 +169,7 @@ const HomeScreen = () => {
         <View style={styles.headerSpacer} />
         <View style={styles.headerCenter}>
           <Text style={styles.logo}>FreeMatch</Text>
-          <Text style={styles.tagline}>Connect freely ❤️</Text>
+          <Text style={styles.tagline}>{t('home.tagline')}</Text>
         </View>
         <View style={styles.menuContainer}>
           <TouchableOpacity style={styles.menuBtn} onPress={() => setMenuOpen(!menuOpen)}>
@@ -177,14 +179,14 @@ const HomeScreen = () => {
             <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuOpen(false)}>
               <View style={styles.menuDropdown}>
                 <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}>
-                  <Text style={styles.menuItemText}>✏️ Editar perfil</Text>
+                  <Text style={styles.menuItemText}>✏️ {t('home.editProfile')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); setResetDialog(true); }}>
-                  <Text style={styles.menuItemText}>🔄 Reiniciar swipes</Text>
+                  <Text style={styles.menuItemText}>🔄 {t('home.resetSwipes')}</Text>
                 </TouchableOpacity>
                 <View style={styles.menuDivider} />
                 <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-                  <Text style={[styles.menuItemText, styles.logoutText]}>🚪 Salir</Text>
+                  <Text style={[styles.menuItemText, styles.logoutText]}>🚪 {t('home.logout')}</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -195,16 +197,16 @@ const HomeScreen = () => {
       <Modal visible={resetDialog} transparent animationType="fade" onRequestClose={() => setResetDialog(false)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setResetDialog(false)}>
           <View style={styles.dialog}>
-            <Text style={styles.dialogTitle}>⚠️ Reiniciar swipes</Text>
+            <Text style={styles.dialogTitle}>⚠️ {t('home.resetConfirmTitle')}</Text>
             <Text style={styles.dialogText}>
-              Volverás a ver nuevamente a las personas que le diste No like. ¿Estás seguro/a?
+              {t('home.resetConfirmMessage')}
             </Text>
             <View style={styles.dialogButtons}>
               <TouchableOpacity style={styles.dialogCancel} onPress={() => setResetDialog(false)}>
-                <Text style={styles.dialogCancelText}>Cancelar</Text>
+                <Text style={styles.dialogCancelText}>{t('home.resetConfirmCancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.dialogConfirm} onPress={handleResetSwipes}>
-                <Text style={styles.dialogConfirmText}>Sí, reiniciar</Text>
+                <Text style={styles.dialogConfirmText}>{t('home.resetConfirmOk')}</Text>
               </TouchableOpacity>
             </View>
           </View>

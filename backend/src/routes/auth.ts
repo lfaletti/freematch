@@ -101,7 +101,7 @@ function calculateAge(bornDate: string): number | null {
 
 router.post('/register', registerRateLimiter, registerIntervalMiddleware, memoryUpload.single('photo'), async (req, res) => {
   try {
-    const { name, email, password, bio, born_date, phone_number, gender, seekingGender } = req.body;
+    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language } = req.body;
 
     if (!name || !email || !password || !born_date) {
       res.status(400).json({ error: 'name, email, password, and born_date are required' });
@@ -149,6 +149,7 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       id,
       gender,
       seekingGender: seekingGender ? (typeof seekingGender === 'string' ? [seekingGender] : seekingGender) : undefined,
+      language: language === 'en' ? 'en' : 'es',
     };
 
     const result = await registerUser(input);
@@ -164,6 +165,7 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       emailVerified: result.emailVerified ?? false,
       gender: result.gender,
       seekingGender: result.seekingGender,
+      language: result.language ?? 'es',
       token: result.token,
       refreshToken: result.refreshToken,
     });
@@ -206,6 +208,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         emailVerified: result.emailVerified ?? false,
         gender: result.gender,
         seekingGender: result.seekingGender,
+        language: result.language ?? 'es',
         token: result.token,
         refreshToken: result.refreshToken,
       });
