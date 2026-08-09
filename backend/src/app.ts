@@ -30,6 +30,18 @@ export function createApp() {
   app.use(express.json());
   app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+  // Maneja errores de JSON inválido en el body (express.json()). Sin esto, el
+  // cliente recibe un mensaje crudo tipo "}" que contamina los logs. Acá
+  // respondemos un 400 limpio y logueamos solo un resumen útil.
+  app.use((err: any, _req: Request, res: Response, next: any) => {
+    const httpErr = err as { status?: number; body?: any };
+    if (err instanceof SyntaxError && httpErr.status === 400 && 'body' in httpErr) {
+      res.status(400).json({ error: 'Invalid JSON body' });
+      return;
+    }
+    next(err);
+  });
+
   app.get('/health', (_req: Request, res: Response) => res.json({ status: 'ok' }));
 
   app.get('/api/session', async (req: Request, res: Response) => {
