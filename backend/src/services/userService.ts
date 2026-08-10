@@ -116,3 +116,33 @@ export async function updateUserProfile(userId: string, updates: {
   );
   return result.rows[0] || null;
 }
+
+// Right to erasure (GDPR art. 17): delete a user and every record tied to them.
+// We remove rows explicitly in dependency order rather than relying solely on
+// FK cascades, so this works even if a DB predates the cascade migration.
+// NOTE: caller is responsible for deleting the user's photo objects from the
+// object store (R2/MinIO) before calling this — the photos table row is removed
+// here but the file lives outside Postgres.
+export async function deleteUserAccount(userId: string): Promise<boolean> {
+  // Messages inside matches the user is part of.
+  await query(
+    `DELETE FROM messages WHERE match_id IN (
+       SELECT id FROM matches WHERE user1_id = $1 OR user2_id = $1
+     )`,
+    [userId],
+  );
+
+  // All matches involving the user (both sides).
+  await query(`DELETE FROM matches WHERE user1_id = $1 OR user2_id = $1`, [userId]);
+
+  // Swipes the user made or received.
+  await query(`DELETE FROM swipes WHERE swiper_id = $1 OR swiped_id = $1`, [userId]);
+
+  // Refresh tokens and photo metadata.
+  await query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [userId]);
+  await query(`DELETE FROM photos WHERE user_id = $1`, [userId]);
+
+  // Finally the user row itself.
+  const result = await query(`DELETE FROM users WHERE id = $1 RETURNING id`, [userId]);
+  return result.rows.length > 0;
+}

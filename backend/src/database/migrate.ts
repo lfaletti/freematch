@@ -132,6 +132,9 @@ export async function runMigrations() {
   const sql010_lang = fs.readFileSync(path.join(__dirname, 'migrations/010_language.sql'), 'utf8');
   await query(sql010_lang);
 
+  const sql011_privacy = fs.readFileSync(path.join(__dirname, 'migrations/011_privacy.sql'), 'utf8');
+  await query(sql011_privacy);
+
   console.log('Migrations ran successfully');
 }
 

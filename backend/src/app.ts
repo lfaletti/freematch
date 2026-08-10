@@ -10,6 +10,7 @@ import matchesRouter from './routes/matches';
 import messagesRouter from './routes/messages';
 import authRouter from './routes/auth';
 import photosRouter from './routes/photos';
+import legalRouter from './routes/legal';
 import { apiLimiter, authLimiter, swipeLimiter } from './middleware/rateLimiter';
 
 export { getUserId, USER_SLOTS };
@@ -83,6 +84,7 @@ export function createApp() {
   app.use('/api/matches', matchesRouter);
   app.use('/api/messages', messagesRouter);
   app.use('/api/photos', photosRouter);
+  app.use('/api/legal', legalRouter);
 
   // City autocomplete via Geoapify
   app.get('/api/cities', async (req: Request, res: Response) => {

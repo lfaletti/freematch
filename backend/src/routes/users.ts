@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import * as userService from '../services/userService';
 import * as photoService from '../services/photoService';
+import { deletePhotoFromS3 } from '../services/s3Service';
 import { getUserId } from '../utils/session';
 
 const router = Router();
@@ -89,6 +90,56 @@ router.patch('/me', async (req: Request, res: Response) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// DELETE /api/users/me
+// Right to erasure (GDPR art. 17): delete the authenticated user's account and
+// all of their data (profile, photos, swipes, matches, messages, tokens).
+// The user must explicitly confirm on the client; this endpoint is destructive
+// and there is no undo.
+router.delete('/me', async (req: Request, res: Response) => {
+  let userId: string;
+  try {
+    userId = getUserId(req);
+  } catch (err) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  try {
+    // 1) Remove the user's photo objects from the object store (R2/MinIO).
+    //    Best-effort: if an object delete fails we still remove the DB rows so
+    //    the account itself can always be erased.
+    const photos = await photoService.getUserPhotos(userId);
+    for (const p of photos) {
+      try {
+        await deletePhotoFromS3(p.url);
+      } catch (e) {
+        console.warn('S3 delete during account deletion failed (continuing):', e);
+      }
+    }
+
+    // Also remove the main profile photo_url if it points at the object store.
+    const user = await userService.getUserById(userId);
+    const mainPhoto = user?.photo_url;
+    if (mainPhoto && !photos.some((p) => p.url === mainPhoto)) {
+      try {
+        await deletePhotoFromS3(mainPhoto);
+      } catch (e) {
+        console.warn('S3 delete of profile photo failed (continuing):', e);
+      }
+    }
+
+    // 2) Remove every DB record tied to the user.
+    const deleted = await userService.deleteUserAccount(userId);
+    if (!deleted) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({ success: true, message: 'Account and all associated data deleted' });
+  } catch (err) {
+    console.error('Account deletion error:', err);
+    return res.status(500).json({ error: 'Failed to delete account' });
   }
 });
 

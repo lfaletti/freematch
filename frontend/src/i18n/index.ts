@@ -36,6 +36,12 @@ const es = {
       en: 'English',
     },
 
+    // ── Legal ──
+    legal: {
+      privacy: 'Política de Privacidad',
+      terms: 'Términos de Servicio',
+    },
+
     // ── Welcome ──
     welcome: {
       title: 'FreeMatch',
@@ -89,6 +95,11 @@ const es = {
       errGender: 'Seleccioná tu género.',
       errSeeking: 'Seleccioná al menos un género que te interese.',
       errEmailTaken: 'Ese email ya está vinculado a una cuenta.',
+      // legal consent
+      legalPrefix: 'Acepto la',
+      legalAnd: 'y los',
+      legalSuffix: 'para crear mi cuenta.',
+      errLegal: 'Debés aceptar la Política de Privacidad y los Términos de Servicio para crear tu cuenta.',
     },
 
     // ── Login ──
@@ -128,6 +139,16 @@ const es = {
       errGender: 'Seleccioná tu género.',
       errSeeking: 'Seleccioná al menos un género que te interese.',
       errUpdate: 'No se pudo actualizar el perfil.',
+      // account deletion
+      deleteTitle: 'Eliminar cuenta',
+      deleteHint: 'Esto borra tu perfil, fotos, matches y mensajes de forma permanente e irreversible.',
+      deleteBtn: 'Eliminar mi cuenta',
+      deleteConfirmTitle: '¿Eliminar tu cuenta definitivamente?',
+      deleteConfirmMessage: 'Esta acción es permanente y no se puede deshacer. Escribí tu email para confirmar.',
+      deletePlaceholder: 'Escribí tu email',
+      deleteForever: 'Eliminar definitivamente',
+      deleteErrEmail: 'El email no coincide. Escribí el email de tu cuenta para confirmar.',
+      deleteErrFailed: 'No se pudo eliminar la cuenta. Intentá de nuevo.',
     },
 
     // ── Home / Discover ──
@@ -223,6 +244,12 @@ const en = {
       en: 'English',
     },
 
+    // ── Legal ──
+    legal: {
+      privacy: 'Privacy Policy',
+      terms: 'Terms of Service',
+    },
+
     // ── Welcome ──
     welcome: {
       title: 'FreeMatch',
@@ -275,6 +302,11 @@ const en = {
       errGender: 'Please select your gender.',
       errSeeking: "Please select at least one gender you're interested in.",
       errEmailTaken: 'That email is already linked to an account.',
+      // legal consent
+      legalPrefix: 'I accept the',
+      legalAnd: 'and the',
+      legalSuffix: 'to create my account.',
+      errLegal: 'You must accept the Privacy Policy and Terms of Service to create your account.',
     },
 
     // ── Login ──
@@ -314,6 +346,16 @@ const en = {
       errGender: 'Please select your gender.',
       errSeeking: 'Please select at least one gender you are interested in.',
       errUpdate: 'Failed to update profile.',
+      // account deletion
+      deleteTitle: 'Delete Account',
+      deleteHint: 'This permanently and irreversibly deletes your profile, photos, matches, and messages.',
+      deleteBtn: 'Delete my account',
+      deleteConfirmTitle: 'Delete your account for good?',
+      deleteConfirmMessage: 'This action is permanent and cannot be undone. Type your email to confirm.',
+      deletePlaceholder: 'Type your email',
+      deleteForever: 'Delete permanently',
+      deleteErrEmail: 'Email does not match. Type the email on your account to confirm.',
+      deleteErrFailed: 'Could not delete your account. Please try again.',
     },
 
     // ── Home / Discover ──

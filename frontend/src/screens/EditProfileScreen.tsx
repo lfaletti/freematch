@@ -10,13 +10,15 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
-import { setSession, setLanguage } from '../redux/slices/sessionSlice';
-import { updateProfile } from '../services/userService';
+import { setSession, setLanguage, clearSession } from '../redux/slices/sessionSlice';
+import { updateProfile, deleteMe } from '../services/userService';
 import { colors } from '../theme/colors';
+import { storageService } from '../services/storageService';
 import CityPicker from '../components/CityPicker';
 import LanguagePicker from '../components/LanguagePicker';
 import i18n, { Language, saveLanguage } from '../i18n';
@@ -60,6 +62,11 @@ export default function EditProfileScreen({ navigation }: Props) {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Account deletion (right to erasure)
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleSave = async () => {
     setError(null);
@@ -131,6 +138,28 @@ export default function EditProfileScreen({ navigation }: Props) {
     setSeekingGenders((prev) =>
       prev.includes(option) ? prev.filter((g) => g !== option) : [...prev, option],
     );
+  };
+
+  // Permanently deletes the account and all data. The user must type their
+  // email (the same one on the account) to confirm — final and irreversible.
+  const handleDeleteAccount = async () => {
+    const expected = (session.email ?? '').trim().toLowerCase();
+    if (deleteConfirmText.trim().toLowerCase() !== expected) {
+      setError(t('editProfile.deleteErrEmail'));
+      return;
+    }
+
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteMe();
+      await storageService.clearAll();
+      dispatch(clearSession());
+    } catch (err: any) {
+      const message = err?.response?.data?.error;
+      setError(message ?? t('editProfile.deleteErrFailed'));
+      setDeleting(false);
+    }
   };
 
   return (
@@ -251,7 +280,74 @@ export default function EditProfileScreen({ navigation }: Props) {
           />
           <Text style={styles.hint}>{t('editProfile.interestsHint')}</Text>
         </View>
+
+        {/* Danger zone: account deletion (right to erasure) */}
+        <View style={styles.dangerZone}>
+          <View style={styles.dangerDivider} />
+          <Text style={styles.dangerTitle}>🗑️ {t('editProfile.deleteTitle')}</Text>
+          <Text style={styles.dangerText}>{t('editProfile.deleteHint')}</Text>
+          <TouchableOpacity
+            style={styles.dangerBtn}
+            onPress={() => {
+              setDeleteConfirmText('');
+              setError(null);
+              setDeleteVisible(true);
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.dangerBtnText}>{t('editProfile.deleteBtn')}</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+
+      {/* Confirm account deletion — final and irreversible */}
+      <Modal
+        visible={deleteVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => { if (!deleting) setDeleteVisible(false); }}
+        >
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>⚠️ {t('editProfile.deleteConfirmTitle')}</Text>
+            <Text style={styles.dialogText}>{t('editProfile.deleteConfirmMessage')}</Text>
+            <TextInput
+              style={styles.deleteInput}
+              value={deleteConfirmText}
+              onChangeText={setDeleteConfirmText}
+              placeholder={t('editProfile.deletePlaceholder')}
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!deleting}
+            />
+            <View style={styles.dialogButtons}>
+              <TouchableOpacity
+                style={styles.dialogCancel}
+                onPress={() => setDeleteVisible(false)}
+                disabled={deleting}
+              >
+                <Text style={styles.dialogCancelText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.dialogDelete, deleting && styles.dialogDeleteDisabled]}
+                onPress={handleDeleteAccount}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator color={colors.white} size="small" />
+                ) : (
+                  <Text style={styles.dialogDeleteText}>{t('editProfile.deleteForever')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -354,6 +450,115 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   chipTextSelected: {
+    color: colors.white,
+  },
+  dangerZone: {
+    marginTop: 8,
+  },
+  dangerDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginBottom: 20,
+  },
+  dangerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.nope,
+    marginBottom: 6,
+  },
+  dangerText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 19,
+    marginBottom: 16,
+  },
+  dangerBtn: {
+    backgroundColor: 'rgba(255,59,48,0.12)',
+    borderWidth: 1,
+    borderColor: colors.nope,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  dangerBtnText: {
+    color: colors.nope,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  dialog: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  dialogTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.nope,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  dialogText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 21,
+    marginBottom: 16,
+  },
+  deleteInput: {
+    backgroundColor: colors.background,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: colors.text,
+    marginBottom: 18,
+  },
+  dialogButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dialogCancel: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  dialogCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  dialogDelete: {
+    flex: 1.2,
+    paddingVertical: 13,
+    borderRadius: 10,
+    backgroundColor: colors.nope,
+    alignItems: 'center',
+  },
+  dialogDeleteDisabled: {
+    opacity: 0.6,
+  },
+  dialogDeleteText: {
+    fontSize: 15,
+    fontWeight: '700',
     color: colors.white,
   },
 });

@@ -57,6 +57,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [language, setLanguageState] = useState<Language>('es');
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
 
   const handleLanguageChange = (lang: Language) => {
     setLanguageState(lang);
@@ -130,6 +131,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
     if (age > 120) return c('createAccount.errAgeInvalid');
     if (!gender) return c('createAccount.errGender');
     if (seekingGenders.length === 0) return c('createAccount.errSeeking');
+    if (!acceptedLegal) return c('createAccount.errLegal');
     return null;
   };
 
@@ -155,6 +157,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
           gender: gender ?? undefined,
           seekingGender: seekingGenders.length > 0 ? seekingGenders : undefined,
           language,
+          acceptedPrivacyPolicy: acceptedLegal,
+          acceptedTerms: acceptedLegal,
         },
         { uri: profile.uri, type: profile.mimeType, name: profile.fileName },
       );
@@ -407,6 +411,33 @@ export default function CreateAccountScreen({ navigation }: Props) {
         <LanguagePicker value={language} onChange={handleLanguageChange} />
       </View>
 
+      {/* Legal consent (GDPR): the user must explicitly accept the Privacy
+          Policy and Terms of Service before the account is created. */}
+      <View style={styles.legalBlock}>
+        <TouchableOpacity
+          style={styles.legalRow}
+          onPress={() => setAcceptedLegal((v) => !v)}
+          activeOpacity={0.7}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: acceptedLegal }}
+        >
+          <View style={[styles.checkbox, acceptedLegal && styles.checkboxOn]}>
+            {acceptedLegal && <Text style={styles.checkboxMark}>✓</Text>}
+          </View>
+          <Text style={styles.legalText}>
+            <Text>{t('createAccount.legalPrefix')} </Text>
+            <Text style={styles.legalLink} onPress={() => navigation.navigate('Legal', { type: 'privacy' })}>
+              {t('legal.privacy')}
+            </Text>
+            <Text> {t('createAccount.legalAnd')} </Text>
+            <Text style={styles.legalLink} onPress={() => navigation.navigate('Legal', { type: 'terms' })}>
+              {t('legal.terms')}
+            </Text>
+            <Text>{t('createAccount.legalSuffix')}</Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {error && <Text style={styles.error}>{error}</Text>}
 
       <TouchableOpacity
@@ -628,5 +659,44 @@ const styles = StyleSheet.create({
   },
   chipTextSelected: {
     color: colors.white,
+  },
+  legalBlock: {
+    marginBottom: 20,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+    backgroundColor: colors.surface,
+  },
+  checkboxOn: {
+    backgroundColor: colors.primary,
+  },
+  checkboxMark: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 16,
+  },
+  legalText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+    flex: 1,
+  },
+  legalLink: {
+    color: colors.primary,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });

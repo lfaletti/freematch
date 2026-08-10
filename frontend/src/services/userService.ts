@@ -81,6 +81,13 @@ export const updateProfile = async (updates: ProfileUpdatePayload) => {
   return res.data;
 };
 
+// Right to erasure: permanently deletes the authenticated user's account and
+// all of their data. There is no undo.
+export const deleteMe = async () => {
+  const res = await api.delete('/api/users/me');
+  return res.data;
+};
+
 export const likeMessage = async (messageId: string) => {
   const res = await api.post(`/api/messages/${messageId}/like`);
   return res.data;

@@ -64,6 +64,8 @@ export const registerWithPhoto = async (
     gender?: string;
     seekingGender?: string[];
     language?: 'es' | 'en';
+    acceptedPrivacyPolicy?: boolean;
+    acceptedTerms?: boolean;
   },
   photo: RegisterPhotoFile,
 ): Promise<AuthResponse> => {
@@ -79,6 +81,8 @@ export const registerWithPhoto = async (
     formData.append('seekingGender', JSON.stringify(fields.seekingGender));
   }
   if (fields.language) formData.append('language', fields.language);
+  formData.append('acceptedPrivacyPolicy', fields.acceptedPrivacyPolicy ? 'true' : 'false');
+  formData.append('acceptedTerms', fields.acceptedTerms ? 'true' : 'false');
 
   if (Platform.OS === 'web') {
     // On web FormData needs real bytes — the RN { uri, type, name } object would

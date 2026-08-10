@@ -26,6 +26,8 @@ export interface RegisterInput {
   gender?: GenderValue;
   seekingGender?: GenderValue[];
   language?: 'es' | 'en';
+  privacyAcceptedAt?: string; // ISO timestamp of when the user accepted the Privacy Policy
+  termsAcceptedAt?: string;   // ISO timestamp of when the user accepted the Terms of Service
 }
 
 export interface LoginInput {
@@ -95,8 +97,8 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
   const result = await query(
     `INSERT INTO users (
       id, name, email, password_hash, bio, born_date, phone_number, photo_url, is_mock,
-      gender, seeking_gender, language
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11)
+      gender, seeking_gender, language, privacy_policy_accepted_at, terms_accepted_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11, $12, $13)
     RETURNING id, name, email, bio, born_date, phone_number, photo_url, gender, seeking_gender, language`,
     [
       id,
@@ -110,6 +112,8 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
       input.gender ?? null,
       input.seekingGender ?? [],
       input.language ?? 'es',
+      input.privacyAcceptedAt ?? null,
+      input.termsAcceptedAt ?? null,
     ]
   );
 

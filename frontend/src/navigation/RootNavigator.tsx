@@ -14,6 +14,7 @@ import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import PhotoScreen from '../screens/PhotoScreen';
+import LegalScreen from '../screens/LegalScreen';
 import RealtimeManager from '../components/RealtimeManager';
 import GlobalMatchModal from '../components/GlobalMatchModal';
 import GlobalUnmatchModal from '../components/GlobalUnmatchModal';
@@ -149,6 +150,7 @@ function AuthStack() {
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Legal" component={LegalScreen} />
     </Stack.Navigator>
   );
 }

@@ -112,10 +112,19 @@ function calculateAge(bornDate: string): number | null {
 
 router.post('/register', registerRateLimiter, registerIntervalMiddleware, memoryUpload.single('photo'), async (req, res) => {
   try {
-    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language } = req.body;
+    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language, acceptedPrivacyPolicy, acceptedTerms } = req.body;
 
     if (!name || !email || !password || !born_date) {
       res.status(400).json({ error: 'name, email, password, and born_date are required' });
+      return;
+    }
+
+    // Legal consent (GDPR): registration is blocked unless the user explicitly
+    // accepts the Privacy Policy and Terms of Service. accept = 'true'/'1'/true.
+    const privacyOk = acceptedPrivacyPolicy === true || acceptedPrivacyPolicy === 'true' || acceptedPrivacyPolicy === '1';
+    const termsOk = acceptedTerms === true || acceptedTerms === 'true' || acceptedTerms === '1';
+    if (!privacyOk || !termsOk) {
+      res.status(400).json({ error: 'You must accept the Privacy Policy and Terms of Service to register' });
       return;
     }
 
@@ -149,6 +158,7 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       }
     }
 
+    const consentTime = new Date().toISOString();
     const input: RegisterInput = {
       name,
       email,
@@ -161,6 +171,8 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       gender,
       seekingGender: seekingGender ? (typeof seekingGender === 'string' ? [seekingGender] : seekingGender) : undefined,
       language: language === 'en' ? 'en' : 'es',
+      privacyAcceptedAt: consentTime,
+      termsAcceptedAt: consentTime,
     };
 
     const result = await registerUser(input);
