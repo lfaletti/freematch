@@ -24,7 +24,11 @@ export function getPhotoUrl(photoPath: string): string {
 
 export const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  // 30s: las subidas de fotos pasan por la moderación nsFW (decode Sharp +
+  // inferencia del modelo en CPU), que con una foto grande de cámara puede
+  // superar los 10s. Un timeout corto hacía que el cliente cortara con
+  // "Failed to upload photo" aunque el backend completara la subida.
+  timeout: 30000,
 });
 
 api.interceptors.request.use((config) => {

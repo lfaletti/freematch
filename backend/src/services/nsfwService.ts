@@ -57,11 +57,13 @@ async function getModel(): Promise<nsfwjs.NSFWJS> {
  */
 export async function preloadNsfwModel(): Promise<void> {
   const model = await getModel();
-  // One warm-up inference against a small neutral buffer allocs the
-  // internal tensors once and validates the model loaded correctly.
-  const warm = Buffer.alloc(4 * 4 * 3, 128);
+  // One warm-up inference against the real 224x224 input shape the nsFW
+  // pipeline uses. Allocing/compiling the actual input shape ahead of time
+  // avoids a slow first real upload (which previously could exceed the
+  // frontend request timeout).
+  const warm = Buffer.alloc(224 * 224 * 3, 128);
   await model.classify(
-    { data: new Uint8Array(warm), width: 4, height: 4 },
+    { data: new Uint8Array(warm), width: 224, height: 224 },
     1
   );
 }
