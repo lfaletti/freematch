@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 32,
+    marginBottom: 28,
   },
   cancelText: {
     fontSize: 16,
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(0,0,0,0.78)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -511,18 +511,20 @@ const styles = StyleSheet.create({
   dialogScrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
+    padding: 28,
   },
   dialog: {
     backgroundColor: colors.surface,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     padding: 24,
     width: '100%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 14,
   },
   dialogTitle: {
     fontSize: 18,
@@ -562,11 +564,13 @@ const styles = StyleSheet.create({
   },
   dialogCancel: {
     flex: 1,
+    minHeight: 52,
     paddingVertical: 13,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   dialogCancelText: {
     fontSize: 15,
@@ -574,11 +578,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   dialogDelete: {
-    flex: 1.2,
+    flex: 1,
+    minHeight: 52,
     paddingVertical: 13,
     borderRadius: 10,
     backgroundColor: colors.nope,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   dialogDeleteDisabled: {
     opacity: 0.6,
