@@ -170,6 +170,7 @@ export default function EditProfileScreen({ navigation }: Props) {
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={!deleteVisible}
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -305,48 +306,57 @@ export default function EditProfileScreen({ navigation }: Props) {
         visible={deleteVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setDeleteVisible(false)}
+        statusBarTranslucent
+        onRequestClose={() => { if (!deleting) setDeleteVisible(false); }}
       >
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={() => { if (!deleting) setDeleteVisible(false); }}
-        >
-          <View style={styles.dialog}>
-            <Text style={styles.dialogTitle}>⚠️ {t('editProfile.deleteConfirmTitle')}</Text>
-            <Text style={styles.dialogText}>{t('editProfile.deleteConfirmMessage')}</Text>
-            <TextInput
-              style={styles.deleteInput}
-              value={deleteConfirmText}
-              onChangeText={setDeleteConfirmText}
-              placeholder={t('editProfile.deletePlaceholder')}
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!deleting}
-            />
-            <View style={styles.dialogButtons}>
-              <TouchableOpacity
-                style={styles.dialogCancel}
-                onPress={() => setDeleteVisible(false)}
-                disabled={deleting}
-              >
-                <Text style={styles.dialogCancelText}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.dialogDelete, deleting && styles.dialogDeleteDisabled]}
-                onPress={handleDeleteAccount}
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <ActivityIndicator color={colors.white} size="small" />
-                ) : (
-                  <Text style={styles.dialogDeleteText}>{t('editProfile.deleteForever')}</Text>
-                )}
-              </TouchableOpacity>
+        {/* Overlay: tap outside closes. The content sits in its own Pressable so
+            taps on the dialog (input/buttons) never reach the close handler. */}
+        <View style={styles.overlay}>
+          <TouchableOpacity style={styles.overlayTouch} activeOpacity={1} onPress={() => { if (!deleting) { setDeleteVisible(false); setError(null); } } } />
+          <ScrollView
+            contentContainerStyle={styles.dialogScrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={styles.dialogScroll}
+          >
+            <View style={styles.dialog}>
+              <Text style={styles.dialogTitle}>⚠️ {t('editProfile.deleteConfirmTitle')}</Text>
+              <Text style={styles.dialogText}>{t('editProfile.deleteConfirmMessage')}</Text>
+              <TextInput
+                style={styles.deleteInput}
+                value={deleteConfirmText}
+                onChangeText={setDeleteConfirmText}
+                placeholder={t('editProfile.deletePlaceholder')}
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!deleting}
+                autoFocus
+              />
+              {error && <Text style={styles.dialogError}>{error}</Text>}
+              <View style={styles.dialogButtons}>
+                <TouchableOpacity
+                  style={styles.dialogCancel}
+                  onPress={() => { setDeleteVisible(false); setError(null); }}
+                  disabled={deleting}
+                >
+                  <Text style={styles.dialogCancelText}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.dialogDelete, deleting && styles.dialogDeleteDisabled]}
+                  onPress={handleDeleteAccount}
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.dialogDeleteText}>{t('editProfile.deleteForever')}</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </ScrollView>
+        </View>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -487,8 +497,20 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overlayTouch: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  dialogScroll: {
+    width: '100%',
+    maxWidth: 380,
+    maxHeight: '90%',
+  },
+  dialogScrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
   },
@@ -497,7 +519,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     width: '100%',
-    maxWidth: 360,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -517,6 +538,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 21,
     marginBottom: 16,
+  },
+  dialogError: {
+    color: colors.nope,
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 18,
   },
   deleteInput: {
     backgroundColor: colors.background,
