@@ -1,15 +1,17 @@
 import * as nsfwjs from 'nsfwjs';
-import { Jimp } from 'jimp';
+import sharp from 'sharp';
 
 /**
  * Content moderation for photos using nsfwjs (Yahoo/OpenNSFW re-trained model).
  *
- * Runs fully local on the CPU-only TensorFlow.js backend — no native binary and
- * no external API. This keeps dependencies light while still catching
- * nudity/adult content. The model is loaded once (singleton) and reused.
+ * Runs fully local on the CPU-only TensorFlow.js backend — no external API.
+ * This keeps the pipeline self-contained while still catching nudity/adult
+ * content. The model is loaded once (singleton) and reused.
  *
  * Pipeline:
- *  1. Decode the uploaded image to RGBA pixels with Jimp (pure-JS, no binaries).
+ *  1. Decode + resize the uploaded image to 224x224 RGBA with Sharp. Sharp
+ *     decodes JPEG/PNG/WebP/AVIF/etc. (Jimp alone can't decode WebP, which
+ *     caused uploads of otherwise-innocent `.webp` photos to fail).
  *  2. Feed `{data, width, height}` to nsfwjs (required for the CPU tfjs backend,
  *     which cannot decode raw image buffers itself — that needs tfjs-node's
  *     native binding, which we deliberately avoid for portability).
@@ -74,10 +76,15 @@ export interface NsfwVerdict {
 async function decodeToPixels(
   buffer: Buffer
 ): Promise<{ data: Uint8Array; width: number; height: number }> {
-  const image = await Jimp.read(buffer);
-  image.resize({ w: 224, h: 224 });
-  const { data, width, height } = image.bitmap;
-  return { data: new Uint8Array(data.buffer, data.byteOffset, data.length), width, height };
+  // Sharp decodes the raw bytes (incl. WebP, which Jimp can't) and resizes to
+  // the 224x224 square the nsFW MobileNetV2 expects. ensureAlpha() guarantees
+  // 4 channels so the RGBA layout matches what the tfjs CPU backend needs.
+  const { data, info } = await sharp(buffer)
+    .resize(224, 224)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  return { data: new Uint8Array(data.buffer, data.byteOffset, data.length), width: info.width, height: info.height };
 }
 
 /**
