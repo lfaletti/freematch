@@ -67,14 +67,25 @@ const MIN_PASSWORD_LENGTH = 6;
 
 // Memory storage for registration photos — forwarded to S3/MinIO, never
 // written to disk so they survive container restarts.
+// Aceptamos los formatos de cámara más comunes (incl. HEIC/HEIF/AVIF de iOS).
+// La moderación nsFW los decodifica con Sharp (ver nsfwService).
+const ACCEPTED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/avif',
+];
+
 const memoryUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+    if (ACCEPTED_IMAGE_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only JPEG, PNG, and WebP images are allowed'));
+      cb(new Error('Only JPEG, PNG, WebP, HEIC, HEIF, and AVIF images are allowed'));
     }
   },
 });

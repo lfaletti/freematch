@@ -4,6 +4,7 @@ import {
   DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
+import sharp from 'sharp';
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'auto',
@@ -23,14 +24,32 @@ export async function uploadPhoto(
   userId: string
 ): Promise<string> {
   try {
-    const fileName = `${userId}/${randomUUID()}.${getFileExtension(file.mimetype)}`;
+    // Normalizamos el archivo a JPEG siempre. Esto decodifica formatos de
+    // cámara (HEIC/HEIF/AVIF/WebP) que los navegadores no renderizan bien y
+    // asegura que lo que se guarda en R2 sea un JPEG universal. La moderación
+    // nsFW ya corrió antes con Sharp, así que acá solo re-codificamos.
+    let body = file.buffer;
+    let contentType = file.mimetype;
+    let ext = getFileExtension(file.mimetype);
+    try {
+      const jpeg = await sharp(file.buffer).jpeg({ quality: 85 }).toBuffer();
+      body = jpeg;
+      contentType = 'image/jpeg';
+      ext = 'jpg';
+    } catch (err) {
+      // Si Sharp no puede decodificar (ej. GIF animado o algo exótico),
+      // subimos el archivo original en vez de fallar.
+      console.warn('Image normalization failed, uploading original:', err);
+    }
+
+    const fileName = `${userId}/${randomUUID()}.${ext}`;
     const bucket = process.env.AWS_S3_BUCKET || 'freematch-dev';
 
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: fileName,
-      Body: file.buffer,
-      ContentType: file.mimetype,
+      Body: body,
+      ContentType: contentType,
       Metadata: {
         'user-id': userId,
         'uploaded-at': new Date().toISOString(),
@@ -96,6 +115,9 @@ function getFileExtension(mimeType: string): string {
     'image/png': 'png',
     'image/gif': 'gif',
     'image/webp': 'webp',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
+    'image/avif': 'avif',
   };
   return mimeToExt[mimeType] || 'jpg';
 }
