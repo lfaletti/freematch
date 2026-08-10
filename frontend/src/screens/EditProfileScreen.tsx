@@ -266,7 +266,6 @@ export default function EditProfileScreen({ navigation }: Props) {
           <CityPicker
             value={location}
             onChange={setLocation}
-            placeholder="Search city..."
           />
         </View>
 

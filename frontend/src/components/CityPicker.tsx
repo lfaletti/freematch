@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
 
 interface City {
@@ -28,7 +29,8 @@ interface Props {
 // Backend URL - Railway staging (fallback to local for dev)
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
-export default function CityPicker({ value, onChange, placeholder = 'Search city...' }: Props) {
+export default function CityPicker({ value, onChange, placeholder }: Props) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<City[]>([]);
   const [loading, setLoading] = useState(false);
@@ -89,7 +91,7 @@ export default function CityPicker({ value, onChange, placeholder = 'Search city
         style={styles.input}
         value={query}
         onChangeText={setQuery}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t('editProfile.locationPlaceholder')}
         placeholderTextColor={colors.textMuted}
         onFocus={handleFocus}
         onBlur={handleBlur}
