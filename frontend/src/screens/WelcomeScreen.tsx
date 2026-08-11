@@ -43,7 +43,17 @@ export default function WelcomeScreen({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.disclaimer}>{t('welcome.disclaimer')}</Text>
+      <Text style={styles.disclaimer}>
+        <Text>{t('welcome.disclaimerPrefix')} </Text>
+        <Text style={styles.disclaimerLink} onPress={() => navigation.navigate('Legal', { type: 'terms' })}>
+          {t('legal.terms')}
+        </Text>
+        <Text> {t('welcome.disclaimerAnd')} </Text>
+        <Text style={styles.disclaimerLink} onPress={() => navigation.navigate('Legal', { type: 'privacy' })}>
+          {t('legal.privacy')}
+        </Text>
+        <Text>{t('welcome.disclaimerSuffix')}</Text>
+      </Text>
     </View>
   );
 }
@@ -147,5 +157,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     marginTop: 24,
+    lineHeight: 18,
+  },
+  disclaimerLink: {
+    color: colors.primary,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });

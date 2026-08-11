@@ -49,7 +49,9 @@ const es = {
       subtitle: 'Encontrá a tu persona ideal',
       createAccount: 'Crear cuenta',
       login: 'Iniciar sesión',
-      disclaimer: 'Al continuar aceptás nuestros Términos de Servicio',
+      disclaimerPrefix: 'Al continuar aceptás nuestros',
+      disclaimerAnd: 'y nuestra',
+      disclaimerSuffix: '.',
     },
 
     // ── Create Account ──
@@ -258,7 +260,9 @@ const en = {
       subtitle: 'Find your perfect match',
       createAccount: 'Create account',
       login: 'Log in',
-      disclaimer: 'By continuing you agree to our Terms of Service',
+      disclaimerPrefix: 'By continuing you accept our',
+      disclaimerAnd: 'and our',
+      disclaimerSuffix: '.',
     },
 
     // ── Create Account ──
