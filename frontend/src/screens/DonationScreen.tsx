@@ -11,7 +11,11 @@ import {
   Linking,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { fetchDonationConfig, DonationConfig } from '../services/donationService';
+import {
+  fetchDonationConfig,
+  DonationConfig,
+  DonationMethod,
+} from '../services/donationService';
 import { colors } from '../theme/colors';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -71,7 +75,8 @@ export default function DonationScreen({ navigation }: Props) {
   }
 
   // Not allowed (whitelist / flag gating) or failed to load → treat as closed.
-  if (!config?.enabled || error) {
+  const hasMethods = !!config?.enabled && config.methods.length > 0;
+  if (!hasMethods || error) {
     return (
       <View style={styles.center}>
         <View style={styles.notAvailable}>
@@ -86,10 +91,51 @@ export default function DonationScreen({ navigation }: Props) {
     );
   }
 
+  const methods = config!.methods;
+  const primary = methods[config!.primaryIndex] ?? methods[0];
+  const secondary = methods.find((m) => m !== primary) ?? null;
+  const primaryIsKoFi = primary.provider === 'kofi';
+
   const parsedAmount =
     amount.trim() === '' ? null : Number(amount.replace(/[^0-9.]/g, ''));
 
-  const canDonate = config.baseUrl.trim().length > 0;
+  // Render a payment button for a method.
+  const renderMethodButton = (method: DonationMethod, opts: { prominent: boolean }) => {
+    const { prominent } = opts;
+    const usable = method.baseUrl.trim().length > 0;
+
+    const label =
+      method.provider === 'kofi'
+        ? parsedAmount && parsedAmount > 0
+          ? t('donation.ctaAmount', { amount: parsedAmount, currency: method.currency })
+          : t('donation.cta', { currency: method.currency })
+        : method.fixedAmount
+          ? t('donation.ctaFixed', {
+              amount: method.fixedAmount,
+              currency: method.currency,
+            })
+          : t('donation.ctaMp');
+
+    return (
+      <TouchableOpacity
+        key={method.provider}
+        style={[
+          styles.donateBtn,
+          prominent && styles.donateBtnPrimary,
+          !prominent && styles.donateBtnAlt,
+          !usable && styles.donateBtnDisabled,
+        ]}
+        onPress={() => usable && openDonationUrl(method.baseUrl, parsedAmount)}
+        disabled={!usable}
+        activeOpacity={0.85}
+      >
+        <Text style={[styles.donateBtnText, !prominent && styles.donateBtnTextAlt]}>
+          {method.provider === 'mercadopago' ? '🟦 ' : '💜 '}
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <KeyboardAvoidingView
@@ -111,34 +157,35 @@ export default function DonationScreen({ navigation }: Props) {
           <Text style={styles.heroText}>{t('donation.heroText')}</Text>
         </View>
 
-        <View style={styles.amountField}>
-          <Text style={styles.label}>{t('donation.amountLabel')}</Text>
-          <View style={styles.amountRow}>
-            <Text style={styles.currency}>{config.currency}</Text>
-            <TextInput
-              style={styles.input}
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              keyboardType={Platform.OS === 'web' ? 'numeric' : 'decimal-pad'}
-              autoFocus={false}
-            />
+        {/* Amount input — only relevant when the primary method is Ko-fi
+            (variable USD). Fixed-amount providers (MercadoPago) skip it. */}
+        {primaryIsKoFi && (
+          <View style={styles.amountField}>
+            <Text style={styles.label}>{t('donation.amountLabel')}</Text>
+            <View style={styles.amountRow}>
+              <Text style={styles.currency}>{primary.currency}</Text>
+              <TextInput
+                style={styles.input}
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                keyboardType={Platform.OS === 'web' ? 'numeric' : 'decimal-pad'}
+              />
+            </View>
           </View>
-        </View>
+        )}
 
-        <TouchableOpacity
-          style={[styles.donateBtn, !canDonate && styles.donateBtnDisabled]}
-          onPress={() => canDonate && openDonationUrl(config.baseUrl, parsedAmount)}
-          disabled={!canDonate}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.donateBtnText}>
-            {parsedAmount && parsedAmount > 0
-              ? t('donation.ctaAmount', { amount: parsedAmount, currency: config.currency })
-              : t('donation.cta', { currency: config.currency })}
-          </Text>
-        </TouchableOpacity>
+        {/* Primary method — highlighted (MercadoPago for LATAM above Ko-fi). */}
+        {renderMethodButton(primary, { prominent: true })}
+
+        {/* Secondary method — lighter alternative below. */}
+        {secondary && !primaryIsKoFi && (
+          <View style={styles.altBlock}>
+            <Text style={styles.altLabel}>{t('donation.altLabel')}</Text>
+            {renderMethodButton(secondary, { prominent: false })}
+          </View>
+        )}
 
         <Text style={styles.footnote}>{t('donation.footnote')}</Text>
       </View>
@@ -240,23 +287,42 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   donateBtn: {
-    backgroundColor: colors.primary,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  donateBtnPrimary: {
+    backgroundColor: colors.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
-  donateBtnDisabled: {
-    opacity: 0.5,
+  donateBtnAlt: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   donateBtnText: {
     fontSize: 17,
     fontWeight: '800',
     color: colors.white,
+  },
+  donateBtnTextAlt: {
+    color: colors.text,
+  },
+  donateBtnDisabled: {
+    opacity: 0.5,
+  },
+  altBlock: {
+    marginTop: 24,
+  },
+  altLabel: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 8,
   },
   footnote: {
     fontSize: 12,
