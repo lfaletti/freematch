@@ -29,7 +29,7 @@ export interface DonationConfig {
 export const DONATION = {
   // Set to true once confident to broadcast the donate entry to everyone.
   ENABLED_FOR_ALL: false,
-  ALLOWED_EMAILS: ['REDACTED_EMAIL'],
+  ALLOWED_EMAILS: ['REDACTED_EMAIL', 'REDACTED_EMAIL'],
 
   // Ko-fi — variable USD (international / rest of the world).
   KOFI: {
@@ -51,34 +51,15 @@ export const DONATION = {
   },
 };
 
-// ISO-3166 alpha-2 country codes that use MercadoPago as a primary payment
-// method. This drives the region decision.
-const LATAM_COUNTRY_CODES: ReadonlySet<string> = new Set([
-  'AR', // Argentina
-  'BR', // Brazil
-  'MX', // Mexico
-  'CL', // Chile
-  'CO', // Colombia
-  'PE', // Peru
-  'UY', // Uruguay
-  'EC', // Ecuador
-  'BO', // Bolivia
-  'PY', // Paraguay
-  'VE', // Venezuela
-  'CR', // Costa Rica
-  'PA', // Panama
-  'DO', // Dominican Republic
-  'GT', // Guatemala
-  'HN', // Honduras
-  'SV', // El Salvador
-  'NI', // Nicaragua
-  'CU', // Cuba
-  'HT', // Haiti
-]);
+// MercadoPago links are tied to an Argentina account (`link.mercadopago.com.ar`)
+// and pay in ARS, so the MercadoPago option is only offered to Argentina users.
+// Everyone else (including other LATAM countries with a different currency)
+// goes through Ko-fi in USD.
+const mercadopagoCountries: ReadonlySet<string> = new Set(['AR']);
 
-export function isLatamCountry(countryCode: string | undefined | null): boolean {
+export function isMercadoPagoCountry(countryCode: string | undefined | null): boolean {
   if (!countryCode) return false;
-  return LATAM_COUNTRY_CODES.has(countryCode.toUpperCase());
+  return mercadopagoCountries.has(countryCode.toUpperCase());
 }
 
 // Decide whether a given (authenticated) user may see the donation feature.
@@ -100,8 +81,8 @@ export function getDonationConfig(
   const kofi: DonationMethod = { ...DONATION.KOFI };
   const mp: DonationMethod = { ...DONATION.MERCADOPAGO };
 
-  // LATAM: MercadoPago shown first (so locals pay in pesos easily).
-  const latam = isLatamCountry(countryCode);
-  const methods = latam ? [mp, kofi] : [kofi, mp];
+  // Argentina: MercadoPago shown first (pay in pesos). Everyone else → Ko-fi.
+  const arg = isMercadoPagoCountry(countryCode);
+  const methods = arg ? [mp, kofi] : [kofi, mp];
   return { enabled: true, methods, primaryIndex: 0 };
 }
