@@ -25,8 +25,12 @@ function corsOrigin() {
 export function createApp() {
   const app = express();
 
-  // Trust proxy for correct IP detection behind load balancers (Railway, etc.)
-  app.set('trust proxy', 1);
+  // Trust proxy for correct IP detection behind load balancers (Railway, etc.).
+  // We use `true` (trust the full X-Forwarded-For chain) because Railway puts
+  // the request behind several proxies; `1` only trusted the nearest one and
+  // gave us a datacenter IP instead of the client's real IP, breaking IP-based
+  // country detection (MercadoPago for Argentina).
+  app.set('trust proxy', true);
 
   app.use(cors({ origin: corsOrigin() }));
   app.use(express.json());
