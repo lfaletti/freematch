@@ -173,6 +173,21 @@ const es = {
       empty: 'No quedan personas por ver por ahora. Volvé más tarde.',
     },
 
+    // ── Donation ──
+    donation: {
+      menuEntry: 'Apoyar FreeMatch',
+      title: 'Donar',
+      heroTitle: 'Apoyá a FreeMatch',
+      heroText: 'FreeMatch se mantiene gracias a personas como vos. Tu donación nos ayuda a cubrir los costos del servidor y seguir mejorando la app para todos.',
+      amountLabel: 'Tu aporte',
+      cta: 'Donar {{currency}}',
+      ctaAmount: 'Donar {{amount}} {{currency}}',
+      footnote: 'Serás redirigido/a a nuestra página segura de pago para completar tu aporte.',
+      loadError: 'No se pudo cargar la información de donación.',
+      unavailableTitle: 'Donaciones no disponibles',
+      unavailableText: 'Por el momento la opción de donar no está disponible para tu cuenta. ¡Gracias por el interés!',
+    },
+
     // ── Matches ──
     matches: {
       title: 'Matches',
@@ -381,6 +396,21 @@ const en = {
       resetConfirmCancel: 'Cancel',
       resetConfirmOk: "Yes, reset",
       empty: 'No one left to see for now. Come back later.',
+    },
+
+    // ── Donation ──
+    donation: {
+      menuEntry: 'Support FreeMatch',
+      title: 'Donate',
+      heroTitle: 'Support FreeMatch',
+      heroText: 'FreeMatch is kept running by people like you. Your donation helps us cover server costs and keep improving the app for everyone.',
+      amountLabel: 'Your contribution',
+      cta: 'Donate {{currency}}',
+      ctaAmount: 'Donate {{amount}} {{currency}}',
+      footnote: "You'll be redirected to our secure payment page to complete your contribution.",
+      loadError: "Couldn't load donation info.",
+      unavailableTitle: 'Donations unavailable',
+      unavailableText: "Donating isn't available for your account right now. Thanks for the interest!",
     },
 
     // ── Matches ──

@@ -18,6 +18,7 @@ import SwipeCard from '../components/SwipeCard';
 import { storageService } from '../services/storageService';
 import { navigate } from '../navigation/navigationRef';
 import { resetLeftSwipes } from '../services/userService';
+import { fetchDonationConfig } from '../services/donationService';
 
 const HomeScreen = () => {
   const dispatch = useAppDispatch();
@@ -27,6 +28,7 @@ const HomeScreen = () => {
   const [swiping, setSwiping] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [resetDialog, setResetDialog] = useState(false);
+  const [canDonate, setCanDonate] = useState(false);
   const swipingRef = useRef(false);
 
   // Load users on mount and when coming back from EditProfile
@@ -44,6 +46,16 @@ const HomeScreen = () => {
       }
     }, [sessionUserId])
   );
+
+  // Expose the Donate entry only when the backend says this user may donate
+  // (gated by email whitelist / global flag).
+  useEffect(() => {
+    let cancelled = false;
+    fetchDonationConfig()
+      .then((cfg) => { if (!cancelled) setCanDonate(!!cfg.enabled); })
+      .catch(() => { if (!cancelled) setCanDonate(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (swipingRef.current) return;
@@ -81,6 +93,11 @@ const HomeScreen = () => {
   const handleEditProfile = () => {
     setMenuOpen(false);
     navigate('EditProfile');
+  };
+
+  const handleDonate = () => {
+    setMenuOpen(false);
+    navigate('Donation');
   };
 
   const handleResetSwipes = async () => {
@@ -184,6 +201,11 @@ const HomeScreen = () => {
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); setResetDialog(true); }}>
                   <Text style={styles.menuItemText}>🔄 {t('home.resetSwipes')}</Text>
                 </TouchableOpacity>
+                {canDonate && (
+                  <TouchableOpacity style={styles.menuItem} onPress={handleDonate}>
+                    <Text style={styles.menuItemText}>💜 {t('donation.menuEntry')}</Text>
+                  </TouchableOpacity>
+                )}
                 <View style={styles.menuDivider} />
                 <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
                   <Text style={[styles.menuItemText, styles.logoutText]}>🚪 {t('home.logout')}</Text>

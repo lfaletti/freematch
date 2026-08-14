@@ -15,6 +15,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import PhotoScreen from '../screens/PhotoScreen';
 import LegalScreen from '../screens/LegalScreen';
+import DonationScreen from '../screens/DonationScreen';
 import RealtimeManager from '../components/RealtimeManager';
 import GlobalMatchModal from '../components/GlobalMatchModal';
 import GlobalUnmatchModal from '../components/GlobalUnmatchModal';
@@ -161,6 +162,7 @@ function AppStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={TabNavigator} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="Donation" component={DonationScreen} options={{ presentation: 'card' }} />
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'card' }} />
     </Stack.Navigator>
   );

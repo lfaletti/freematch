@@ -11,6 +11,7 @@ import messagesRouter from './routes/messages';
 import authRouter from './routes/auth';
 import photosRouter from './routes/photos';
 import legalRouter from './routes/legal';
+import donationRouter from './routes/donation';
 import { apiLimiter, authLimiter, swipeLimiter } from './middleware/rateLimiter';
 
 export { getUserId, USER_SLOTS };
@@ -85,6 +86,7 @@ export function createApp() {
   app.use('/api/messages', messagesRouter);
   app.use('/api/photos', photosRouter);
   app.use('/api/legal', legalRouter);
+  app.use('/api/donation', donationRouter);
 
   // City autocomplete via Geoapify
   app.get('/api/cities', async (req: Request, res: Response) => {
