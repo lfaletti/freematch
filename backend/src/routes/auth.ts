@@ -405,20 +405,18 @@ router.post('/forgot-password', async (req, res) => {
     const result = await generatePasswordResetToken(email);
     if (!result) {
       // Don't leak whether the email exists
-      return res.json({ success: true, message: 'If that email is registered, you will receive a reset link.' });
+      return res.status(404).json({ error: 'No account found with that email.' });
     }
 
-    // In development, return the token so the frontend can use it directly.
-    // In production, send the token via email (e.g. a link to /reset-password?token=...).
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        token: result.token,
-        note: 'In production this token would be sent via email.',
-      });
-    }
-
-    return res.json({ success: true, message: 'If that email is registered, you will receive a reset link.' });
+    // No email provider is configured yet, so this flow is email-less: we return
+    // the short-lived token (15 min) directly and the frontend consumes it right
+    // away to set a new password. When an email service is added, this becomes
+    // "send the token via email" and the token should NOT be returned in prod.
+    return res.json({
+      success: true,
+      token: result.token,
+      note: 'No email provider configured — token returned directly (email-less reset).',
+    });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ error: 'Failed to process password reset request.' });

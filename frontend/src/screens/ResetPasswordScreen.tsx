@@ -10,77 +10,57 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { useAppDispatch } from '../redux/hooks';
-import { setSession } from '../redux/slices/sessionSlice';
-import { loginWithPassword } from '../services/authService';
-import { storageService } from '../services/storageService';
+import { resetPassword } from '../services/authService';
 import { colors } from '../theme/colors';
-import i18n, { Language, saveLanguage } from '../i18n';
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
+  route?: RouteProp<{ ResetPassword: { token: string; email: string } }, 'ResetPassword'>;
 };
 
-export default function LoginScreen({ navigation }: Props) {
-  const dispatch = useAppDispatch();
+export default function ResetPasswordScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async () => {
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
+  const { token } = route?.params ?? {};
 
+  const handleReset = async () => {
     setError(null);
-    if (!trimmedEmail) {
-      setError(t('login.errEmail'));
+
+    if (!password) {
+      setError(t('resetPassword.errPassword'));
       return;
     }
-    if (!trimmedPassword) {
-      setError(t('login.errPassword'));
+    if (password.length < 6) {
+      setError(t('resetPassword.errPasswordLength'));
+      return;
+    }
+    if (password !== confirm) {
+      setError(t('resetPassword.errPasswordMatch'));
+      return;
+    }
+    if (!token) {
+      setError(t('resetPassword.errToken'));
       return;
     }
 
     setLoading(true);
     try {
-      const user = await loginWithPassword(trimmedEmail, trimmedPassword);
-      await storageService.setUserId(user.userId);
-      if (user.token) {
-        await storageService.setToken(user.token);
-      }
-      if (user.refreshToken) {
-        await storageService.setRefreshToken(user.refreshToken);
-      }
-      const userLang: Language = user.language === 'en' ? 'en' : 'es';
-      await i18n.changeLanguage(userLang);
-      await saveLanguage(userLang);
-      dispatch(setSession({
-        userId: user.userId,
-        name: user.name,
-        photo: user.photo,
-        bio: user.bio,
-        bornDate: user.bornDate,
-        phoneNumber: user.phoneNumber,
-        email: user.email,
-        token: user.token ?? '',
-        refreshToken: user.refreshToken ?? '',
-        slot: '',
-        gender: user.gender,
-        seekingGender: user.seekingGender,
-        language: userLang,
-      }));
+      await resetPassword(token, password);
+      // Password updated and all refresh tokens revoked — send the user to login.
+      navigation.navigate('Login');
     } catch (err: any) {
       const status = err?.response?.status;
       const message = err?.response?.data?.error;
-      if (status === 401) {
-        setError(t('login.errInvalid'));
-      } else if (status === 404) {
-        setError(t('login.errNoAccount'));
+      if (status === 400) {
+        setError(message ?? t('resetPassword.errToken'));
       } else {
-        setError(message ?? t('login.errNetwork'));
+        setError(t('resetPassword.errNetwork'));
       }
     } finally {
       setLoading(false);
@@ -97,36 +77,36 @@ export default function LoginScreen({ navigation }: Props) {
       </TouchableOpacity>
 
       <View style={styles.content}>
-        <Text style={styles.title}>{t('login.welcomeBack')}</Text>
-        <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
+        <Text style={styles.title}>{t('resetPassword.title')}</Text>
+        <Text style={styles.subtitle}>{t('resetPassword.subtitle')}</Text>
 
         <View style={styles.field}>
-          <Text style={styles.label}>{t('login.email')}</Text>
+          <Text style={styles.label}>{t('resetPassword.newPassword')}</Text>
           <TextInput
             style={styles.input}
-            placeholder={t('login.emailPlaceholder')}
-            placeholderTextColor={colors.textMuted}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            returnKeyType="next"
-            onSubmitEditing={() => setPassword(password)}
-            autoFocus
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>{t('login.password')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t('login.passwordPlaceholder')}
+            placeholder={t('resetPassword.newPasswordPlaceholder')}
             placeholderTextColor={colors.textMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            autoCapitalize="none"
+            returnKeyType="next"
+            onSubmitEditing={() => {}}
+          />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>{t('resetPassword.confirmPassword')}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={t('resetPassword.confirmPasswordPlaceholder')}
+            placeholderTextColor={colors.textMuted}
+            value={confirm}
+            onChangeText={setConfirm}
+            secureTextEntry
+            autoCapitalize="none"
             returnKeyType="done"
-            onSubmitEditing={handleLogin}
+            onSubmitEditing={handleReset}
           />
         </View>
 
@@ -134,29 +114,15 @@ export default function LoginScreen({ navigation }: Props) {
 
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
+          onPress={handleReset}
           disabled={loading}
           activeOpacity={0.85}
         >
           {loading ? (
             <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.buttonText}>{t('login.login')}</Text>
+            <Text style={styles.buttonText}>{t('resetPassword.reset')}</Text>
           )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => navigation.navigate('ForgotPassword')}
-          style={styles.forgot}
-        >
-          <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => navigation.navigate('CreateAccount')}>
-          <Text style={styles.switchLink}>
-            {t('login.needAccount')}{' '}
-            <Text style={styles.switchLinkHighlight}>{t('login.createOne')}</Text>
-          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -239,23 +205,5 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 17,
     fontWeight: '700',
-  },
-  forgot: {
-    marginBottom: 20,
-  },
-  forgotText: {
-    textAlign: 'center',
-    color: colors.textSecondary,
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  },
-  switchLink: {
-    textAlign: 'center',
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
-  switchLinkHighlight: {
-    color: colors.primary,
-    fontWeight: '600',
   },
 });

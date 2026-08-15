@@ -116,6 +116,7 @@ const es = {
       login: 'Iniciar sesión',
       needAccount: '¿No tenés cuenta?',
       createOne: 'Crear una',
+      forgotPassword: '¿Olvidaste tu contraseña?',
       success: '¡Sesión iniciada!',
       err: 'No se pudo iniciar sesión. Verificá tus datos.',
       errEmail: 'Ingresá tu email.',
@@ -123,6 +124,34 @@ const es = {
       errInvalid: 'El email o la contraseña son incorrectos.',
       errNoAccount: 'No se encontró ninguna cuenta con ese email.',
       errNetwork: 'No se pudo iniciar sesión. Revisá tu conexión e intentá de nuevo.',
+    },
+
+    // ── Forgot Password ──
+    forgotPassword: {
+      title: 'Restablecer contraseña',
+      subtitle: 'Ingresá el email de tu cuenta y te preparamos el siguiente paso.',
+      email: 'Email',
+      emailPlaceholder: 'vos@ejemplo.com',
+      continue: 'Continuar',
+      errEmail: 'Ingresá tu email.',
+      errNoAccount: 'No se encontró ninguna cuenta con ese email.',
+      errNetwork: 'No se pudo conectar con el servidor. Revisá tu conexión.',
+    },
+
+    // ── Reset Password ──
+    resetPassword: {
+      title: 'Nueva contraseña',
+      subtitle: 'Elegí tu nueva contraseña para iniciar sesión.',
+      newPassword: 'Nueva contraseña',
+      newPasswordPlaceholder: 'Al menos 6 caracteres',
+      confirmPassword: 'Confirmar contraseña',
+      confirmPasswordPlaceholder: 'Repetí tu nueva contraseña',
+      reset: 'Cambiar contraseña',
+      errPassword: 'Ingresá tu nueva contraseña.',
+      errPasswordLength: 'La contraseña debe tener al menos 6 caracteres.',
+      errPasswordMatch: 'Las contraseñas no coinciden.',
+      errToken: 'El enlace de restablecimiento no es válido o expiró. Volvé a intentarlo.',
+      errNetwork: 'No se pudo cambiar la contraseña. Revisá tu conexión.',
     },
 
     // ── Edit Profile ──
@@ -344,6 +373,7 @@ const en = {
       login: 'Log in',
       needAccount: "Don't have an account?",
       createOne: 'Create one',
+      forgotPassword: 'Forgot your password?',
       success: 'Logged in!',
       err: 'Could not log in. Check your credentials.',
       errEmail: 'Please enter your email address.',
@@ -351,6 +381,34 @@ const en = {
       errInvalid: 'Email or password is incorrect.',
       errNoAccount: 'No account found with that email.',
       errNetwork: 'Could not log in. Please check your connection and try again.',
+    },
+
+    // ── Forgot Password ──
+    forgotPassword: {
+      title: 'Reset password',
+      subtitle: "Enter your account email and we'll get you to the next step.",
+      email: 'Email',
+      emailPlaceholder: 'you@example.com',
+      continue: 'Continue',
+      errEmail: 'Please enter your email.',
+      errNoAccount: 'No account found with that email.',
+      errNetwork: 'Could not connect to the server. Please check your connection.',
+    },
+
+    // ── Reset Password ──
+    resetPassword: {
+      title: 'New password',
+      subtitle: 'Choose your new password to log in.',
+      newPassword: 'New password',
+      newPasswordPlaceholder: 'At least 6 characters',
+      confirmPassword: 'Confirm password',
+      confirmPasswordPlaceholder: 'Re-enter your new password',
+      reset: 'Change password',
+      errPassword: 'Please enter your new password.',
+      errPasswordLength: 'Password must be at least 6 characters.',
+      errPasswordMatch: 'Passwords do not match.',
+      errToken: 'The reset link is invalid or has expired. Please try again.',
+      errNetwork: 'Could not change your password. Please check your connection.',
     },
 
     // ── Edit Profile ──
