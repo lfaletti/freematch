@@ -23,6 +23,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
 
   const handleContinue = async () => {
     const trimmedEmail = email.trim();
@@ -36,9 +37,14 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
     setLoading(true);
     try {
       const result = await forgotPassword(trimmedEmail);
-      // Email-less flow: the backend returns the short-lived reset token
-      // directly (no SMTP provider configured yet). Hand it to the next step.
-      navigation.navigate('ResetPassword', { token: result.token, email: trimmedEmail });
+      // With email configured the backend sends a reset link and returns no token.
+      // In dev (email-less) it returns the token directly — keep that path working.
+      if (result.token) {
+        navigation.navigate('ResetPassword', { token: result.token, email: trimmedEmail });
+      } else {
+        // Email sent: show a confirmation state (stay on this screen).
+        setSent(true);
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       const message = err?.response?.data?.error;
@@ -65,7 +71,9 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 
       <View style={styles.content}>
         <Text style={styles.title}>{t('forgotPassword.title')}</Text>
-        <Text style={styles.subtitle}>{t('forgotPassword.subtitle')}</Text>
+        <Text style={styles.subtitle}>
+          {sent ? t('forgotPassword.sentTitle') : t('forgotPassword.subtitle')}
+        </Text>
 
         <View style={styles.field}>
           <Text style={styles.label}>{t('forgotPassword.email')}</Text>
@@ -81,23 +89,31 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
             returnKeyType="done"
             onSubmitEditing={handleContinue}
             autoFocus
+            editable={!sent}
           />
         </View>
 
+        {sent && <Text style={styles.success}>{t('forgotPassword.sentBody')}</Text>}
         {error && <Text style={styles.error}>{error}</Text>}
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleContinue}
-          disabled={loading}
-          activeOpacity={0.85}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>{t('forgotPassword.continue')}</Text>
-          )}
-        </TouchableOpacity>
+        {!sent ? (
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleContinue}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.buttonText}>{t('forgotPassword.continue')}</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')} activeOpacity={0.85}>
+            <Text style={styles.buttonText}>{t('common.backToLogin') ?? 'Volver al login'}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -156,6 +172,12 @@ const styles = StyleSheet.create({
   },
   error: {
     color: colors.nope,
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  success: {
+    color: colors.like,
     fontSize: 14,
     marginBottom: 16,
     textAlign: 'center',

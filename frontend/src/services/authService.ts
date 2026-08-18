@@ -113,16 +113,29 @@ export const refreshToken = async (refreshToken: string): Promise<{ token: strin
   return res.data;
 };
 
-// Email-less password reset flow (no SMTP provider configured yet).
-// forgotPassword returns a short-lived (15 min) reset token directly from the
-// backend; resetPassword then consumes it to set the new password.
-export const forgotPassword = async (email: string): Promise<{ success: boolean; token: string }> => {
+// Password reset flow.
+// forgotPassword returns { success } plus, only when email is NOT configured
+// (dev/email-less), a direct token. With email configured the backend sends a
+// reset link instead and no token comes back.
+export const forgotPassword = async (email: string): Promise<{ success: boolean; token?: string }> => {
   const res = await api.post('/api/auth/forgot-password', { email });
   return res.data;
 };
 
 export const resetPassword = async (token: string, newPassword: string): Promise<{ success: boolean }> => {
   const res = await api.post('/api/auth/reset-password', { token, newPassword });
+  return res.data;
+};
+
+// Verifies an email address with a signed token (from the email link).
+export const verifyEmail = async (token: string): Promise<{ success: boolean }> => {
+  const res = await api.get('/api/auth/verify-email', { params: { token } });
+  return res.data;
+};
+
+// Requests that the verification email be re-sent (for an unverified user).
+export const resendVerification = async (email?: string, userId?: string): Promise<{ success: boolean; token?: string }> => {
+  const res = await api.post('/api/auth/resend-verification', { email, userId });
   return res.data;
 };
 

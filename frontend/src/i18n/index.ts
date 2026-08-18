@@ -22,7 +22,8 @@ const es = {
       success: 'Éxito',
       required: '*',
       optional: 'opcional',
-    },
+      backToLogin: 'Volver al login',
+      },
     gender: {
       man: 'Hombre',
       woman: 'Mujer',
@@ -136,6 +137,8 @@ const es = {
       errEmail: 'Ingresá tu email.',
       errNoAccount: 'No se encontró ninguna cuenta con ese email.',
       errNetwork: 'No se pudo conectar con el servidor. Revisá tu conexión.',
+    sentTitle: 'Revisá tu email',
+    sentBody: 'Te enviamos un link para restablecer tu contraseña. Vence en 15 minutos.',
     },
 
     // ── Reset Password ──
@@ -152,6 +155,15 @@ const es = {
       errPasswordMatch: 'Las contraseñas no coinciden.',
       errToken: 'El enlace de restablecimiento no es válido o expiró. Volvé a intentarlo.',
       errNetwork: 'No se pudo cambiar la contraseña. Revisá tu conexión.',
+    },
+
+    // "?  Verify Email "?
+    verifyEmail: {
+    loading: 'Verificando tu email…',
+    success: 'Tu email fue verificado. Ya podés iniciar sesión. 💛',
+    goLogin: 'Ir al login',
+    errToken: 'Link de verificación inválido o expirado.',
+    errGeneric: 'No se pudo verificar tu email. Volvé a intentarlo.',
     },
 
     // ── Edit Profile ──
@@ -280,7 +292,8 @@ const en = {
       success: 'Success',
       required: '*',
       optional: 'optional',
-    },
+      backToLogin: 'Back to login',
+      },
     gender: {
       man: 'Man',
       woman: 'Woman',
@@ -390,6 +403,8 @@ const en = {
       email: 'Email',
       emailPlaceholder: 'you@example.com',
       continue: 'Continue',
+      sentTitle: 'Check your email',
+      sentBody: 'We sent you a link to reset your password. It expires in 15 minutes.',
       errEmail: 'Please enter your email.',
       errNoAccount: 'No account found with that email.',
       errNetwork: 'Could not connect to the server. Please check your connection.',
@@ -410,6 +425,15 @@ const en = {
       errToken: 'The reset link is invalid or has expired. Please try again.',
       errNetwork: 'Could not change your password. Please check your connection.',
     },
+
+    // Verify Email
+    verifyEmail: {
+      loading: 'Verifying your email…',
+      success: 'Your email is verified. You can now log in. 💛',
+      goLogin: 'Go to login',
+      errToken: 'Verification link is invalid or expired.',
+      errGeneric: 'Could not verify your email. Please try again.',
+      },
 
     // ── Edit Profile ──
     editProfile: {

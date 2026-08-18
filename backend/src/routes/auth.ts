@@ -17,6 +17,11 @@ import {
   generatePasswordResetToken,
   resetPassword,
 } from '../services/authService';
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  isEmailEnabled,
+} from '../services/emailService';
 
 const router = Router();
 
@@ -176,6 +181,12 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
     };
 
     const result = await registerUser(input);
+
+    // Auto-send a verification email to the newly registered address, so the
+    // user can confirm the email right away. Fire-and-forget (non-blocking).
+    // With no RESEND_API_KEY configured this is a harmless no-op.
+    sendVerificationEmail(result.email, await generateEmailVerificationToken(result.userId, result.email))
+      .catch((err) => console.error('Failed to send verification email on register:', err));
 
     res.status(201).json({
       userId: result.userId,
@@ -379,10 +390,10 @@ router.post('/resend-verification', async (req, res) => {
     const user = lookup.rows[0];
     const token = await generateEmailVerificationToken(user.id, user.email);
 
-    // In production, send the token via email here.
-    // For now, just return the token so the frontend can use it.
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({ success: true, token, note: 'In production this would be sent via email' });
+    const sent = await sendVerificationEmail(user.email, token);
+    // If email is not configured, fall back to returning the token inline for dev/testing.
+    if (!sent && !isEmailEnabled()) {
+      return res.json({ success: true, token, note: 'No email provider configured — token returned directly (dev mode).' });
     }
 
     return res.json({ success: true, message: 'Verification email sent' });
@@ -408,15 +419,17 @@ router.post('/forgot-password', async (req, res) => {
       return res.status(404).json({ error: 'No account found with that email.' });
     }
 
-    // No email provider is configured yet, so this flow is email-less: we return
-    // the short-lived token (15 min) directly and the frontend consumes it right
-    // away to set a new password. When an email service is added, this becomes
-    // "send the token via email" and the token should NOT be returned in prod.
-    return res.json({
-      success: true,
-      token: result.token,
-      note: 'No email provider configured — token returned directly (email-less reset).',
-    });
+    const sent = await sendPasswordResetEmail(email, result.token);
+    // If email is not configured, fall back to returning the token inline for dev/testing.
+    if (!sent && !isEmailEnabled()) {
+      return res.json({
+        success: true,
+        token: result.token,
+        note: 'No email provider configured — token returned directly (email-less reset).',
+      });
+    }
+
+    return res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ error: 'Failed to process password reset request.' });
