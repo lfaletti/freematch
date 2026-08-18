@@ -20,6 +20,7 @@ import PhotoScreen from '../screens/PhotoScreen';
 import LegalScreen from '../screens/LegalScreen';
 import DonationScreen from '../screens/DonationScreen';
 import RealtimeManager from '../components/RealtimeManager';
+import DeepLinkHandler from './DeepLinkHandler';
 import GlobalMatchModal from '../components/GlobalMatchModal';
 import GlobalUnmatchModal from '../components/GlobalUnmatchModal';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
@@ -206,6 +207,7 @@ function RootNavigator() {
 
   return (
     <NavigationContainer ref={navigationRef}>
+      <DeepLinkHandler />
       {session.isAuthenticated ? (
         <>
           <RealtimeManager />
