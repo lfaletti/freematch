@@ -24,6 +24,8 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [sentEmail, setSentEmail] = useState('');
+  const [resent, setResent] = useState(false);
 
   const handleContinue = async () => {
     const trimmedEmail = email.trim();
@@ -42,7 +44,9 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
       if (result.token) {
         navigation.navigate('ResetPassword', { token: result.token, email: trimmedEmail });
       } else {
-        // Email sent: show a confirmation state (stay on this screen).
+        // Email sent: show a confirmation state (stay on this screen) letting the
+        // user know to check their inbox and click the verification link.
+        setSentEmail(trimmedEmail);
         setSent(true);
       }
     } catch (err: any) {
@@ -60,6 +64,22 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
     }
   };
 
+  // Re-send the reset link to the same address.
+  const handleResend = async () => {
+    const target = sentEmail || email.trim();
+    if (!target) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await forgotPassword(target);
+      setResent(true);
+    } catch {
+      setError(t('forgotPassword.errNetwork'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -70,49 +90,70 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
       </TouchableOpacity>
 
       <View style={styles.content}>
-        <Text style={styles.title}>{t('forgotPassword.title')}</Text>
-        <Text style={styles.subtitle}>
-          {sent ? t('forgotPassword.sentTitle') : t('forgotPassword.subtitle')}
-        </Text>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>{t('forgotPassword.email')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t('forgotPassword.emailPlaceholder')}
-            placeholderTextColor={colors.textMuted}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="done"
-            onSubmitEditing={handleContinue}
-            autoFocus
-            editable={!sent}
-          />
-        </View>
-
-        {sent && <Text style={styles.success}>{t('forgotPassword.sentBody')}</Text>}
-        {error && <Text style={styles.error}>{error}</Text>}
-
         {!sent ? (
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleContinue}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.buttonText}>{t('forgotPassword.continue')}</Text>
-            )}
-          </TouchableOpacity>
+          <>
+            <Text style={styles.title}>{t('forgotPassword.title')}</Text>
+            <Text style={styles.subtitle}>{t('forgotPassword.subtitle')}</Text>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('forgotPassword.email')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={t('forgotPassword.emailPlaceholder')}
+                placeholderTextColor={colors.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={handleContinue}
+                autoFocus
+              />
+            </View>
+
+            {error && <Text style={styles.error}>{error}</Text>}
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleContinue}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.buttonText}>{t('forgotPassword.continue')}</Text>
+              )}
+            </TouchableOpacity>
+          </>
         ) : (
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')} activeOpacity={0.85}>
-            <Text style={styles.buttonText}>{t('common.backToLogin') ?? 'Volver al login'}</Text>
-          </TouchableOpacity>
+          <View style={styles.sentWrap}>
+            <Text style={styles.sentEmoji}>✉️</Text>
+            <Text style={styles.sentTitle}>{t('forgotPassword.sentTitle')}</Text>
+            <Text style={styles.sentBody}>
+              {t('forgotPassword.sentBody')} <Text style={styles.sentEmail}>{sentEmail}</Text>
+            </Text>
+            <Text style={styles.sentHint}>{t('forgotPassword.sentHint')}</Text>
+            {resent && <Text style={styles.success}>{t('forgotPassword.resent')}</Text>}
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleResend}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.buttonText}>{t('forgotPassword.resend')}</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Login')} activeOpacity={0.85}>
+              <Text style={styles.secondaryButtonText}>{t('common.backToLogin') ?? 'Volver al login'}</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     </KeyboardAvoidingView>
@@ -201,5 +242,49 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 17,
     fontWeight: '700',
+  },
+  sentWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sentEmoji: {
+    fontSize: 56,
+    marginBottom: 20,
+  },
+  sentTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  sentBody: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 23,
+    marginBottom: 8,
+  },
+  sentEmail: {
+    color: colors.text,
+    fontWeight: '700',
+  },
+  sentHint: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  secondaryButton: {
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

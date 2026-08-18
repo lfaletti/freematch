@@ -137,8 +137,11 @@ const es = {
       errEmail: 'Ingresá tu email.',
       errNoAccount: 'No se encontró ninguna cuenta con ese email.',
       errNetwork: 'No se pudo conectar con el servidor. Revisá tu conexión.',
-    sentTitle: 'Revisá tu email',
-    sentBody: 'Te enviamos un link para restablecer tu contraseña. Vence en 15 minutos.',
+      sentTitle: 'Revisá tu email',
+      sentBody: 'Te enviamos un link para restablecer tu contraseña. Vence en 15 minutos.',
+      sentHint: 'Abrí el email y tocá el link para confirmar. Revisá también la carpeta de spam.',
+      resend: 'Reenviar email',
+      resent: 'Listo, te lo reenviamos.'
     },
 
     // ── Reset Password ──
@@ -405,6 +408,9 @@ const en = {
       continue: 'Continue',
       sentTitle: 'Check your email',
       sentBody: 'We sent you a link to reset your password. It expires in 15 minutes.',
+      sentHint: 'Open the email and tap the link to confirm. Also check your spam folder.',
+      resend: 'Resend email',
+      resent: 'Done, we resent it.',
       errEmail: 'Please enter your email.',
       errNoAccount: 'No account found with that email.',
       errNetwork: 'Could not connect to the server. Please check your connection.',
