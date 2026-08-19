@@ -19,6 +19,7 @@ import { setSession } from '../redux/slices/sessionSlice';
 import { registerWithPhoto } from '../services/authService';
 import { uploadPhoto } from '../services/photoService';
 import { storageService } from '../services/storageService';
+import { navigationRef } from '../navigation/navigationRef';
 import { colors } from '../theme/colors';
 import LanguagePicker from '../components/LanguagePicker';
 import i18n from '../i18n';
@@ -184,6 +185,12 @@ export default function CreateAccountScreen({ navigation }: Props) {
         slot: '',
         gender: user.gender,
         seekingGender: seekingGenders.length > 0 ? seekingGenders : (user.seekingGender ?? []),
+        // Critical for the post-signup gate: RootNavigator routes an
+        // unverified account to VerifyEmailScreen instead of the home/swipe
+        // deck via session.requiresVerification. Without these two fields the
+        // session is treated as fully verified and the user lands on swipes.
+        emailVerified: user.emailVerified ?? false,
+        requiresVerification: user.requiresVerification ?? !user.emailVerified,
       }));
 
       // Strong signup: a NEW account that hasn't verified its email must go to
@@ -191,7 +198,10 @@ export default function CreateAccountScreen({ navigation }: Props) {
       // a token — the backend guards the operational routes (403 EMAIL_NOT_VERIFIED)
       // until the user confirms via the email link.
       if (!user.emailVerified) {
-        navigation.navigate('VerifyEmail');
+        // Use the global navigation ref: setSession above causes RootNavigator
+        // to re-mount the NavigationContainer, so the local navigation prop may
+        // be stale right after the dispatch. The ref navigates reliably.
+        navigationRef.navigate('VerifyEmail' as never);
         setLoading(false);
         return;
       }

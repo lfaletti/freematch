@@ -63,6 +63,7 @@ export interface AuthResponse {
   phone_number?: string;
   photo_url?: string;
   emailVerified?: boolean;
+  requiresVerification?: boolean;
   gender?: string;
   seekingGender?: string[];
   language?: 'es' | 'en';
@@ -144,6 +145,9 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     phone_number: user.phone_number,
     photo_url: user.photo_url,
     emailVerified: user.email_verified ?? false,
+    // A freshly created account always needs email verification (strong
+    // signup): mirror what loginUser computes via requiresEmailVerification.
+    requiresVerification: true,
     gender: user.gender,
     seekingGender: user.seeking_gender,
     language: user.language ?? 'es',
