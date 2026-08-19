@@ -204,7 +204,11 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
     // Auto-send a verification email to the newly registered address, so the
     // user can confirm the email right away. Fire-and-forget (non-blocking).
     // With no RESEND_API_KEY configured this is a harmless no-op.
-    sendVerificationEmail(result.email, await generateEmailVerificationToken(result.userId, result.email))
+    sendVerificationEmail(
+      result.email,
+      await generateEmailVerificationToken(result.userId, result.email),
+      result.language === 'en' ? 'en' : 'es',
+    )
       .catch((err) => console.error('Failed to send verification email on register:', err));
 
     res.status(201).json({
@@ -408,7 +412,7 @@ router.post('/resend-verification', resendVerificationLimiter, async (req, res) 
     }
 
     const lookup = await query(
-      `SELECT id, email FROM users WHERE ($1::text IS NOT NULL AND email = $1)
+      `SELECT id, email, language FROM users WHERE ($1::text IS NOT NULL AND email = $1)
        OR ($2::uuid IS NOT NULL AND id = $2) LIMIT 1`,
       [email ?? null, userId ?? null]
     );
@@ -420,7 +424,7 @@ router.post('/resend-verification', resendVerificationLimiter, async (req, res) 
     const user = lookup.rows[0];
     const token = await generateEmailVerificationToken(user.id, user.email);
 
-    const sent = await sendVerificationEmail(user.email, token);
+    const sent = await sendVerificationEmail(user.email, token, user.language === 'en' ? 'en' : 'es');
     // If email is not configured, fall back to returning the token inline for dev/testing.
     if (!sent && !isEmailEnabled()) {
       return res.json({ success: true, token, note: 'No email provider configured — token returned directly (dev mode).' });

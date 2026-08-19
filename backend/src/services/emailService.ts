@@ -45,28 +45,40 @@ function resetLink(token: string): string {
 }
 
 /**
- * Sends an email verification link to the user.
- * Returns true when the email was accepted by Resend.
+ * Sends an email verification link to the user, localized to the account's
+ * language ('es' by default). Returns true when accepted by Resend.
  */
-export async function sendVerificationEmail(to: string, token: string): Promise<boolean> {
+export async function sendVerificationEmail(to: string, token: string, language: 'es' | 'en' = 'es'): Promise<boolean> {
   const c = client();
   if (!c) {
     console.warn('emailService: RESEND_API_KEY not set, skipping verification email to', to);
     return false;
   }
+
+  const isEn = language === 'en';
+  const subject = isEn ? 'Verify your account' : 'Verificá tu cuenta';
+  const heading = 'FreeMatch 💘';
+  const greeting = isEn
+    ? 'Hi! Confirm your email to activate your account.'
+    : '¡Hola! Confirmá tu email para activar tu cuenta.';
+  const button = isEn ? 'Confirm email' : 'Confirmar email';
+  const footer = isEn
+    ? "The link expires in 24 hours. If you didn't create an account, ignore this email."
+    : 'El link vence en 24 horas. Si no creaste una cuenta, ignorá este mail.';
+
   try {
     await c.emails.send({
       from: FROM,
       to,
-      subject: 'FreeMatch — Verify your email',
+      subject,
       html: `
         <div style="font-family:system-ui,sans-serif;max-width:480px;margin:auto;padding:24px">
-          <h2 style="color:#ff2d55">FreeMatch 💘</h2>
-          <p>Hola! Confirmá tu email para activar tu cuenta.</p>
+          <h2 style="color:#ff2d55">${heading}</h2>
+          <p>${greeting}</p>
           <p><a href="${verificationLink(token)}"
                 style="display:inline-block;padding:12px 24px;background:#ff2d55;color:#fff;border-radius:8px;text-decoration:none">
-                Confirmar email</a></p>
-          <p style="color:#888;font-size:13px">El link vence en 24 horas. Si no creaste una cuenta, ignorá este mail.</p>
+                ${button}</a></p>
+          <p style="color:#888;font-size:13px">${footer}</p>
         </div>`,
     });
     return true;
