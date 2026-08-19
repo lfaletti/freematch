@@ -183,7 +183,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
         refreshToken: user.refreshToken ?? '',
         slot: '',
         gender: user.gender,
-        seekingGender: user.seekingGender,
+        seekingGender: seekingGenders.length > 0 ? seekingGenders : (user.seekingGender ?? []),
       }));
 
       // Strong signup: a NEW account that hasn't verified its email must go to
