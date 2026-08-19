@@ -242,6 +242,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         phoneNumber: result.phone_number,
         photo: result.photo_url ?? '',
         emailVerified: result.emailVerified ?? false,
+        requiresVerification: result.requiresVerification ?? false,
         gender: result.gender,
         seekingGender: result.seekingGender,
         language: result.language ?? 'es',

@@ -23,7 +23,7 @@ import { colors } from '../theme/colors';
  *     a NEW account). We show "check your email" with a resend link and a logout
  *     button, so the user is "kicked" until they verify.
  */
-export default function VerifyEmailScreen({ navigation }: any) {
+export default function VerifyEmailScreen({ navigation, route }: any) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [state, setState] = useState<'loading' | 'idle' | 'success' | 'error'>('loading');
@@ -41,8 +41,9 @@ export default function VerifyEmailScreen({ navigation }: any) {
       if (!token) {
         if (!cancelled) {
           setState('idle');
-          // Read the email from session (passed via params) if available.
-          setEmail(navigation?.getParam?.('email') ?? '');
+          // Read the email passed as a nav param (React Navigation v6 uses
+          // route.params, not the removed navigation.getParam API).
+          setEmail(route?.params?.email ?? '');
         }
         return;
       }

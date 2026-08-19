@@ -15,6 +15,7 @@ import { useAppDispatch } from '../redux/hooks';
 import { setSession } from '../redux/slices/sessionSlice';
 import { loginWithPassword } from '../services/authService';
 import { storageService } from '../services/storageService';
+import { navigate } from '../navigation/navigationRef';
 import { colors } from '../theme/colors';
 import i18n, { Language, saveLanguage } from '../i18n';
 
@@ -71,13 +72,22 @@ export default function LoginScreen({ navigation }: Props) {
         gender: user.gender,
         seekingGender: user.seekingGender,
         language: userLang,
+        // Same post-auth gate as signup: an unverified new account must land on
+        // VerifyEmailScreen, not HomeScreen. The backend now returns
+        // requiresVerification on login too; persist it so RootNavigator's gate
+        // routes correctly instead of dropping onto the (403-blocked) swipe deck.
+        emailVerified: user.emailVerified ?? false,
+        requiresVerification: user.requiresVerification ?? false,
       }));
 
       // Strong signup: a new account that hasn't verified its email must go to
       // the "verify your email" screen instead of the home — the backend guards
       // the operational routes with 403 EMAIL_NOT_VERIFIED until confirmed.
       if (user.requiresVerification) {
-        navigation.navigate('VerifyEmail', { email: user.email });
+        // Use the global navigate helper: it routes through the shared
+        // navigationRef, which stays valid across the container re-render that
+        // setSession triggers (the local prop can go stale mid-dispatch).
+        navigate('VerifyEmail', { email: user.email });
         return;
       }
     } catch (err: any) {
