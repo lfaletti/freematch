@@ -24,6 +24,16 @@ function extractToken(req: Request): string | null {
  * Old accounts (created before the cut-off) are exempt.
  */
 export async function requireVerifiedEmail(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  // Right to erasure (GDPR): deleting your account must always be allowed, even
+  // for a NEW account that hasn't verified its email yet — otherwise a user
+  // stuck in "verify your email" couldn't ever remove their data.
+  if (req.method === 'DELETE') {
+    // Still enforce auth (the route pulls the user from the token) but skip the
+    // email-verification gate for this destructive-but-always-permitted action.
+    next();
+    return;
+  }
+
   // Attach the user if not already done by jwtMiddleware.
   if (!req.user) {
     const token = extractToken(req);
