@@ -16,6 +16,8 @@ import {
   generateEmailVerificationToken,
   generatePasswordResetToken,
   resetPassword,
+  generateToken,
+  generateAndStoreRefreshToken,
 } from '../services/authService';
 import {
   sendVerificationEmail,
@@ -358,7 +360,17 @@ router.get('/verify-email', async (req, res) => {
 
     const verified = await verifyEmailToken(token);
     if (verified) {
-      return res.json({ success: true, message: 'Email verified successfully' });
+      // Opción A: after verifying from the email link, the user is logged in
+      // directly. Emit fresh access + refresh tokens so the web app can resume
+      // the session straight into the home screen.
+      const accessToken = generateToken(verified.userId, verified.email);
+      const refreshToken = await generateAndStoreRefreshToken(verified.userId, verified.email);
+      return res.json({
+        success: true,
+        message: 'Email verified successfully',
+        token: accessToken,
+        refreshToken,
+      });
     }
 
     return res.status(400).json({ error: 'Invalid or expired verification token' });

@@ -12,6 +12,20 @@ const JWT_SECRET_EFFECTIVE = JWT_SECRET || 'dev-secret-do-not-use-in-production'
 const JWT_EXPIRY = '24h';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
+// Email verification cut-off. Accounts created ON/AFTER this date must verify
+// their email before using the app (strong 2FA-style signup). Accounts created
+// before it keep working as-is (email verification was optional back then).
+const REQUIRES_VERIFICATION_SINCE = '2026-08-18';
+
+/** Whether an account must verify its email to operate (new + not verified). */
+export function requiresEmailVerification(
+  createdAt: string | Date | null | undefined,
+  emailVerified: boolean | undefined | null
+): boolean {
+  if (emailVerified) return false;
+  return !!createdAt && new Date(createdAt) >= new Date(REQUIRES_VERIFICATION_SINCE);
+}
+
 export type GenderValue = 'man' | 'woman' | 'other';
 
 export interface RegisterInput {
@@ -138,9 +152,9 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
   };
 }
 
-export async function loginUser(input: LoginInput): Promise<AuthResponse | null> {
+export async function loginUser(input: LoginInput): Promise<AuthResponse & { requiresVerification?: boolean } | null> {
   const result = await query(
-    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, gender, seeking_gender, language
+    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, created_at, gender, seeking_gender, language
      FROM users WHERE email = $1 AND is_mock = false`,
     [input.email]
   );
@@ -158,6 +172,8 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse | null>
 
   await query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
 
+  const requiresVerification = requiresEmailVerification(user.created_at, user.email_verified);
+
   const token = generateToken(user.id, user.email);
   const refreshToken = await generateAndStoreRefreshToken(user.id, user.email);
 
@@ -170,6 +186,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse | null>
     phone_number: user.phone_number,
     photo_url: user.photo_url,
     emailVerified: user.email_verified ?? false,
+    requiresVerification,
     gender: user.gender,
     seekingGender: user.seeking_gender,
     language: user.language ?? 'es',
@@ -225,7 +242,7 @@ function sha256(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-async function generateAndStoreRefreshToken(
+export async function generateAndStoreRefreshToken(
   userId: string,
   email: string,
   replacedById?: string
@@ -255,20 +272,21 @@ async function revokeUserTokens(userId: string): Promise<void> {
   );
 }
 
-export async function verifyEmailToken(token: string): Promise<boolean> {
+export async function verifyEmailToken(token: string): Promise<{ userId: string; email: string } | null> {
   try {
     const decoded = jwt.verify(token, JWT_SECRET_EFFECTIVE) as JWTPayload & { type: string };
-    if (decoded.type !== 'email_verify') return false;
+    if (decoded.type !== 'email_verify') return null;
 
-    await query(
+    const res = await query(
       `UPDATE users SET email_verified = true, email_verified_at = NOW()
-       WHERE id = $1 AND email_verified = false`,
+       WHERE id = $1 AND email_verified = false RETURNING id, email`,
       [decoded.userId]
     );
 
-    return true;
+    if (res.rows.length === 0) return null; // already verified / not found
+    return { userId: res.rows[0].id, email: res.rows[0].email };
   } catch {
-    return false;
+    return null;
   }
 }
 

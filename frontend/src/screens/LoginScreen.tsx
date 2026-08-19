@@ -72,6 +72,14 @@ export default function LoginScreen({ navigation }: Props) {
         seekingGender: user.seekingGender,
         language: userLang,
       }));
+
+      // Strong signup: a new account that hasn't verified its email must go to
+      // the "verify your email" screen instead of the home — the backend guards
+      // the operational routes with 403 EMAIL_NOT_VERIFIED until confirmed.
+      if (user.requiresVerification) {
+        navigation.navigate('VerifyEmail');
+        return;
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       const message = err?.response?.data?.error;

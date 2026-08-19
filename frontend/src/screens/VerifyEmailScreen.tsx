@@ -9,6 +9,9 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { verifyEmail } from '../services/authService';
+import { storageService } from '../services/storageService';
+import { useAppDispatch } from '../redux/hooks';
+import { setSession } from '../redux/slices/sessionSlice';
 import { colors } from '../theme/colors';
 
 /**
@@ -19,6 +22,7 @@ import { colors } from '../theme/colors';
  */
 export default function VerifyEmailScreen({ navigation }: any) {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const [state, setState] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
 
@@ -34,8 +38,25 @@ export default function VerifyEmailScreen({ navigation }: any) {
         return;
       }
       try {
-        await verifyEmail(token);
-        if (!cancelled) setState('success');
+        const res = await verifyEmail(token);
+        if (cancelled) return;
+        setState('success');
+
+        // Opción A: after verifying, the backend returns new tokens → log the
+        // user in directly so they land on the home screen authenticated.
+        if (res.token) {
+          await storageService.setToken(res.token);
+          if (res.refreshToken) await storageService.setRefreshToken(res.refreshToken);
+          if (typeof window !== 'undefined' && window.location) {
+            // Clear the ?token= from the URL so a refresh doesn't re-verify.
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+          dispatch(setSession({
+            email: '',
+            token: res.token,
+            refreshToken: res.refreshToken ?? '',
+          } as any));
+        }
       } catch (err: any) {
         const msg = err?.response?.data?.error;
         if (!cancelled) {

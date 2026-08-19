@@ -14,6 +14,8 @@ export interface AuthResponse {
   gender?: string;
   seekingGender?: string[];
   language?: 'es' | 'en';
+  emailVerified?: boolean;
+  requiresVerification?: boolean;
 }
 
 export const register = async (formData: FormData): Promise<AuthResponse> => {
@@ -128,7 +130,7 @@ export const resetPassword = async (token: string, newPassword: string): Promise
 };
 
 // Verifies an email address with a signed token (from the email link).
-export const verifyEmail = async (token: string): Promise<{ success: boolean }> => {
+export const verifyEmail = async (token: string): Promise<{ success: boolean; token?: string; refreshToken?: string }> => {
   const res = await api.get('/api/auth/verify-email', { params: { token } });
   return res.data;
 };

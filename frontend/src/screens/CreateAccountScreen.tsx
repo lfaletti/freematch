@@ -186,6 +186,16 @@ export default function CreateAccountScreen({ navigation }: Props) {
         seekingGender: user.seekingGender,
       }));
 
+      // Strong signup: a NEW account that hasn't verified its email must go to
+      // the "verify your email" screen instead of the home, even though it holds
+      // a token — the backend guards the operational routes (403 EMAIL_NOT_VERIFIED)
+      // until the user confirms via the email link.
+      if (!user.emailVerified) {
+        navigation.navigate('VerifyEmail');
+        setLoading(false);
+        return;
+      }
+
       // Extra photos go to the gallery. The request interceptor reads the token
       // from Redux, so this must run after setSession. Best-effort: a failed
       // gallery upload shouldn't block the now-authenticated user.
