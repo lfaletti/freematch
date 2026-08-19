@@ -18,6 +18,7 @@ import {
   resetPassword,
   generateToken,
   generateAndStoreRefreshToken,
+  normalizeSeekingGender,
 } from '../services/authService';
 import {
   sendVerificationEmail,
@@ -176,7 +177,7 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       photo_url,
       id,
       gender,
-      seekingGender: seekingGender ? (typeof seekingGender === 'string' ? [seekingGender] : seekingGender) : undefined,
+      seekingGender: normalizeSeekingGender(seekingGender),
       language: language === 'en' ? 'en' : 'es',
       privacyAcceptedAt: consentTime,
       termsAcceptedAt: consentTime,

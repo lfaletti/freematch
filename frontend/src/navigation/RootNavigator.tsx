@@ -207,17 +207,10 @@ function RootNavigator() {
     );
   }
 
-  // Opción A gate: a logged-in account that still needs email verification must
-  // land on the "verify your email" screen, never the home/operational app.
-  if (session.isAuthenticated && session.requiresVerification) {
-    return (
-      <NavigationContainer ref={navigationRef}>
-        <DeepLinkHandler />
-        <AuthStack />
-      </NavigationContainer>
-    );
-  }
-
+  // Logged-in users always land on the operational app (swipe deck).
+  // Unverified NEW accounts see an in-app activation banner there instead of
+  // being kicked to a separate screen; the backend enforces the visibility rule
+  // (can't view profiles / not shown to others) until they verify their email.
   return (
     <NavigationContainer ref={navigationRef}>
       <DeepLinkHandler />

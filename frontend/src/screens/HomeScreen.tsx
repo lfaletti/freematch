@@ -18,17 +18,22 @@ import SwipeCard from '../components/SwipeCard';
 import { storageService } from '../services/storageService';
 import { navigate } from '../navigation/navigationRef';
 import { resetLeftSwipes } from '../services/userService';
+import { resendVerification } from '../services/authService';
 import { fetchDonationConfig } from '../services/donationService';
 
 const HomeScreen = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
   const sessionUserId = useAppSelector((s) => s.session.userId);
+  const requiresVerification = useAppSelector((s) => s.session.requiresVerification);
+  const sessionEmail = useAppSelector((s) => s.session.email);
   const { all: users, currentIndex, loading, loaded, error } = useAppSelector((s) => s.users);
   const [swiping, setSwiping] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [resetDialog, setResetDialog] = useState(false);
   const [canDonate, setCanDonate] = useState(false);
+  const [resendingVerify, setResendingVerify] = useState(false);
+  const [verifyResent, setVerifyResent] = useState(false);
   const swipingRef = useRef(false);
 
   // Load users on mount and when coming back from EditProfile
@@ -107,6 +112,18 @@ const HomeScreen = () => {
       dispatch(loadUsers());
     } catch {
       // silently fail
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResendingVerify(true);
+    try {
+      await resendVerification(sessionEmail || undefined);
+      setVerifyResent(true);
+    } catch {
+      // silently fail
+    } finally {
+      setResendingVerify(false);
     }
   };
 
@@ -234,6 +251,23 @@ const HomeScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {requiresVerification && (
+        <View style={styles.verifyBanner}>
+          <Text style={styles.verifyBannerTitle}>📩 {t('home.verifyBanner')}</Text>
+          <Text style={styles.verifyBannerSub}>{t('home.verifyBannerSub')}</Text>
+          <TouchableOpacity
+            style={styles.verifyResendBtn}
+            onPress={handleResendVerification}
+            disabled={resendingVerify}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.verifyResendText}>
+              {verifyResent ? t('home.verifyResent') : t('home.verifyResend')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.cardArea}>
         {renderCardArea()}
@@ -424,6 +458,39 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  verifyBanner: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: 'rgba(255, 215, 0, 0.12)',
+    borderWidth: 1,
+    borderColor: colors.matchGold,
+    borderRadius: 14,
+    padding: 14,
+  },
+  verifyBannerTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  verifyBannerSub: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  verifyResendBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: colors.matchGold,
+  },
+  verifyResendText: {
+    color: colors.black,
+    fontSize: 13,
+    fontWeight: '700',
   },
   dialog: {
     backgroundColor: colors.surface,

@@ -3,6 +3,7 @@ import * as userService from '../services/userService';
 import * as photoService from '../services/photoService';
 import { deletePhotoFromS3 } from '../services/s3Service';
 import { getUserId } from '../utils/session';
+import { normalizeSeekingGender } from '../services/authService';
 
 const router = Router();
 
@@ -55,20 +56,13 @@ router.patch('/me', async (req: Request, res: Response) => {
     if (gender !== undefined && !validGenders.includes(gender)) {
       return res.status(400).json({ error: 'gender must be man, woman, or other' });
     }
-    // Normalize seekingGender: tolerate a legacy double-encoded value (an array
-    // containing a single JSON string like ['["man","woman"]']) that corrupted
-    // the DB in the past; repair it to a clean array so saving the profile works.
-    let normalizedSeeking = seekingGender;
+    // Normalize seekingGender: tolerate the historical double-encoded value (an
+    // array containing a single JSON string like ['["man","woman"]']) that
+    // corrupted the DB in the past, and repair it to a clean array.
+    let normalizedSeeking: ('man' | 'woman' | 'other')[] | undefined;
     if (seekingGender !== undefined) {
-      if (Array.isArray(seekingGender) && seekingGender.length === 1 && typeof seekingGender[0] === 'string') {
-        try {
-          const parsed = JSON.parse(seekingGender[0]);
-          if (Array.isArray(parsed)) normalizedSeeking = parsed;
-        } catch {
-          /* keep as-is, validation below catches it */
-        }
-      }
-      if (!Array.isArray(normalizedSeeking) || !normalizedSeeking.every((g: string) => validGenders.includes(g))) {
+      normalizedSeeking = normalizeSeekingGender(seekingGender);
+      if (normalizedSeeking.length === 0) {
         return res.status(400).json({ error: 'seekingGender must be an array of: man, woman, other' });
       }
     }

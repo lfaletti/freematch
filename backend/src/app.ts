@@ -4,7 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import { getUserId, USER_SLOTS, extractBearerToken } from './utils/session';
 import { getUserById } from './services/userService';
-import { requiresEmailVerification } from './services/authService';
+import { requiresEmailVerification, normalizeSeekingGender } from './services/authService';
 import usersRouter from './routes/users';
 import swipesRouter from './routes/swipes';
 import matchesRouter from './routes/matches';
@@ -14,7 +14,7 @@ import photosRouter from './routes/photos';
 import legalRouter from './routes/legal';
 import donationRouter from './routes/donation';
 import { apiLimiter, authLimiter, swipeLimiter } from './middleware/rateLimiter';
-import { requireVerifiedEmail } from './middleware/requireVerifiedEmail';
+
 
 export { getUserId, USER_SLOTS };
 
@@ -76,7 +76,7 @@ export function createApp() {
         location: user.location ?? '',
         interests: user.interests ?? [],
         gender: user.gender ?? undefined,
-        seekingGender: user.seeking_gender ?? [],
+        seekingGender: normalizeSeekingGender(user.seeking_gender),
         language: user.language ?? 'es',
         emailVerified: user.email_verified ?? false,
         requiresVerification: requiresEmailVerification(user.created_at, user.email_verified),
@@ -88,11 +88,11 @@ export function createApp() {
   });
 
   app.use('/api/auth', authLimiter, authRouter);
-  app.use('/api/users', requireVerifiedEmail, usersRouter);
-  app.use('/api/swipes', swipeLimiter, requireVerifiedEmail, swipesRouter);
-  app.use('/api/matches', requireVerifiedEmail, matchesRouter);
-  app.use('/api/messages', requireVerifiedEmail, messagesRouter);
-  app.use('/api/photos', requireVerifiedEmail, photosRouter);
+  app.use('/api/users', usersRouter);
+  app.use('/api/swipes', swipeLimiter, swipesRouter);
+  app.use('/api/matches', matchesRouter);
+  app.use('/api/messages', messagesRouter);
+  app.use('/api/photos', photosRouter);
   app.use('/api/legal', legalRouter);
   app.use('/api/donation', donationRouter);
 

@@ -15,7 +15,6 @@ import { useAppDispatch } from '../redux/hooks';
 import { setSession } from '../redux/slices/sessionSlice';
 import { loginWithPassword } from '../services/authService';
 import { storageService } from '../services/storageService';
-import { navigate } from '../navigation/navigationRef';
 import { colors } from '../theme/colors';
 import i18n, { Language, saveLanguage } from '../i18n';
 
@@ -79,17 +78,6 @@ export default function LoginScreen({ navigation }: Props) {
         emailVerified: user.emailVerified ?? false,
         requiresVerification: user.requiresVerification ?? false,
       }));
-
-      // Strong signup: a new account that hasn't verified its email must go to
-      // the "verify your email" screen instead of the home — the backend guards
-      // the operational routes with 403 EMAIL_NOT_VERIFIED until confirmed.
-      if (user.requiresVerification) {
-        // Use the global navigate helper: it routes through the shared
-        // navigationRef, which stays valid across the container re-render that
-        // setSession triggers (the local prop can go stale mid-dispatch).
-        navigate('VerifyEmail', { email: user.email });
-        return;
-      }
     } catch (err: any) {
       const status = err?.response?.status;
       const message = err?.response?.data?.error;

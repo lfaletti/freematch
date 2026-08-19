@@ -215,6 +215,10 @@ const es = {
       resetConfirmCancel: 'Cancelar',
       resetConfirmOk: 'Sí, reiniciar',
       empty: 'No quedan personas por ver por ahora. Volvé más tarde.',
+      verifyBanner: 'Activá tu cuenta desde el link de verificación que te enviamos por email.',
+      verifyBannerSub: 'Hasta que no verifiques, no vas a poder ver perfiles ni aparecer a otros usuarios.',
+      verifyResend: 'Reenviar email',
+      verifyResent: 'Listo, te lo reenviamos.',
     },
 
     // ── Donation ──
@@ -487,6 +491,10 @@ const en = {
       resetConfirmCancel: 'Cancel',
       resetConfirmOk: "Yes, reset",
       empty: 'No one left to see for now. Come back later.',
+      verifyBanner: 'Activate your account via the verification link we emailed you.',
+      verifyBannerSub: "Until you verify, you won't be able to see profiles or be shown to others.",
+      verifyResend: 'Resend email',
+      verifyResent: 'Done, we resent it.',
     },
 
     // ── Donation ──

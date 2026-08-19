@@ -19,7 +19,6 @@ import { setSession } from '../redux/slices/sessionSlice';
 import { registerWithPhoto } from '../services/authService';
 import { uploadPhoto } from '../services/photoService';
 import { storageService } from '../services/storageService';
-import { navigationRef } from '../navigation/navigationRef';
 import { colors } from '../theme/colors';
 import LanguagePicker from '../components/LanguagePicker';
 import i18n from '../i18n';
@@ -192,19 +191,6 @@ export default function CreateAccountScreen({ navigation }: Props) {
         emailVerified: user.emailVerified ?? false,
         requiresVerification: user.requiresVerification ?? !user.emailVerified,
       }));
-
-      // Strong signup: a NEW account that hasn't verified its email must go to
-      // the "verify your email" screen instead of the home, even though it holds
-      // a token — the backend guards the operational routes (403 EMAIL_NOT_VERIFIED)
-      // until the user confirms via the email link.
-      if (!user.emailVerified) {
-        // Use the global navigation ref: setSession above causes RootNavigator
-        // to re-mount the NavigationContainer, so the local navigation prop may
-        // be stale right after the dispatch. The ref navigates reliably.
-        navigationRef.navigate('VerifyEmail' as never);
-        setLoading(false);
-        return;
-      }
 
       // Extra photos go to the gallery. The request interceptor reads the token
       // from Redux, so this must run after setSession. Best-effort: a failed

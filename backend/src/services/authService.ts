@@ -15,7 +15,7 @@ const REFRESH_TOKEN_EXPIRY = '7d';
 // Email verification cut-off. Accounts created ON/AFTER this date must verify
 // their email before using the app (strong 2FA-style signup). Accounts created
 // before it keep working as-is (email verification was optional back then).
-const REQUIRES_VERIFICATION_SINCE = '2026-08-18';
+export const REQUIRES_VERIFICATION_SINCE = '2026-08-18';
 
 /** Whether an account must verify its email to operate (new + not verified). */
 export function requiresEmailVerification(
@@ -27,6 +27,45 @@ export function requiresEmailVerification(
 }
 
 export type GenderValue = 'man' | 'woman' | 'other';
+
+const VALID_GENDERS: readonly GenderValue[] = ['man', 'woman', 'other'];
+
+/**
+ * Normalizes a `seeking_gender` value into a clean, de-duplicated array of
+ * valid genders. Handles the historical double-encoding bug where the value
+ * was stored as ['["man","woman"]'] (a single JSON string inside an array)
+ * instead of ['man','woman'], and also tolerates a mixed array where a JSON
+ * string sits alongside valid values.
+ */
+export function normalizeSeekingGender(value: unknown): GenderValue[] {
+  if (value === undefined || value === null) return [];
+  const result: GenderValue[] = [];
+  const seen = new Set<GenderValue>();
+  const add = (v: unknown) => {
+    if (typeof v !== 'string') return;
+    // A double-encoded value is a JSON array string like '["man","woman"]'.
+    if (v.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(v);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(add);
+          return;
+        }
+      } catch {
+        // Not valid JSON — fall through and treat the raw string as a value.
+      }
+    }
+    if ((VALID_GENDERS as readonly string[]).includes(v)) {
+      const g = v as GenderValue;
+      if (!seen.has(g)) {
+        seen.add(g);
+        result.push(g);
+      }
+    }
+  };
+  (Array.isArray(value) ? value : [value]).forEach(add);
+  return result;
+}
 
 export interface RegisterInput {
   name: string;
@@ -149,7 +188,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     // signup): mirror what loginUser computes via requiresEmailVerification.
     requiresVerification: true,
     gender: user.gender,
-    seekingGender: user.seeking_gender,
+    seekingGender: normalizeSeekingGender(user.seeking_gender),
     language: user.language ?? 'es',
     token,
     refreshToken,
@@ -192,7 +231,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse & { req
     emailVerified: user.email_verified ?? false,
     requiresVerification,
     gender: user.gender,
-    seekingGender: user.seeking_gender,
+    seekingGender: normalizeSeekingGender(user.seeking_gender),
     language: user.language ?? 'es',
     token,
     refreshToken,

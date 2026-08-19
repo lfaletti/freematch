@@ -1,4 +1,5 @@
 import { query } from '../database/connection';
+import { REQUIRES_VERIFICATION_SINCE } from './authService';
 
 const SESSION_USER_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -11,7 +12,9 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
     `WITH my_user AS (
       SELECT 
         COALESCE(gender, 'other') as gender, 
-        COALESCE(seeking_gender, '{man,woman,other}'::text[]) as seeking_gender 
+        COALESCE(seeking_gender, '{man,woman,other}'::text[]) as seeking_gender,
+        email_verified,
+        created_at
       FROM users WHERE id = $1
     )
     SELECT u.*,
@@ -20,6 +23,11 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
      FROM users u, my_user
      WHERE u.id != $1
        AND u.gender IS NOT NULL
+       -- Email-verification visibility gate: an unverified NEW account can't
+       -- view profiles, and unverified NEW accounts aren't shown to anyone
+       -- either (activation via the verification link is required for both).
+       AND (my_user.email_verified = true OR my_user.created_at < $4::timestamptz)
+       AND (u.email_verified = true OR u.created_at < $4::timestamptz)
        AND u.id NOT IN (
          SELECT swiped_id FROM swipes WHERE swiper_id = $1
        )
@@ -32,7 +40,7 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
        )
      ORDER BY RANDOM()
      LIMIT $2 OFFSET $3`,
-    [sessionUserId, limit, offset]
+    [sessionUserId, limit, offset, REQUIRES_VERIFICATION_SINCE]
   );
   return result.rows;
 }
