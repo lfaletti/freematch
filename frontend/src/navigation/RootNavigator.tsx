@@ -69,6 +69,8 @@ const initSession = async (dispatch: any) => {
           gender: profile.gender,
           seekingGender: profile.seekingGender,
           language: profileLang,
+          emailVerified: profile.emailVerified,
+          requiresVerification: profile.requiresVerification,
         }),
       );
     } else {
@@ -202,6 +204,17 @@ function RootNavigator() {
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
+    );
+  }
+
+  // Opción A gate: a logged-in account that still needs email verification must
+  // land on the "verify your email" screen, never the home/operational app.
+  if (session.isAuthenticated && session.requiresVerification) {
+    return (
+      <NavigationContainer ref={navigationRef}>
+        <DeepLinkHandler />
+        <AuthStack />
+      </NavigationContainer>
     );
   }
 

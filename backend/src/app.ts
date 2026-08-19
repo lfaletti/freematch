@@ -4,6 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import { getUserId, USER_SLOTS, extractBearerToken } from './utils/session';
 import { getUserById } from './services/userService';
+import { requiresEmailVerification } from './services/authService';
 import usersRouter from './routes/users';
 import swipesRouter from './routes/swipes';
 import matchesRouter from './routes/matches';
@@ -77,6 +78,8 @@ export function createApp() {
         gender: user.gender ?? undefined,
         seekingGender: user.seeking_gender ?? [],
         language: user.language ?? 'es',
+        emailVerified: user.email_verified ?? false,
+        requiresVerification: requiresEmailVerification(user.created_at, user.email_verified),
         token: token ?? null,
       });
     } catch (err) {

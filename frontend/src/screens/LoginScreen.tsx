@@ -77,7 +77,7 @@ export default function LoginScreen({ navigation }: Props) {
       // the "verify your email" screen instead of the home — the backend guards
       // the operational routes with 403 EMAIL_NOT_VERIFIED until confirmed.
       if (user.requiresVerification) {
-        navigation.navigate('VerifyEmail');
+        navigation.navigate('VerifyEmail', { email: user.email });
         return;
       }
     } catch (err: any) {

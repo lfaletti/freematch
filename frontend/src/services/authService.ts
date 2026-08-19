@@ -155,6 +155,8 @@ export interface SessionProfile {
   gender?: string;
   seekingGender?: string[];
   language?: 'es' | 'en';
+  emailVerified?: boolean;
+  requiresVerification?: boolean;
   token: string | null;
 }
 

@@ -5,35 +5,44 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Linking,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { verifyEmail } from '../services/authService';
+import { verifyEmail, resendVerification } from '../services/authService';
 import { storageService } from '../services/storageService';
 import { useAppDispatch } from '../redux/hooks';
 import { setSession } from '../redux/slices/sessionSlice';
+import { clearSession } from '../redux/slices/sessionSlice';
 import { colors } from '../theme/colors';
 
 /**
- * VerifyEmail — completed the email-verification link. The web app is opened
- * at /verify-email?token=... ; this screen reads the token from the URL on web
- * and calls the backend to confirm the address. It also offers a simple
- * "verified, log in" CTA for mobile deep links (token in the deep link).
+ * VerifyEmail — two roles:
+ *  1. Completed the email-verification link (?token=... in the URL). The backend
+ *     verifies the address and returns access+refresh tokens → we log the user in
+ *     and clear the ?token from the URL.
+ *  2. Hard redirect for a logged-in-but-unverified account (emailVerified=false on
+ *     a NEW account). We show "check your email" with a resend link and a logout
+ *     button, so the user is "kicked" until they verify.
  */
 export default function VerifyEmailScreen({ navigation }: any) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const [state, setState] = useState<'loading' | 'success' | 'error'>('loading');
+  const [state, setState] = useState<'loading' | 'idle' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
+  const [email, setEmail] = useState('');
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const token = extractToken();
+      // No token in the URL → this is the "kicked" flow (already logged in,
+      // account not verified). Show the "check your email" screen.
       if (!token) {
         if (!cancelled) {
-          setState('error');
-          setError(t('verifyEmail.errToken'));
+          setState('idle');
+          // Read the email from session (passed via params) if available.
+          setEmail(navigation?.getParam?.('email') ?? '');
         }
         return;
       }
@@ -42,8 +51,7 @@ export default function VerifyEmailScreen({ navigation }: any) {
         if (cancelled) return;
         setState('success');
 
-        // Opción A: after verifying, the backend returns new tokens → log the
-        // user in directly so they land on the home screen authenticated.
+        // Opción A: the backend returns new tokens → log the user in directly.
         if (res.token) {
           await storageService.setToken(res.token);
           if (res.refreshToken) await storageService.setRefreshToken(res.refreshToken);
@@ -72,15 +80,32 @@ export default function VerifyEmailScreen({ navigation }: any) {
   }, []);
 
   function extractToken(): string | null {
-    // Web: read the query string from the current location.
     if (typeof window !== 'undefined' && window.location?.search) {
       const params = new URLSearchParams(window.location.search);
       return params.get('token');
     }
-    // Mobile: token may come via deep link — the app is expected to pass it in
-    // navigation params when linking. Fallback: expose a way to enter the login.
     return null;
   }
+
+  const handleResend = async () => {
+    setResending(true);
+    setResent(false);
+    try {
+      // If we don't have the email in state, try to read it at runtime.
+      await resendVerification(email || undefined);
+      setResent(true);
+    } catch {
+      setError(t('forgotPassword.errNetwork'));
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await storageService.clearTokens();
+    dispatch(clearSession());
+    navigation.navigate('Login');
+  };
 
   return (
     <View style={styles.container}>
@@ -90,6 +115,31 @@ export default function VerifyEmailScreen({ navigation }: any) {
         <>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.subtitle}>{t('verifyEmail.loading')}</Text>
+        </>
+      )}
+
+      {state === 'idle' && (
+        <>
+          <Text style={styles.emoji}>✉️</Text>
+          <Text style={styles.titleSmall}>{t('verifyEmail.title')}</Text>
+          <Text style={styles.subtitle}>{t('verifyEmail.pendingBody')}</Text>
+          {resent && <Text style={styles.success}>{t('forgotPassword.resent')}</Text>}
+          {error && <Text style={styles.error}>{error}</Text>}
+          <TouchableOpacity
+            style={[styles.button, resending && styles.buttonDisabled]}
+            onPress={handleResend}
+            disabled={resending}
+            activeOpacity={0.85}
+          >
+            {resending ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.buttonText}>{t('forgotPassword.resend')}</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleLogout} activeOpacity={0.85}>
+            <Text style={styles.secondaryButtonText}>{t('common.backToLogin') ?? 'Volver al login'}</Text>
+          </TouchableOpacity>
         </>
       )}
 
@@ -138,6 +188,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginBottom: 32,
   },
+  titleSmall: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
   emoji: {
     fontSize: 56,
     marginBottom: 16,
@@ -149,6 +206,18 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 24,
   },
+  success: {
+    color: colors.like,
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  error: {
+    color: colors.nope,
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
   button: {
     backgroundColor: colors.primary,
     borderRadius: 16,
@@ -156,10 +225,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     alignItems: 'center',
     marginTop: 8,
+    alignSelf: 'stretch',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     color: colors.white,
     fontSize: 16,
     fontWeight: '700',
+  },
+  secondaryButton: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  secondaryButtonText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

@@ -12,6 +12,8 @@ interface SessionState {
   token: string;
   refreshToken: string;
   isAuthenticated: boolean;
+  emailVerified?: boolean;
+  requiresVerification?: boolean;
   location?: string;
   interests?: string[];
   gender?: string;
