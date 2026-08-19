@@ -70,6 +70,22 @@ const loginRateLimiter = rateLimit({
   skipSuccessfulRequests: true, // Solo cuenta intentos fallidos
 });
 
+// Rate limiter para reenvío del email de verificación. Claveado por email
+// (o userId) para evitar que una misma cuenta dispare emails ilimitados y
+// haga spam/mal uso del servidor de correo.
+const resendVerificationLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 horas
+  max: 5, // hasta 5 reenvíos por cuenta por día
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: any) => {
+    const email = req.body?.email;
+    const userId = req.body?.userId;
+    return String(email || userId || req.ip || 'unknown').toLowerCase();
+  },
+  message: { error: 'Too many verification emails requested. Please try again later.' },
+});
+
 const MIN_AGE = 18;
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -384,7 +400,7 @@ router.get('/verify-email', async (req, res) => {
 
 // POST /api/auth/resend-verification
 // Generates a new verification token. In production, this would also send it via email.
-router.post('/resend-verification', async (req, res) => {
+router.post('/resend-verification', resendVerificationLimiter, async (req, res) => {
   try {
     const { email, userId } = req.body;
     if (!email && !userId) {

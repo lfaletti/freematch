@@ -34,6 +34,7 @@ const HomeScreen = () => {
   const [canDonate, setCanDonate] = useState(false);
   const [resendingVerify, setResendingVerify] = useState(false);
   const [verifyResent, setVerifyResent] = useState(false);
+  const [verifyResendError, setVerifyResendError] = useState(false);
   const swipingRef = useRef(false);
 
   // Load users on mount and when coming back from EditProfile
@@ -117,11 +118,15 @@ const HomeScreen = () => {
 
   const handleResendVerification = async () => {
     setResendingVerify(true);
+    setVerifyResendError(false);
+    setVerifyResent(false);
     try {
       await resendVerification(sessionEmail || undefined);
       setVerifyResent(true);
-    } catch {
-      // silently fail
+    } catch (err: any) {
+      // 429 → rate-limited (too many resends); any other failure is also
+      // surfaced so the user isn't left guessing.
+      setVerifyResendError(true);
     } finally {
       setResendingVerify(false);
     }
@@ -266,6 +271,9 @@ const HomeScreen = () => {
               {verifyResent ? t('home.verifyResent') : t('home.verifyResend')}
             </Text>
           </TouchableOpacity>
+          {verifyResendError && (
+            <Text style={styles.verifyResendError}>{t('home.verifyRateLimited')}</Text>
+          )}
         </View>
       )}
 
@@ -491,6 +499,11 @@ const styles = StyleSheet.create({
     color: colors.black,
     fontSize: 13,
     fontWeight: '700',
+  },
+  verifyResendError: {
+    color: colors.nope,
+    fontSize: 12,
+    marginTop: 8,
   },
   dialog: {
     backgroundColor: colors.surface,

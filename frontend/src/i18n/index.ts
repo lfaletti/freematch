@@ -167,6 +167,7 @@ const es = {
     goLogin: 'Ir al login',
     errToken: 'Link de verificación inválido o expirado.',
     errGeneric: 'No se pudo verificar tu email. Volvé a intentarlo.',
+    rateLimited: 'Pediste demasiados emails de verificación. Probá de nuevo más tarde.',
     },
 
     // ── Edit Profile ──
@@ -219,6 +220,7 @@ const es = {
       verifyBannerSub: 'Hasta que no verifiques, no vas a poder ver perfiles ni aparecer a otros usuarios.',
       verifyResend: 'Reenviar email',
       verifyResent: 'Listo, te lo reenviamos.',
+      verifyRateLimited: 'Pediste demasiados emails de verificación. Probá de nuevo más tarde.',
     },
 
     // ── Donation ──
@@ -443,6 +445,7 @@ const en = {
       goLogin: 'Go to login',
       errToken: 'Verification link is invalid or expired.',
       errGeneric: 'Could not verify your email. Please try again.',
+      rateLimited: 'You requested too many verification emails. Please try again later.',
       },
 
     // ── Edit Profile ──
@@ -495,6 +498,7 @@ const en = {
       verifyBannerSub: "Until you verify, you won't be able to see profiles or be shown to others.",
       verifyResend: 'Resend email',
       verifyResent: 'Done, we resent it.',
+      verifyRateLimited: 'You requested too many verification emails. Please try again later.',
     },
 
     // ── Donation ──

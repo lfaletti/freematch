@@ -95,8 +95,14 @@ export default function VerifyEmailScreen({ navigation, route }: any) {
       // If we don't have the email in state, try to read it at runtime.
       await resendVerification(email || undefined);
       setResent(true);
-    } catch {
-      setError(t('forgotPassword.errNetwork'));
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.error;
+      if (status === 429) {
+        setError(t('verifyEmail.rateLimited'));
+      } else {
+        setError(msg ?? t('forgotPassword.errNetwork'));
+      }
     } finally {
       setResending(false);
     }
