@@ -4,7 +4,7 @@ import { colors } from '../theme/colors';
 
 // Preset search radii (km). The deck shows ONLY people within the chosen
 // radius of the user's city — no fallback to "everyone" when empty.
-export const RADIUS_OPTIONS = [25, 50, 100, 200];
+export const RADIUS_OPTIONS = [10, 25, 50, 100];
 
 interface Props {
   value: number;

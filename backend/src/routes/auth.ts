@@ -213,8 +213,8 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
     // Search radius: how far (km) the user wants to see people. Required at
     // signup — the deck shows ONLY candidates within this radius (no fallback).
     const radius = Number(searchRadiusKm);
-    if (!Number.isInteger(radius) || radius < 1 || radius > 1000) {
-      res.status(400).json({ error: 'searchRadiusKm must be an integer between 1 and 1000' });
+    if (!Number.isInteger(radius) || radius < 1 || radius > 100) {
+      res.status(400).json({ error: 'searchRadiusKm must be an integer between 1 and 100' });
       return;
     }
 

@@ -102,8 +102,8 @@ router.patch('/me', async (req: Request, res: Response) => {
     let radius: number | undefined;
     if (searchRadiusKm !== undefined) {
       radius = Number(searchRadiusKm);
-      if (!Number.isInteger(radius) || radius < 1 || radius > 1000) {
-        return res.status(400).json({ error: 'searchRadiusKm must be an integer between 1 and 1000' });
+      if (!Number.isInteger(radius) || radius < 1 || radius > 100) {
+        return res.status(400).json({ error: 'searchRadiusKm must be an integer between 1 and 100' });
       }
     }
 
