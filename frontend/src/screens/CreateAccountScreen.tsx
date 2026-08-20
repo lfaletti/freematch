@@ -60,6 +60,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
   const [language, setLanguageState] = useState<Language>('es');
   const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [location, setLocation] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
 
   const handleLanguageChange = (lang: Language) => {
     setLanguageState(lang);
@@ -132,6 +134,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
     if (age < 18) return c('createAccount.errUnder18');
     if (age > 120) return c('createAccount.errAgeInvalid');
     if (!location.trim()) return c('createAccount.errLocation');
+    if (latitude == null || longitude == null) return c('createAccount.errLocation');
     if (!gender) return c('createAccount.errGender');
     if (seekingGenders.length === 0) return c('createAccount.errSeeking');
     if (!acceptedLegal) return c('createAccount.errLegal');
@@ -161,6 +164,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
           seekingGender: seekingGenders.length > 0 ? seekingGenders : undefined,
           language,
           location: location.trim(),
+          latitude: latitude!,
+          longitude: longitude!,
           acceptedPrivacyPolicy: acceptedLegal,
           acceptedTerms: acceptedLegal,
         },
@@ -188,6 +193,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
         slot: '',
         gender: user.gender,
         location: location.trim(),
+        latitude: latitude ?? undefined,
+        longitude: longitude ?? undefined,
         seekingGender: seekingGenders.length > 0 ? seekingGenders : (user.seekingGender ?? []),
         // Critical for the post-signup gate: RootNavigator routes an
         // unverified account to VerifyEmailScreen instead of the home/swipe
@@ -370,6 +377,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
         <CityPicker
           value={location}
           onChange={setLocation}
+          onSelectCity={(city) => { setLatitude(city.lat); setLongitude(city.lon); }}
           placeholder={t('createAccount.locationPlaceholder')}
         />
       </View>

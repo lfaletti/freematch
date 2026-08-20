@@ -15,6 +15,8 @@ interface SessionState {
   emailVerified?: boolean;
   requiresVerification?: boolean;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   interests?: string[];
   gender?: string;
   seekingGender?: string[];

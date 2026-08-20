@@ -176,7 +176,7 @@ function calculateAge(bornDate: string): number | null {
 
 router.post('/register', registerRateLimiter, registerIntervalMiddleware, memoryUpload.single('photo'), async (req, res) => {
   try {
-    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language, location, acceptedPrivacyPolicy, acceptedTerms } = req.body;
+    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language, location, latitude, longitude, acceptedPrivacyPolicy, acceptedTerms } = req.body;
 
     if (!name || !email || !password || !born_date) {
       res.status(400).json({ error: 'name, email, password, and born_date are required' });
@@ -198,6 +198,15 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
     }
     if (!location || typeof location !== 'string' || !location.trim()) {
       res.status(400).json({ error: 'location is required' });
+      return;
+    }
+
+    // Coordinates come from the selected city (Geoapify returns lat/lon in
+    // /api/cities). They're the CITY CENTROID, not the user's exact position.
+    const lat = Number(latitude);
+    const lon = Number(longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      res.status(400).json({ error: 'latitude and longitude are required' });
       return;
     }
 
@@ -257,6 +266,8 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       gender,
       seekingGender: normalizedSeeking,
       location: location.trim(),
+      latitude: lat,
+      longitude: lon,
       language: language === 'en' ? 'en' : 'es',
       privacyAcceptedAt: consentTime,
       termsAcceptedAt: consentTime,
@@ -287,6 +298,8 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       seekingGender: result.seekingGender,
       language: result.language ?? 'es',
       location: result.location ?? '',
+      latitude: result.latitude ?? null,
+      longitude: result.longitude ?? null,
       token: result.token,
       refreshToken: result.refreshToken,
     });

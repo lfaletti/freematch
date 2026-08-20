@@ -135,6 +135,9 @@ export async function runMigrations() {
   const sql011_privacy = fs.readFileSync(path.join(__dirname, 'migrations/011_privacy.sql'), 'utf8');
   await query(sql011_privacy);
 
+  const sql012_coords = fs.readFileSync(path.join(__dirname, 'migrations/012_location_coords.sql'), 'utf8');
+  await query(sql012_coords);
+
   console.log('Migrations ran successfully');
 }
 

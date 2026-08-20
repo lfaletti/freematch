@@ -14,7 +14,9 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
         COALESCE(gender, 'other') as gender, 
         COALESCE(seeking_gender, '{man,woman,other}'::text[]) as seeking_gender,
         email_verified,
-        created_at
+        created_at,
+        latitude,
+        longitude
       FROM users WHERE id = $1
     )
     SELECT u.id, u.name, u.bio, u.born_date, u.interests, u.location, u.is_mock,
@@ -39,7 +41,15 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
          -- I must want their gender (or want everyone)
          (my_user.seeking_gender = '{}'::text[] OR u.gender = ANY(my_user.seeking_gender))
        )
-     ORDER BY RANDOM()
+     -- Distance ordering (Haversine, km). Users without coordinates (legacy
+     -- accounts) sort last (NULLS LAST). Exact coords are never exposed in the
+     -- response — only the human-readable location string.
+     ORDER BY
+       (6371 * 2 * ASIN(SQRT(
+         POWER(SIN((RADIANS(u.latitude) - RADIANS(my_user.latitude)) / 2), 2) +
+         COS(RADIANS(my_user.latitude)) * COS(RADIANS(u.latitude)) *
+         POWER(SIN((RADIANS(u.longitude) - RADIANS(my_user.longitude)) / 2), 2)
+       ))) ASC NULLS LAST
      LIMIT $2 OFFSET $3`,
     [sessionUserId, limit, offset, REQUIRES_VERIFICATION_SINCE]
   );
@@ -64,7 +74,7 @@ export async function getUserById(id: string) {
 // and phone_number (the owner is allowed to see them) but NEVER password_hash.
 export async function getOwnUserById(id: string) {
   const result = await query(
-    `SELECT id, name, email, phone_number, bio, born_date, interests, location,
+    `SELECT id, name, email, phone_number, bio, born_date, interests, location, latitude, longitude,
        is_mock, gender, seeking_gender, language, email_verified, created_at,
        COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
        EXTRACT(YEAR FROM AGE(born_date))::integer AS age
@@ -80,6 +90,8 @@ export async function updateUserProfile(userId: string, updates: {
   photo_url?: string | null;
   interests?: string[];
   location?: string;
+  latitude?: number;
+  longitude?: number;
   gender?: 'man' | 'woman' | 'other';
   seekingGender?: ('man' | 'woman' | 'other')[];
   language?: 'es' | 'en';
@@ -113,6 +125,16 @@ export async function updateUserProfile(userId: string, updates: {
     values.push(updates.location);
     idx++;
   }
+  if (updates.latitude !== undefined) {
+    fields.push(`latitude = $${idx}`);
+    values.push(updates.latitude);
+    idx++;
+  }
+  if (updates.longitude !== undefined) {
+    fields.push(`longitude = $${idx}`);
+    values.push(updates.longitude);
+    idx++;
+  }
   if (updates.gender !== undefined) {
     fields.push(`gender = $${idx}`);
     values.push(updates.gender);
@@ -136,7 +158,7 @@ export async function updateUserProfile(userId: string, updates: {
 
   const result = await query(
     `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}
-       RETURNING id, name, email, phone_number, bio, born_date, interests, location,
+       RETURNING id, name, email, phone_number, bio, born_date, interests, location, latitude, longitude,
          is_mock, gender, seeking_gender, language,
          COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
          EXTRACT(YEAR FROM AGE(born_date))::integer AS age`,

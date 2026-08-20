@@ -15,6 +15,8 @@ export interface AuthResponse {
   seekingGender?: string[];
   language?: 'es' | 'en';
   location?: string;
+  latitude?: number;
+  longitude?: number;
   emailVerified?: boolean;
   requiresVerification?: boolean;
 }
@@ -68,6 +70,8 @@ export const registerWithPhoto = async (
     seekingGender?: string[];
     language?: 'es' | 'en';
     location: string;
+    latitude: number;
+    longitude: number;
     acceptedPrivacyPolicy?: boolean;
     acceptedTerms?: boolean;
   },
@@ -86,6 +90,8 @@ export const registerWithPhoto = async (
   }
   if (fields.language) formData.append('language', fields.language);
   formData.append('location', fields.location);
+  formData.append('latitude', String(fields.latitude));
+  formData.append('longitude', String(fields.longitude));
   formData.append('acceptedPrivacyPolicy', fields.acceptedPrivacyPolicy ? 'true' : 'false');
   formData.append('acceptedTerms', fields.acceptedTerms ? 'true' : 'false');
 
@@ -154,6 +160,8 @@ export interface SessionProfile {
   phoneNumber: string;
   email: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   interests?: string[];
   gender?: string;
   seekingGender?: string[];

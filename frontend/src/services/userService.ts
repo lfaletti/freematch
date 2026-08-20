@@ -69,6 +69,8 @@ export interface ProfileUpdatePayload {
   name?: string;
   bio?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   interests?: string[];
   photo_url?: string | null;
   gender?: string;

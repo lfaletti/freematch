@@ -84,6 +84,8 @@ export interface RegisterInput {
   gender: GenderValue;
   seekingGender: GenderValue[];
   location: string;
+  latitude: number;
+  longitude: number;
   language?: 'es' | 'en';
   privacyAcceptedAt?: string; // ISO timestamp of when the user accepted the Privacy Policy
   termsAcceptedAt?: string;   // ISO timestamp of when the user accepted the Terms of Service
@@ -113,6 +115,8 @@ export interface AuthResponse {
   seekingGender?: string[];
   language?: 'es' | 'en';
   location?: string;
+  latitude?: number;
+  longitude?: number;
   token: string;
   refreshToken: string;
 }
@@ -158,9 +162,10 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
   const result = await query(
     `INSERT INTO users (
       id, name, email, password_hash, bio, born_date, phone_number, photo_url, is_mock,
-      gender, seeking_gender, language, location, privacy_policy_accepted_at, terms_accepted_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11, $12, $13, $14)
-    RETURNING id, name, email, bio, born_date, phone_number, photo_url, gender, seeking_gender, language, location`,
+      gender, seeking_gender, language, location, latitude, longitude,
+      privacy_policy_accepted_at, terms_accepted_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11, $12, $13, $14, $15, $16)
+    RETURNING id, name, email, bio, born_date, phone_number, photo_url, gender, seeking_gender, language, location, latitude, longitude`,
     [
       id,
       input.name,
@@ -174,6 +179,8 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
       input.seekingGender,
       input.language ?? 'es',
       input.location,
+      input.latitude,
+      input.longitude,
       input.privacyAcceptedAt ?? null,
       input.termsAcceptedAt ?? null,
     ]
@@ -199,6 +206,8 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     seekingGender: normalizeSeekingGender(user.seeking_gender),
     language: user.language ?? 'es',
     location: user.location,
+    latitude: user.latitude,
+    longitude: user.longitude,
     token,
     refreshToken,
   };
@@ -206,7 +215,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
 
 export async function loginUser(input: LoginInput): Promise<AuthResponse & { requiresVerification?: boolean } | null> {
   const result = await query(
-    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, created_at, gender, seeking_gender, language, location
+    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, created_at, gender, seeking_gender, language, location, latitude, longitude
      FROM users WHERE email = $1 AND is_mock = false`,
     [input.email]
   );
@@ -243,6 +252,8 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse & { req
     seekingGender: normalizeSeekingGender(user.seeking_gender),
     language: user.language ?? 'es',
     location: user.location,
+    latitude: user.latitude,
+    longitude: user.longitude,
     token,
     refreshToken,
   };

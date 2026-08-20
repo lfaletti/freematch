@@ -106,6 +106,8 @@ export function createApp() {
         phoneNumber: user.phone_number ?? '',
         email: user.email ?? '',
         location: user.location ?? '',
+        latitude: user.latitude ?? null,
+        longitude: user.longitude ?? null,
         interests: user.interests ?? [],
         gender: user.gender ?? undefined,
         seekingGender: normalizeSeekingGender(user.seeking_gender),
@@ -175,6 +177,8 @@ export function createApp() {
         state: r.state,
         country: r.country,
         display: [r.city || r.name, r.state, r.country].filter(Boolean).join(', '),
+        lat: r.lat,
+        lon: r.lon,
       }));
 
       citiesCache.set(query.toLowerCase(), { expiresAt: Date.now() + CITIES_CACHE_TTL_MS, data: cities });

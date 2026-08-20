@@ -54,7 +54,7 @@ router.patch('/me', async (req: Request, res: Response) => {
     // photo_url is intentionally NOT accepted here: profile photos are managed
     // through the dedicated /api/photos endpoints (upload/delete). Allowing an
     // arbitrary photo_url would let a user point their profile at any URL.
-    const { name, bio, interests, location, gender, seekingGender, language } = req.body;
+    const { name, bio, interests, location, latitude, longitude, gender, seekingGender, language } = req.body;
 
     if (language !== undefined && language !== 'es' && language !== 'en') {
       return res.status(400).json({ error: 'language must be es or en' });
@@ -84,11 +84,27 @@ router.patch('/me', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Location cannot be empty' });
     }
 
+    // Coordinates (city centroid) are optional on PATCH — only validate if the
+    // client sends them. If location is being set, coords should come together,
+    // but we don't hard-require them (a legacy account editing only its bio
+    // won't have coords to send).
+    let lat: number | undefined;
+    let lon: number | undefined;
+    if (latitude !== undefined || longitude !== undefined) {
+      lat = Number(latitude);
+      lon = Number(longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return res.status(400).json({ error: 'latitude and longitude must be valid numbers' });
+      }
+    }
+
     const updated = await userService.updateUserProfile(userId, {
       name: name?.trim(),
       bio,
       interests,
       location: location?.trim(),
+      latitude: lat,
+      longitude: lon,
       gender,
       seekingGender: normalizedSeeking,
       language,
@@ -105,6 +121,9 @@ router.patch('/me', async (req: Request, res: Response) => {
       phoneNumber: updated.phone_number,
       email: updated.email,
       language: updated.language ?? 'es',
+      location: updated.location ?? '',
+      latitude: updated.latitude ?? null,
+      longitude: updated.longitude ?? null,
     });
   } catch (err) {
     if (respondAuthError(res, err)) return;

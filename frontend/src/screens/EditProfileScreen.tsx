@@ -51,6 +51,8 @@ export default function EditProfileScreen({ navigation }: Props) {
   const [name, setName] = useState(session.name ?? '');
   const [bio, setBio] = useState(session.bio ?? '');
   const [location, setLocation] = useState(session.location ?? '');
+  const [latitude, setLatitude] = useState<number | null>(session.latitude ?? null);
+  const [longitude, setLongitude] = useState<number | null>(session.longitude ?? null);
   const [interestsText, setInterestsText] = useState(
     (session.interests ?? []).join(', '),
   );
@@ -102,6 +104,8 @@ export default function EditProfileScreen({ navigation }: Props) {
         name: name.trim(),
         bio: bio.trim() || undefined,
         location: location.trim() || undefined,
+        latitude: latitude ?? undefined,
+        longitude: longitude ?? undefined,
         interests: interests.length > 0 ? interests : undefined,
         gender: gender ?? undefined,
         seekingGender: seekingGenders.length > 0 ? seekingGenders : undefined,
@@ -122,6 +126,8 @@ export default function EditProfileScreen({ navigation }: Props) {
           refreshToken: session.refreshToken,
           slot: session.slot,
           location: location.trim(),
+          latitude: updated.latitude ?? latitude,
+          longitude: updated.longitude ?? longitude,
           interests,
           gender: updated.gender ?? gender,
           seekingGender: updated.seekingGender ?? seekingGenders,
@@ -271,6 +277,7 @@ export default function EditProfileScreen({ navigation }: Props) {
           <CityPicker
             value={location}
             onChange={setLocation}
+            onSelectCity={(city) => { setLatitude(city.lat); setLongitude(city.lon); }}
           />
         </View>
 

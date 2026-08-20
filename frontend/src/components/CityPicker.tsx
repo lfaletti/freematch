@@ -18,18 +18,21 @@ interface City {
   state: string;
   country: string;
   display: string;
+  lat: number;
+  lon: number;
 }
 
 interface Props {
   value: string;
   onChange: (city: string) => void;
+  onSelectCity?: (city: City) => void;
   placeholder?: string;
 }
 
 // Backend URL - Railway staging (fallback to local for dev)
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
-export default function CityPicker({ value, onChange, placeholder }: Props) {
+export default function CityPicker({ value, onChange, onSelectCity, placeholder }: Props) {
   const { t } = useTranslation();
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<City[]>([]);
@@ -69,6 +72,7 @@ export default function CityPicker({ value, onChange, placeholder }: Props) {
   const handleSelect = (city: City) => {
     setQuery(city.display);
     onChange(city.display);
+    onSelectCity?.(city);
     setShowDropdown(false);
     Keyboard.dismiss();
   };
