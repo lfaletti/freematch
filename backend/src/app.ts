@@ -12,7 +12,7 @@ import authRouter from './routes/auth';
 import photosRouter from './routes/photos';
 import legalRouter from './routes/legal';
 import donationRouter from './routes/donation';
-import { apiLimiter, authLimiter, swipeLimiter } from './middleware/rateLimiter';
+import { apiLimiter, authLimiter, swipeLimiter, citiesLimiter } from './middleware/rateLimiter';
 
 
 export { getUserId, USER_SLOTS };
@@ -23,15 +23,30 @@ function corsOrigin() {
   return configured.split(',').map((o) => o.trim());
 }
 
+// In-memory cache for the city autocomplete proxy (Geoapify free tier).
+const citiesCache = new Map<string, { expiresAt: number; data: any[] }>();
+const CITIES_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 export function createApp() {
   const app = express();
 
   // Trust proxy for correct IP detection behind load balancers (Railway, etc.).
-  // We use `true` (trust the full X-Forwarded-For chain) because Railway puts
-  // the request behind several proxies; `1` only trusted the nearest one and
-  // gave us a datacenter IP instead of the client's real IP, breaking IP-based
-  // country detection (MercadoPago for Argentina).
-  app.set('trust proxy', true);
+  // `true` trusts the full X-Forwarded-For chain — required on Railway (multiple
+  // proxies) for geoip country detection. Override with TRUST_PROXY to tighten
+  // (e.g. `1` for a single known proxy, or `false` for none). Login brute-force
+  // is additionally keyed by email (not just IP), so XFF spoofing can't bypass
+  // the account limiter even if this app were ever reachable directly.
+  const trustProxyRaw = process.env.TRUST_PROXY;
+  let trustProxy: boolean | number = true;
+  if (trustProxyRaw !== undefined) {
+    if (trustProxyRaw === 'false') trustProxy = false;
+    else if (trustProxyRaw === 'true') trustProxy = true;
+    else {
+      const n = Number(trustProxyRaw);
+      if (!Number.isNaN(n)) trustProxy = n;
+    }
+  }
+  app.set('trust proxy', trustProxy);
 
   app.use(cors({ origin: corsOrigin() }));
   app.use(express.json());
@@ -125,11 +140,18 @@ export function createApp() {
     res.status(500).json({ error: 'Internal server error' });
   });
 
-  // City autocomplete via Geoapify
-  app.get('/api/cities', async (req: Request, res: Response) => {
+  // City autocomplete via Geoapify (free tier: 3000 req/day). Rate-limited and
+  // cached so a single client can't exhaust the upstream quota or use us as a
+  // free geocoding proxy.
+  app.get('/api/cities', citiesLimiter, async (req: Request, res: Response) => {
     const query = (req.query.q as string)?.trim();
     if (!query || query.length < 2) {
       return res.json([]);
+    }
+
+    const cached = citiesCache.get(query.toLowerCase());
+    if (cached && cached.expiresAt > Date.now()) {
+      return res.json(cached.data);
     }
 
     const apiKey = process.env.GEOAPIFY_API_KEY;
@@ -155,6 +177,7 @@ export function createApp() {
         display: [r.city || r.name, r.state, r.country].filter(Boolean).join(', '),
       }));
 
+      citiesCache.set(query.toLowerCase(), { expiresAt: Date.now() + CITIES_CACHE_TTL_MS, data: cities });
       res.json(cities);
     } catch (err) {
       console.error('Geoapify error:', err);

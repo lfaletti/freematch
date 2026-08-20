@@ -5,8 +5,13 @@ import * as jwt from 'jsonwebtoken';
 import { createHash } from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
-  throw new Error('JWT_SECRET environment variable is required in production');
+// Require a real JWT secret in ANY non-development environment. Railway runs
+// with NODE_ENV=staging, so gating on 'production' alone would let staging
+// silently fall back to the hardcoded dev secret (token forgery by anyone who
+// reads the repo). Only explicit `development` may use the fallback.
+const isDev = process.env.NODE_ENV === 'development';
+if (!JWT_SECRET && !isDev) {
+  throw new Error('JWT_SECRET environment variable is required (set NODE_ENV=development to allow the dev fallback)');
 }
 const JWT_SECRET_EFFECTIVE = JWT_SECRET || 'dev-secret-do-not-use-in-production';
 const JWT_EXPIRY = '24h';

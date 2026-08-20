@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadPhoto } from '../services/s3Service';
 import { query } from '../database/connection';
@@ -59,8 +59,10 @@ const registerRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Rate limiter para login — previene fuerza bruta
-// 10 intentos fallidos por IP por 15 minutos
+// Rate limiter para login — previene fuerza bruta.
+// Doble capa: por IP (abajo) y por email (loginAccountLimiter), así un atacante
+// no puede rotar X-Forwarded-For para burlar el límite por IP.
+// `skipSuccessfulRequests` hace que solo cuenten los intentos fallidos.
 const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
@@ -68,6 +70,24 @@ const loginRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Solo cuenta intentos fallidos
+});
+
+// Per-account login limiter: acota la fuerza bruta sobre un email concreto
+// independientemente de la IP de origen. Techo más alto que el de IP para no
+// bloquear usuarios legítimos detrás de NAT/IPs compartidas, pero igual corta
+// el credential stuffing.
+const loginAccountLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many login attempts for this account. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req: any) => {
+    const email = req.body?.email;
+    if (typeof email === 'string' && email) return `login:${email.trim().toLowerCase()}`;
+    return `login:${ipKeyGenerator(req.ip ?? 'unknown')}`;
+  },
 });
 
 // Rate limiter para reenvío del email de verificación. Claveado por email
@@ -81,7 +101,10 @@ const resendVerificationLimiter = rateLimit({
   keyGenerator: (req: any) => {
     const email = req.body?.email;
     const userId = req.body?.userId;
-    return String(email || userId || req.ip || 'unknown').toLowerCase();
+    if (email || userId) return String(email || userId).toLowerCase();
+    // IPv6-safe fallback: express-rate-limit 8.x rejects a custom keyGenerator
+    // that touches req.ip directly (ERR_ERL_KEY_GEN_IPV6). Use the helper.
+    return ipKeyGenerator(req.ip ?? 'unknown');
   },
   message: { error: 'Too many verification emails requested. Please try again later.' },
 });
@@ -262,7 +285,7 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
   }
 });
 
-router.post('/login', loginRateLimiter, async (req, res) => {
+router.post('/login', loginRateLimiter, loginAccountLimiter, async (req, res) => {
   try {
     const { email, password, phone_number } = req.body;
 

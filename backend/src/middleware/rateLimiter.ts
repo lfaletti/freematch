@@ -26,3 +26,14 @@ export const swipeLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Swipe rate limit exceeded' },
 });
+
+// Limiter for the city autocomplete proxy (Geoapify free tier: 3000 req/day).
+// Keeps a single client from exhausting the upstream quota or using us as a
+// free geocoding proxy.
+export const citiesLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 searches per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many city search requests, please slow down' },
+});
