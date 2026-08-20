@@ -17,7 +17,8 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
         created_at
       FROM users WHERE id = $1
     )
-    SELECT u.*,
+    SELECT u.id, u.name, u.bio, u.born_date, u.interests, u.location, u.is_mock,
+       u.gender, u.seeking_gender, u.language, u.created_at,
        COALESCE(u.photo_url, (SELECT p.url FROM photos p WHERE p.user_id = u.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
        EXTRACT(YEAR FROM AGE(u.born_date))::integer AS age
      FROM users u, my_user
@@ -45,9 +46,26 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
   return result.rows;
 }
 
+// Public-safe projection of a user: NO password_hash, email, or phone_number.
+// Used for viewing OTHER users' profiles (deck taps, match partner info).
 export async function getUserById(id: string) {
   const result = await query(
-    `SELECT *,
+    `SELECT id, name, bio, born_date, interests, location, is_mock,
+       gender, seeking_gender, language,
+       COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
+       EXTRACT(YEAR FROM AGE(born_date))::integer AS age
+     FROM users WHERE id = $1`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+// Full projection of a user for their OWN session/auth flows: includes email
+// and phone_number (the owner is allowed to see them) but NEVER password_hash.
+export async function getOwnUserById(id: string) {
+  const result = await query(
+    `SELECT id, name, email, phone_number, bio, born_date, interests, location,
+       is_mock, gender, seeking_gender, language, email_verified, created_at,
        COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
        EXTRACT(YEAR FROM AGE(born_date))::integer AS age
      FROM users WHERE id = $1`,
@@ -117,9 +135,11 @@ export async function updateUserProfile(userId: string, updates: {
   fields.push(`id = $${idx}`);
 
   const result = await query(
-    `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *,
-       COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
-       EXTRACT(YEAR FROM AGE(born_date))::integer AS age`,
+    `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}
+       RETURNING id, name, email, phone_number, bio, born_date, interests, location,
+         is_mock, gender, seeking_gender, language,
+         COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
+         EXTRACT(YEAR FROM AGE(born_date))::integer AS age`,
     values,
   );
   return result.rows[0] || null;

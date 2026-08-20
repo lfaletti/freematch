@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import * as matchService from '../services/matchService';
 import * as swipeService from '../services/swipeService';
-import { getUserId } from '../utils/session';
+import { getUserId, respondAuthError } from '../utils/session';
 
 const router = Router();
 
@@ -10,16 +10,23 @@ router.get('/', async (req: Request, res: Response) => {
     const matches = await matchService.getMatchesForUser(getUserId(req));
     res.json(matches);
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to fetch matches' });
   }
 });
 
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const userId = getUserId(req);
     const match = await matchService.getMatchById(req.params.id);
     if (!match) return res.status(404).json({ error: 'Match not found' });
+    // Only a participant may read a match's details.
+    if (match.user1_id !== userId && match.user2_id !== userId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
     res.json(match);
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to fetch match' });
   }
 });
@@ -46,6 +53,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to unmatch' });
   }
 });

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import * as swipeService from '../services/swipeService';
 import * as matchService from '../services/matchService';
-import { getUserId } from '../utils/session';
+import { getUserId, respondAuthError } from '../utils/session';
 
 const router = Router();
 
@@ -29,6 +29,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     res.json({ success: true, match: match || null });
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to record swipe' });
   }
 });
@@ -39,6 +40,7 @@ router.post('/reset-left', async (req: Request, res: Response) => {
     await swipeService.resetLeftSwipes(userId);
     res.json({ success: true });
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to reset left swipes' });
   }
 });

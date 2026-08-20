@@ -8,8 +8,9 @@ export const pool = new Pool({
 });
 
 pool.on('error', (err) => {
+  // An idle-client error (e.g. a transient disconnect) should NOT take down the
+  // whole process. Log it; the pool will reconnect on the next query.
   console.error('Unexpected error on idle client', err);
-  process.exit(-1);
 });
 
 export const query = (text: string, params?: unknown[]) => pool.query(text, params);

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import geoip from 'geoip-lite';
 import { getUserId } from '../utils/session';
-import { getUserById } from '../services/userService';
+import { getOwnUserById } from '../services/userService';
 import { getDonationConfig, DonationConfig } from '../services/donationService';
 
 const router = Router();
@@ -48,7 +48,7 @@ router.get('/config', async (req: Request, res: Response) => {
   }
 
   try {
-    const user = await getUserById(userId);
+    const user = await getOwnUserById(userId);
     const country = countryFromIp(req);
     const config = getDonationConfig(user?.email, country);
     res.json(config);

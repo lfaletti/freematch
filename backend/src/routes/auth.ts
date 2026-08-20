@@ -87,7 +87,24 @@ const resendVerificationLimiter = rateLimit({
 });
 
 const MIN_AGE = 18;
-const MIN_PASSWORD_LENGTH = 6;
+const MIN_PASSWORD_LENGTH = 8;
+
+// Dev-only backdoors (phone login/registration) are enabled ONLY in an explicit
+// `development` environment. Staging/production require email + password.
+const isDev = process.env.NODE_ENV === 'development';
+
+// Lightweight denylist of the most common passwords. A full HaveIBeenPwned
+// check can be layered on later; this catches the obvious ones for free.
+const COMMON_PASSWORDS = new Set([
+  'password', 'password1', 'password123', '12345678', '123456789',
+  '1234567890', 'qwerty', 'qwerty123', 'abc123', '11111111',
+  '123123', 'admin', 'admin123', 'letmein', 'welcome', 'iloveyou',
+  'monkey', 'dragon', 'football', 'baseball', 'sunshine', 'princess',
+]);
+
+function isCommonPassword(password: string): boolean {
+  return COMMON_PASSWORDS.has(password.trim().toLowerCase());
+}
 
 // Memory storage for registration photos — forwarded to S3/MinIO, never
 // written to disk so they survive container restarts.
@@ -154,6 +171,10 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
 
     if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
       res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` });
+      return;
+    }
+    if (isCommonPassword(password)) {
+      res.status(400).json({ error: 'That password is too common, please choose a stronger one' });
       return;
     }
 
@@ -270,7 +291,9 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         token: result.token,
         refreshToken: result.refreshToken,
       });
-    } else if (phone_number) {
+    } else if (phone_number && isDev) {
+      // Legacy phone-only login: disabled outside local development. It has no
+      // password and no consent flow, so it must never be reachable in prod.
       const user = await loginByPhone(phone_number);
       if (!user) {
         res.status(404).json({ error: 'No account found with that phone number' });
@@ -287,7 +310,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         email: user.email ?? '',
       });
     } else {
-      res.status(400).json({ error: 'email/password or phone_number required' });
+      res.status(400).json({ error: 'email/password required' });
     }
   } catch (err) {
     console.error('Login error:', err);
@@ -322,6 +345,12 @@ router.post('/refresh', async (req, res) => {
 
 router.post('/register-phone', registerRateLimiter, registerIntervalMiddleware, memoryUpload.single('photo'), async (req, res) => {
   try {
+    // Legacy phone registration is disabled outside local development: no
+    // password, no GDPR consent. Keep it out of staging/production entirely.
+    if (!isDev) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
     const { name, bio, born_date, phone_number, email } = req.body;
 
     if (!name || !born_date || !phone_number) {
@@ -448,19 +477,18 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     const result = await generatePasswordResetToken(email);
-    if (!result) {
-      // Don't leak whether the email exists
-      return res.status(404).json({ error: 'No account found with that email.' });
-    }
-
-    const sent = await sendPasswordResetEmail(email, result.token);
-    // If email is not configured, fall back to returning the token inline for dev/testing.
-    if (!sent && !isEmailEnabled()) {
-      return res.json({
-        success: true,
-        token: result.token,
-        note: 'No email provider configured — token returned directly (email-less reset).',
-      });
+    // Always respond identically whether or not the email exists, so we don't
+    // leak which addresses are registered (account enumeration).
+    if (result) {
+      const sent = await sendPasswordResetEmail(email, result.token);
+      // If email is not configured, fall back to returning the token inline for dev/testing.
+      if (!sent && !isEmailEnabled()) {
+        return res.json({
+          success: true,
+          token: result.token,
+          note: 'No email provider configured — token returned directly (email-less reset).',
+        });
+      }
     }
 
     return res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
@@ -479,8 +507,11 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'token and newPassword are required' });
     }
 
-    if (typeof newPassword !== 'string' || newPassword.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    if (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` });
+    }
+    if (isCommonPassword(newPassword)) {
+      return res.status(400).json({ error: 'That password is too common, please choose a stronger one' });
     }
 
     const ok = await resetPassword(token, newPassword);

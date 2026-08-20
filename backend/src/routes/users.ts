@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import * as userService from '../services/userService';
 import * as photoService from '../services/photoService';
 import { deletePhotoFromS3 } from '../services/s3Service';
-import { getUserId } from '../utils/session';
+import { getUserId, respondAuthError } from '../utils/session';
 import { normalizeSeekingGender } from '../services/authService';
 
 const router = Router();
@@ -14,6 +14,7 @@ router.get('/', async (req: Request, res: Response) => {
     const users = await userService.getAllUsers(getUserId(req), limit, offset);
     res.json(users);
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
@@ -29,16 +30,20 @@ router.get('/:id/photos', async (req: Request, res: Response) => {
       uploaded_at: p.uploaded_at,
     })));
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to fetch user photos' });
   }
 });
 
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    // Require auth to view another user's profile — same privacy bar as photos.
+    getUserId(req);
     const user = await userService.getUserById(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
@@ -46,7 +51,10 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.patch('/me', async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
-    const { name, bio, photo_url, interests, location, gender, seekingGender, language } = req.body;
+    // photo_url is intentionally NOT accepted here: profile photos are managed
+    // through the dedicated /api/photos endpoints (upload/delete). Allowing an
+    // arbitrary photo_url would let a user point their profile at any URL.
+    const { name, bio, interests, location, gender, seekingGender, language } = req.body;
 
     if (language !== undefined && language !== 'es' && language !== 'en') {
       return res.status(400).json({ error: 'language must be es or en' });
@@ -74,7 +82,6 @@ router.patch('/me', async (req: Request, res: Response) => {
     const updated = await userService.updateUserProfile(userId, {
       name: name?.trim(),
       bio,
-      photo_url,
       interests,
       location: location?.trim(),
       gender,
@@ -95,6 +102,7 @@ router.patch('/me', async (req: Request, res: Response) => {
       language: updated.language ?? 'es',
     });
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to update profile' });
   }
 });

@@ -7,7 +7,7 @@ import {
   getPhotoById,
   deletePhoto,
 } from '../services/photoService';
-import { getUserId } from '../utils/session';
+import { getUserId, respondAuthError } from '../utils/session';
 import { checkImage } from '../services/nsfwService';
 
 const router = Router();
@@ -41,6 +41,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       message: 'Photo uploaded successfully',
     });
   } catch (error) {
+    if (respondAuthError(res, error)) return;
     console.error('Upload error:', error);
     return res.status(500).json({ error: 'Failed to upload photo' });
   }
@@ -52,6 +53,7 @@ router.get('/', async (req: Request, res: Response) => {
     const photos = await getUserPhotos(userId);
     return res.json(photos);
   } catch (error) {
+    if (respondAuthError(res, error)) return;
     console.error('Get photos error:', error);
     return res.status(500).json({ error: 'Failed to fetch photos' });
   }
@@ -73,6 +75,7 @@ router.get('/:photoId', async (req: Request, res: Response) => {
 
     return res.json(photo);
   } catch (error) {
+    if (respondAuthError(res, error)) return;
     console.error('Get photo error:', error);
     return res.status(500).json({ error: 'Failed to fetch photo' });
   }
@@ -97,6 +100,7 @@ router.delete('/:photoId', async (req: Request, res: Response) => {
 
     return res.json({ success: true, message: 'Photo deleted successfully' });
   } catch (error) {
+    if (respondAuthError(res, error)) return;
     console.error('Delete photo error:', error);
     return res.status(500).json({ error: 'Failed to delete photo' });
   }

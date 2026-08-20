@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import * as messageService from '../services/messageService';
 import * as matchService from '../services/matchService';
-import { getUserId } from '../utils/session';
+import { getUserId, respondAuthError } from '../utils/session';
 import { query } from '../database/connection';
 
 const router = Router();
@@ -19,6 +19,7 @@ router.get('/:matchId', async (req: Request, res: Response) => {
     const messages = await messageService.getMessages(req.params.matchId);
     res.json(messages);
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to fetch messages' });
   }
 });
@@ -56,6 +57,7 @@ router.post('/:id/like', async (req: Request, res: Response) => {
 
     res.json(updated);
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     console.error('Error adding like:', err);
     res.status(500).json({ error: 'Failed to add like' });
   }
@@ -94,6 +96,7 @@ router.delete('/:id/like', async (req: Request, res: Response) => {
 
     res.json(updated);
   } catch (err) {
+    if (respondAuthError(res, err)) return;
     console.error('Error removing like:', err);
     res.status(500).json({ error: 'Failed to remove like' });
   }

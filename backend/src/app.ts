@@ -1,9 +1,8 @@
 import express, { Request, Response } from 'express';
 // Use native fetch (Node 18+) instead of node-fetch
 import cors from 'cors';
-import path from 'path';
-import { getUserId, USER_SLOTS, extractBearerToken } from './utils/session';
-import { getUserById } from './services/userService';
+import { getUserId, USER_SLOTS, extractBearerToken, isAuthError } from './utils/session';
+import { getOwnUserById } from './services/userService';
 import { requiresEmailVerification, normalizeSeekingGender } from './services/authService';
 import usersRouter from './routes/users';
 import swipesRouter from './routes/swipes';
@@ -36,7 +35,16 @@ export function createApp() {
 
   app.use(cors({ origin: corsOrigin() }));
   app.use(express.json());
-  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+  // Basic security headers (dependency-free; a proper helmet setup can replace
+  // this later). NoSniff + frame denial + no-referrer are the minimum for a
+  // JSON API that also serves user content.
+  app.use((_req: Request, res: Response, next: any) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    next();
+  });
 
   // Maneja errores de JSON inválido en el body (express.json()). Sin esto, el
   // cliente recibe un mensaje crudo tipo "}" que contamina los logs. Acá
@@ -53,10 +61,19 @@ export function createApp() {
   app.get('/health', (_req: Request, res: Response) => res.json({ status: 'ok' }));
 
   app.get('/api/session', async (req: Request, res: Response) => {
-    const userId = getUserId(req);
+    let userId: string;
+    try {
+      userId = getUserId(req);
+    } catch (err) {
+      if (isAuthError(err)) {
+        res.status(401).json({ error: err.message });
+        return;
+      }
+      throw err;
+    }
     const slot = Object.entries(USER_SLOTS).find(([, id]) => id === userId)?.[0] ?? null;
     try {
-      const user = await getUserById(userId);
+      const user = await getOwnUserById(userId);
       if (!user) {
         res.status(404).json({ error: 'User not found' });
         return;
@@ -95,6 +112,18 @@ export function createApp() {
   app.use('/api/photos', photosRouter);
   app.use('/api/legal', legalRouter);
   app.use('/api/donation', donationRouter);
+
+  // Global error handler: map auth failures to 401, mask everything else as 500.
+  // Routes catch their own expected errors; this is the safety net for anything
+  // that propagates (e.g. AuthError rethrown from a middleware path).
+  app.use((err: any, _req: Request, res: Response, _next: any) => {
+    if (isAuthError(err)) {
+      res.status(401).json({ error: err.message });
+      return;
+    }
+    console.error('Unhandled error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  });
 
   // City autocomplete via Geoapify
   app.get('/api/cities', async (req: Request, res: Response) => {
