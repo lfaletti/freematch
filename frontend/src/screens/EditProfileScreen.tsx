@@ -76,6 +76,11 @@ export default function EditProfileScreen({ navigation }: Props) {
       return;
     }
 
+    if (!location.trim()) {
+      setError(t('editProfile.errLocation'));
+      return;
+    }
+
     if (!gender) {
       setError(t('editProfile.errGender'));
       return;

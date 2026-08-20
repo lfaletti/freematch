@@ -79,6 +79,11 @@ router.patch('/me', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Name cannot be empty' });
     }
 
+    // Location is required on a profile: reject an attempt to clear it to empty.
+    if (location !== undefined && (typeof location !== 'string' || !location.trim())) {
+      return res.status(400).json({ error: 'Location cannot be empty' });
+    }
+
     const updated = await userService.updateUserProfile(userId, {
       name: name?.trim(),
       bio,

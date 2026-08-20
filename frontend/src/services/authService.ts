@@ -14,6 +14,7 @@ export interface AuthResponse {
   gender?: string;
   seekingGender?: string[];
   language?: 'es' | 'en';
+  location?: string;
   emailVerified?: boolean;
   requiresVerification?: boolean;
 }
@@ -66,6 +67,7 @@ export const registerWithPhoto = async (
     gender?: string;
     seekingGender?: string[];
     language?: 'es' | 'en';
+    location: string;
     acceptedPrivacyPolicy?: boolean;
     acceptedTerms?: boolean;
   },
@@ -83,6 +85,7 @@ export const registerWithPhoto = async (
     formData.append('seekingGender', JSON.stringify(fields.seekingGender));
   }
   if (fields.language) formData.append('language', fields.language);
+  formData.append('location', fields.location);
   formData.append('acceptedPrivacyPolicy', fields.acceptedPrivacyPolicy ? 'true' : 'false');
   formData.append('acceptedTerms', fields.acceptedTerms ? 'true' : 'false');
 

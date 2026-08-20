@@ -36,7 +36,7 @@ export default function ResetPasswordScreen({ navigation, route }: Props) {
       setError(t('resetPassword.errPassword'));
       return;
     }
-    if (password.length < 6) {
+    if (password.length < 8) {
       setError(t('resetPassword.errPasswordLength'));
       return;
     }

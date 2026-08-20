@@ -176,10 +176,28 @@ function calculateAge(bornDate: string): number | null {
 
 router.post('/register', registerRateLimiter, registerIntervalMiddleware, memoryUpload.single('photo'), async (req, res) => {
   try {
-    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language, acceptedPrivacyPolicy, acceptedTerms } = req.body;
+    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language, location, acceptedPrivacyPolicy, acceptedTerms } = req.body;
 
     if (!name || !email || !password || !born_date) {
       res.status(400).json({ error: 'name, email, password, and born_date are required' });
+      return;
+    }
+
+    // gender + seekingGender + location are required: the swipe deck filters by
+    // gender, and location is shown on the profile. Enforce server-side so a
+    // direct API call can't create an account that never appears or matches.
+    const validGenders = ['man', 'woman', 'other'];
+    if (!gender || !validGenders.includes(gender)) {
+      res.status(400).json({ error: 'gender must be man, woman, or other' });
+      return;
+    }
+    const normalizedSeeking = normalizeSeekingGender(seekingGender);
+    if (normalizedSeeking.length === 0) {
+      res.status(400).json({ error: 'seekingGender must include at least one of: man, woman, other' });
+      return;
+    }
+    if (!location || typeof location !== 'string' || !location.trim()) {
+      res.status(400).json({ error: 'location is required' });
       return;
     }
 
@@ -237,7 +255,8 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       photo_url,
       id,
       gender,
-      seekingGender: normalizeSeekingGender(seekingGender),
+      seekingGender: normalizedSeeking,
+      location: location.trim(),
       language: language === 'en' ? 'en' : 'es',
       privacyAcceptedAt: consentTime,
       termsAcceptedAt: consentTime,
@@ -267,6 +286,7 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       gender: result.gender,
       seekingGender: result.seekingGender,
       language: result.language ?? 'es',
+      location: result.location ?? '',
       token: result.token,
       refreshToken: result.refreshToken,
     });

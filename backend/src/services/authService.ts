@@ -81,8 +81,9 @@ export interface RegisterInput {
   phone_number?: string;
   photo_url?: string;
   id?: string; // Pre-generated UUID for S3 upload; falls back to internal generation.
-  gender?: GenderValue;
-  seekingGender?: GenderValue[];
+  gender: GenderValue;
+  seekingGender: GenderValue[];
+  location: string;
   language?: 'es' | 'en';
   privacyAcceptedAt?: string; // ISO timestamp of when the user accepted the Privacy Policy
   termsAcceptedAt?: string;   // ISO timestamp of when the user accepted the Terms of Service
@@ -111,6 +112,7 @@ export interface AuthResponse {
   gender?: string;
   seekingGender?: string[];
   language?: 'es' | 'en';
+  location?: string;
   token: string;
   refreshToken: string;
 }
@@ -156,9 +158,9 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
   const result = await query(
     `INSERT INTO users (
       id, name, email, password_hash, bio, born_date, phone_number, photo_url, is_mock,
-      gender, seeking_gender, language, privacy_policy_accepted_at, terms_accepted_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11, $12, $13)
-    RETURNING id, name, email, bio, born_date, phone_number, photo_url, gender, seeking_gender, language`,
+      gender, seeking_gender, language, location, privacy_policy_accepted_at, terms_accepted_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11, $12, $13, $14)
+    RETURNING id, name, email, bio, born_date, phone_number, photo_url, gender, seeking_gender, language, location`,
     [
       id,
       input.name,
@@ -168,9 +170,10 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
       input.born_date,
       input.phone_number ?? null,
       input.photo_url ?? null,
-      input.gender ?? null,
-      input.seekingGender ?? [],
+      input.gender,
+      input.seekingGender,
       input.language ?? 'es',
+      input.location,
       input.privacyAcceptedAt ?? null,
       input.termsAcceptedAt ?? null,
     ]
@@ -195,6 +198,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     gender: user.gender,
     seekingGender: normalizeSeekingGender(user.seeking_gender),
     language: user.language ?? 'es',
+    location: user.location,
     token,
     refreshToken,
   };
@@ -202,7 +206,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
 
 export async function loginUser(input: LoginInput): Promise<AuthResponse & { requiresVerification?: boolean } | null> {
   const result = await query(
-    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, created_at, gender, seeking_gender, language
+    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, created_at, gender, seeking_gender, language, location
      FROM users WHERE email = $1 AND is_mock = false`,
     [input.email]
   );
@@ -238,6 +242,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse & { req
     gender: user.gender,
     seekingGender: normalizeSeekingGender(user.seeking_gender),
     language: user.language ?? 'es',
+    location: user.location,
     token,
     refreshToken,
   };

@@ -21,6 +21,7 @@ import { uploadPhoto } from '../services/photoService';
 import { storageService } from '../services/storageService';
 import { colors } from '../theme/colors';
 import LanguagePicker from '../components/LanguagePicker';
+import CityPicker from '../components/CityPicker';
 import i18n from '../i18n';
 import { Language, saveLanguage } from '../i18n';
 
@@ -58,6 +59,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [language, setLanguageState] = useState<Language>('es');
   const [acceptedLegal, setAcceptedLegal] = useState(false);
+  const [location, setLocation] = useState('');
 
   const handleLanguageChange = (lang: Language) => {
     setLanguageState(lang);
@@ -118,7 +120,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
       return c('createAccount.errEmailFormat');
     }
     if (!password.trim()) return c('createAccount.errPassword');
-    if (password.length < 6) return c('createAccount.errPasswordLength');
+    if (password.length < 8) return c('createAccount.errPasswordLength');
     if (password !== confirmPassword) return c('createAccount.errPasswordMatch');
     if (!bornDate.trim()) return c('createAccount.errBornDate');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(bornDate.trim())) {
@@ -129,6 +131,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
     const age = Math.floor((Date.now() - parsed.getTime()) / (365.25 * 24 * 3600 * 1000));
     if (age < 18) return c('createAccount.errUnder18');
     if (age > 120) return c('createAccount.errAgeInvalid');
+    if (!location.trim()) return c('createAccount.errLocation');
     if (!gender) return c('createAccount.errGender');
     if (seekingGenders.length === 0) return c('createAccount.errSeeking');
     if (!acceptedLegal) return c('createAccount.errLegal');
@@ -157,6 +160,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
           gender: gender ?? undefined,
           seekingGender: seekingGenders.length > 0 ? seekingGenders : undefined,
           language,
+          location: location.trim(),
           acceptedPrivacyPolicy: acceptedLegal,
           acceptedTerms: acceptedLegal,
         },
@@ -183,6 +187,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
         refreshToken: user.refreshToken ?? '',
         slot: '',
         gender: user.gender,
+        location: location.trim(),
         seekingGender: seekingGenders.length > 0 ? seekingGenders : (user.seekingGender ?? []),
         // Critical for the post-signup gate: RootNavigator routes an
         // unverified account to VerifyEmailScreen instead of the home/swipe
@@ -357,6 +362,15 @@ export default function CreateAccountScreen({ navigation }: Props) {
           numberOfLines={4}
           returnKeyType="next"
           textAlignVertical="top"
+        />
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>{t('createAccount.location')} <Text style={styles.required}>{t('common.required')}</Text></Text>
+        <CityPicker
+          value={location}
+          onChange={setLocation}
+          placeholder={t('createAccount.locationPlaceholder')}
         />
       </View>
 
