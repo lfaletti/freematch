@@ -138,6 +138,9 @@ export async function runMigrations() {
   const sql012_coords = fs.readFileSync(path.join(__dirname, 'migrations/012_location_coords.sql'), 'utf8');
   await query(sql012_coords);
 
+  const sql013_radius = fs.readFileSync(path.join(__dirname, 'migrations/013_search_radius.sql'), 'utf8');
+  await query(sql013_radius);
+
   console.log('Migrations ran successfully');
 }
 

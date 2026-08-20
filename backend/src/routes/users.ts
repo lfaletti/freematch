@@ -54,7 +54,7 @@ router.patch('/me', async (req: Request, res: Response) => {
     // photo_url is intentionally NOT accepted here: profile photos are managed
     // through the dedicated /api/photos endpoints (upload/delete). Allowing an
     // arbitrary photo_url would let a user point their profile at any URL.
-    const { name, bio, interests, location, latitude, longitude, gender, seekingGender, language } = req.body;
+    const { name, bio, interests, location, latitude, longitude, searchRadiusKm, gender, seekingGender, language } = req.body;
 
     if (language !== undefined && language !== 'es' && language !== 'en') {
       return res.status(400).json({ error: 'language must be es or en' });
@@ -98,6 +98,15 @@ router.patch('/me', async (req: Request, res: Response) => {
       }
     }
 
+    // Search radius (optional on PATCH): validate as a positive integer if sent.
+    let radius: number | undefined;
+    if (searchRadiusKm !== undefined) {
+      radius = Number(searchRadiusKm);
+      if (!Number.isInteger(radius) || radius < 1 || radius > 1000) {
+        return res.status(400).json({ error: 'searchRadiusKm must be an integer between 1 and 1000' });
+      }
+    }
+
     const updated = await userService.updateUserProfile(userId, {
       name: name?.trim(),
       bio,
@@ -105,6 +114,7 @@ router.patch('/me', async (req: Request, res: Response) => {
       location: location?.trim(),
       latitude: lat,
       longitude: lon,
+      searchRadiusKm: radius,
       gender,
       seekingGender: normalizedSeeking,
       language,
@@ -124,6 +134,7 @@ router.patch('/me', async (req: Request, res: Response) => {
       location: updated.location ?? '',
       latitude: updated.latitude ?? null,
       longitude: updated.longitude ?? null,
+      searchRadiusKm: updated.search_radius_km ?? null,
     });
   } catch (err) {
     if (respondAuthError(res, err)) return;

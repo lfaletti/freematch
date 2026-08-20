@@ -16,40 +16,53 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
         email_verified,
         created_at,
         latitude,
-        longitude
+        longitude,
+        search_radius_km
       FROM users WHERE id = $1
+    ),
+    ranked AS (
+      SELECT u.id, u.name, u.bio, u.born_date, u.interests, u.location, u.is_mock,
+         u.gender, u.seeking_gender, u.language, u.created_at,
+         COALESCE(u.photo_url, (SELECT p.url FROM photos p WHERE p.user_id = u.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
+         EXTRACT(YEAR FROM AGE(u.born_date))::integer AS age,
+         my_user.search_radius_km AS my_radius,
+         CASE WHEN my_user.latitude IS NOT NULL AND my_user.longitude IS NOT NULL
+                   AND u.latitude IS NOT NULL AND u.longitude IS NOT NULL
+              THEN (6371 * 2 * ASIN(SQRT(
+                POWER(SIN((RADIANS(u.latitude) - RADIANS(my_user.latitude)) / 2), 2) +
+                COS(RADIANS(my_user.latitude)) * COS(RADIANS(u.latitude)) *
+                POWER(SIN((RADIANS(u.longitude) - RADIANS(my_user.longitude)) / 2), 2)
+              )))
+              ELSE NULL
+         END AS distance_km
+       FROM users u, my_user
+       WHERE u.id != $1
+         AND u.gender IS NOT NULL
+         -- Email-verification visibility gate: an unverified NEW account can't
+         -- view profiles, and unverified NEW accounts aren't shown to anyone
+         -- either (activation via the verification link is required for both).
+         AND (my_user.email_verified = true OR my_user.created_at < $4::timestamptz)
+         AND (u.email_verified = true OR u.created_at < $4::timestamptz)
+         AND u.id NOT IN (
+           SELECT swiped_id FROM swipes WHERE swiper_id = $1
+         )
+         AND (
+           -- They must want my gender (or want everyone)
+           (COALESCE(u.seeking_gender, '{man,woman,other}'::text[]) = '{}'::text[] OR my_user.gender = ANY(COALESCE(u.seeking_gender, '{man,woman,other}'::text[])))
+           AND
+           -- I must want their gender (or want everyone)
+           (my_user.seeking_gender = '{}'::text[] OR u.gender = ANY(my_user.seeking_gender))
+         )
     )
-    SELECT u.id, u.name, u.bio, u.born_date, u.interests, u.location, u.is_mock,
-       u.gender, u.seeking_gender, u.language, u.created_at,
-       COALESCE(u.photo_url, (SELECT p.url FROM photos p WHERE p.user_id = u.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
-       EXTRACT(YEAR FROM AGE(u.born_date))::integer AS age
-     FROM users u, my_user
-     WHERE u.id != $1
-       AND u.gender IS NOT NULL
-       -- Email-verification visibility gate: an unverified NEW account can't
-       -- view profiles, and unverified NEW accounts aren't shown to anyone
-       -- either (activation via the verification link is required for both).
-       AND (my_user.email_verified = true OR my_user.created_at < $4::timestamptz)
-       AND (u.email_verified = true OR u.created_at < $4::timestamptz)
-       AND u.id NOT IN (
-         SELECT swiped_id FROM swipes WHERE swiper_id = $1
-       )
-       AND (
-         -- They must want my gender (or want everyone)
-         (COALESCE(u.seeking_gender, '{man,woman,other}'::text[]) = '{}'::text[] OR my_user.gender = ANY(COALESCE(u.seeking_gender, '{man,woman,other}'::text[])))
-         AND
-         -- I must want their gender (or want everyone)
-         (my_user.seeking_gender = '{}'::text[] OR u.gender = ANY(my_user.seeking_gender))
-       )
-     -- Distance ordering (Haversine, km). Users without coordinates (legacy
-     -- accounts) sort last (NULLS LAST). Exact coords are never exposed in the
-     -- response — only the human-readable location string.
-     ORDER BY
-       (6371 * 2 * ASIN(SQRT(
-         POWER(SIN((RADIANS(u.latitude) - RADIANS(my_user.latitude)) / 2), 2) +
-         COS(RADIANS(my_user.latitude)) * COS(RADIANS(u.latitude)) *
-         POWER(SIN((RADIANS(u.longitude) - RADIANS(my_user.longitude)) / 2), 2)
-       ))) ASC NULLS LAST
+    SELECT id, name, bio, born_date, interests, location, is_mock,
+       gender, seeking_gender, language, created_at, photo_url, age
+     FROM ranked
+     -- Search-radius filter. No fallback: when the current user has a radius
+     -- and coords, ONLY candidates within it appear (empty deck if none).
+     -- Legacy accounts (no radius) keep the previous ordering-only behavior.
+     WHERE my_radius IS NULL
+        OR (distance_km IS NOT NULL AND distance_km <= my_radius)
+     ORDER BY distance_km ASC NULLS LAST
      LIMIT $2 OFFSET $3`,
     [sessionUserId, limit, offset, REQUIRES_VERIFICATION_SINCE]
   );
@@ -74,7 +87,7 @@ export async function getUserById(id: string) {
 // and phone_number (the owner is allowed to see them) but NEVER password_hash.
 export async function getOwnUserById(id: string) {
   const result = await query(
-    `SELECT id, name, email, phone_number, bio, born_date, interests, location, latitude, longitude,
+    `SELECT id, name, email, phone_number, bio, born_date, interests, location, latitude, longitude, search_radius_km,
        is_mock, gender, seeking_gender, language, email_verified, created_at,
        COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
        EXTRACT(YEAR FROM AGE(born_date))::integer AS age
@@ -92,6 +105,7 @@ export async function updateUserProfile(userId: string, updates: {
   location?: string;
   latitude?: number;
   longitude?: number;
+  searchRadiusKm?: number;
   gender?: 'man' | 'woman' | 'other';
   seekingGender?: ('man' | 'woman' | 'other')[];
   language?: 'es' | 'en';
@@ -135,6 +149,11 @@ export async function updateUserProfile(userId: string, updates: {
     values.push(updates.longitude);
     idx++;
   }
+  if (updates.searchRadiusKm !== undefined) {
+    fields.push(`search_radius_km = $${idx}`);
+    values.push(updates.searchRadiusKm);
+    idx++;
+  }
   if (updates.gender !== undefined) {
     fields.push(`gender = $${idx}`);
     values.push(updates.gender);
@@ -158,7 +177,7 @@ export async function updateUserProfile(userId: string, updates: {
 
   const result = await query(
     `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}
-       RETURNING id, name, email, phone_number, bio, born_date, interests, location, latitude, longitude,
+       RETURNING id, name, email, phone_number, bio, born_date, interests, location, latitude, longitude, search_radius_km,
          is_mock, gender, seeking_gender, language,
          COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
          EXTRACT(YEAR FROM AGE(born_date))::integer AS age`,

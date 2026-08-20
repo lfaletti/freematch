@@ -108,6 +108,7 @@ export function createApp() {
         location: user.location ?? '',
         latitude: user.latitude ?? null,
         longitude: user.longitude ?? null,
+        searchRadiusKm: user.search_radius_km ?? null,
         interests: user.interests ?? [],
         gender: user.gender ?? undefined,
         seekingGender: normalizeSeekingGender(user.seeking_gender),

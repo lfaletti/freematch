@@ -22,6 +22,7 @@ import { storageService } from '../services/storageService';
 import { colors } from '../theme/colors';
 import LanguagePicker from '../components/LanguagePicker';
 import CityPicker from '../components/CityPicker';
+import RadiusPicker from '../components/RadiusPicker';
 import i18n from '../i18n';
 import { Language, saveLanguage } from '../i18n';
 
@@ -62,6 +63,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
   const [location, setLocation] = useState('');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [searchRadiusKm, setSearchRadiusKm] = useState(50);
 
   const handleLanguageChange = (lang: Language) => {
     setLanguageState(lang);
@@ -166,6 +168,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
           location: location.trim(),
           latitude: latitude!,
           longitude: longitude!,
+          searchRadiusKm,
           acceptedPrivacyPolicy: acceptedLegal,
           acceptedTerms: acceptedLegal,
         },
@@ -195,6 +198,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
         location: location.trim(),
         latitude: latitude ?? undefined,
         longitude: longitude ?? undefined,
+        searchRadiusKm,
         seekingGender: seekingGenders.length > 0 ? seekingGenders : (user.seekingGender ?? []),
         // Critical for the post-signup gate: RootNavigator routes an
         // unverified account to VerifyEmailScreen instead of the home/swipe
@@ -380,6 +384,12 @@ export default function CreateAccountScreen({ navigation }: Props) {
           onSelectCity={(city) => { setLatitude(city.lat); setLongitude(city.lon); }}
           placeholder={t('createAccount.locationPlaceholder')}
         />
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>{t('createAccount.radius')} <Text style={styles.required}>{t('common.required')}</Text></Text>
+        <Text style={styles.photoHint}>{t('createAccount.radiusHint')}</Text>
+        <RadiusPicker value={searchRadiusKm} onChange={setSearchRadiusKm} />
       </View>
 
       <View style={styles.field}>

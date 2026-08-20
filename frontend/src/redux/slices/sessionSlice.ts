@@ -17,6 +17,7 @@ interface SessionState {
   location?: string;
   latitude?: number;
   longitude?: number;
+  searchRadiusKm?: number;
   interests?: string[];
   gender?: string;
   seekingGender?: string[];

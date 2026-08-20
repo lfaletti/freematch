@@ -176,7 +176,7 @@ function calculateAge(bornDate: string): number | null {
 
 router.post('/register', registerRateLimiter, registerIntervalMiddleware, memoryUpload.single('photo'), async (req, res) => {
   try {
-    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language, location, latitude, longitude, acceptedPrivacyPolicy, acceptedTerms } = req.body;
+    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language, location, latitude, longitude, searchRadiusKm, acceptedPrivacyPolicy, acceptedTerms } = req.body;
 
     if (!name || !email || !password || !born_date) {
       res.status(400).json({ error: 'name, email, password, and born_date are required' });
@@ -207,6 +207,14 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
     const lon = Number(longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
       res.status(400).json({ error: 'latitude and longitude are required' });
+      return;
+    }
+
+    // Search radius: how far (km) the user wants to see people. Required at
+    // signup — the deck shows ONLY candidates within this radius (no fallback).
+    const radius = Number(searchRadiusKm);
+    if (!Number.isInteger(radius) || radius < 1 || radius > 1000) {
+      res.status(400).json({ error: 'searchRadiusKm must be an integer between 1 and 1000' });
       return;
     }
 
@@ -268,6 +276,7 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       location: location.trim(),
       latitude: lat,
       longitude: lon,
+      searchRadiusKm: radius,
       language: language === 'en' ? 'en' : 'es',
       privacyAcceptedAt: consentTime,
       termsAcceptedAt: consentTime,
@@ -300,6 +309,7 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       location: result.location ?? '',
       latitude: result.latitude ?? null,
       longitude: result.longitude ?? null,
+      searchRadiusKm: result.searchRadiusKm ?? null,
       token: result.token,
       refreshToken: result.refreshToken,
     });
