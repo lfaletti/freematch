@@ -177,7 +177,7 @@ const es = {
 
     // ── Edit Profile ──
     editProfile: {
-      title: 'Editar perfil',
+      title: 'Ajustes',
       name: 'Nombre',
       bio: 'Bio',
       namePlaceholder: 'Tu nombre',
@@ -215,7 +215,7 @@ const es = {
       retry: 'Reintentar',
       done: 'Eso es todo por ahora',
       doneSubtext: 'Ya viste a todos. Revisá tus matches y empezá a chatear.',
-      editProfile: 'Editar perfil',
+      editProfile: 'Ajustes',
       resetSwipes: 'Reiniciar swipes',
       logout: 'Salir',
       resetConfirmTitle: 'Reiniciar swipes',
@@ -462,7 +462,7 @@ const en = {
 
     // ── Edit Profile ──
     editProfile: {
-      title: 'Edit Profile',
+      title: 'Settings',
       name: 'Name',
       bio: 'Bio',
       namePlaceholder: 'Your name',
@@ -500,7 +500,7 @@ const en = {
       retry: 'Retry',
       done: "That's all for now",
       doneSubtext: "You've seen everyone. Check your matches and start chatting.",
-      editProfile: 'Edit profile',
+      editProfile: 'Settings',
       resetSwipes: 'Reset swipes',
       logout: 'Log out',
       resetConfirmTitle: 'Reset swipes',

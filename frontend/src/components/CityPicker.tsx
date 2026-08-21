@@ -165,7 +165,10 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: colors.surface,
+    // Opaque, slightly lighter than the fields behind it (colors.surface) so the
+    // open list reads as a solid panel on top rather than blending/"transparent"
+    // with the inputs/chips underneath.
+    backgroundColor: colors.surfaceLight,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,

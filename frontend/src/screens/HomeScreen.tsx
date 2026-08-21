@@ -218,7 +218,7 @@ const HomeScreen = () => {
             <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuOpen(false)}>
               <View style={styles.menuDropdown}>
                 <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}>
-                  <Text style={styles.menuItemText}>✏️ {t('home.editProfile')}</Text>
+                  <Text style={styles.menuItemText}>⚙️ {t('home.editProfile')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuOpen(false); setResetDialog(true); }}>
                   <Text style={styles.menuItemText}>🔄 {t('home.resetSwipes')}</Text>
