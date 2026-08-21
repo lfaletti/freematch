@@ -141,6 +141,9 @@ export async function runMigrations() {
   const sql013_radius = fs.readFileSync(path.join(__dirname, 'migrations/013_search_radius.sql'), 'utf8');
   await query(sql013_radius);
 
+  const sql014_photo_sync = fs.readFileSync(path.join(__dirname, 'migrations/014_photo_url_sync.sql'), 'utf8');
+  await query(sql014_photo_sync);
+
   console.log('Migrations ran successfully');
 }
 

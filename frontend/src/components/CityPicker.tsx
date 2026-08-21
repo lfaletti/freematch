@@ -89,8 +89,10 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder 
     setTimeout(() => setShowDropdown(false), 200);
   };
 
+  const dropdownOpen = showDropdown && results.length > 0;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, dropdownOpen && styles.containerOpen]}>
       <TextInput
         style={styles.input}
         value={query}
@@ -109,7 +111,7 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder 
         </View>
       )}
 
-      {showDropdown && results.length > 0 && (
+      {dropdownOpen && (
         <View style={styles.dropdown}>
           <FlatList
             data={results}
@@ -134,6 +136,14 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder 
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
+  },
+  // When the dropdown is open, lift the WHOLE picker above the sibling fields
+  // that follow it in the form. zIndex only competes among siblings in the same
+  // stacking context; the absolutely-positioned dropdown alone can be painted
+  // under later fields, so the container itself must carry the z-index.
+  containerOpen: {
+    zIndex: 9999,
+    elevation: 100,
   },
   input: {
     backgroundColor: colors.surface,

@@ -9,6 +9,10 @@ import {
 } from '../services/photoService';
 import { getUserId, respondAuthError } from '../utils/session';
 import { checkImage } from '../services/nsfwService';
+import {
+  clearPhotoUrlIfMatches,
+  setPhotoUrlIfNull,
+} from '../services/userService';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -34,6 +38,10 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
 
     const photoUrl = await uploadPhoto(req.file, userId);
     const photo = await savePhotoUrl(userId, photoUrl);
+
+    // If the user has no main profile photo yet (e.g. they deleted it), promote
+    // this newly-uploaded photo so the profile always shows one.
+    await setPhotoUrlIfNull(userId, photo.url);
 
     return res.status(201).json({
       success: true,
@@ -97,6 +105,10 @@ router.delete('/:photoId', async (req: Request, res: Response) => {
 
     await deletePhotoFromS3(photo.url);
     await deletePhoto(photoId, userId);
+
+    // If the deleted photo was the user's main profile photo, clear the stale
+    // photo_url so the profile falls back to the gallery (oldest remaining photo).
+    await clearPhotoUrlIfMatches(userId, photo.url);
 
     return res.json({ success: true, message: 'Photo deleted successfully' });
   } catch (error) {

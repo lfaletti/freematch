@@ -97,6 +97,27 @@ export async function getOwnUserById(id: string) {
   return result.rows[0] || null;
 }
 
+// Clear the main profile photo when it points at a URL that's being removed
+// from the gallery (DELETE /api/photos/:photoId). Without this, deleting a
+// photo from the Photos tab left `users.photo_url` stale, so the swipe deck /
+// profile kept showing a photo that no longer existed in the gallery.
+export async function clearPhotoUrlIfMatches(userId: string, url: string): Promise<void> {
+  await query(
+    `UPDATE users SET photo_url = NULL WHERE id = $1 AND photo_url = $2`,
+    [userId, url]
+  );
+}
+
+// Promote a newly-uploaded photo to the main profile photo when the user has
+// none (photo_url IS NULL), so there is always a main photo after a user has
+// deleted their previous one.
+export async function setPhotoUrlIfNull(userId: string, url: string): Promise<void> {
+  await query(
+    `UPDATE users SET photo_url = $2 WHERE id = $1 AND photo_url IS NULL`,
+    [userId, url]
+  );
+}
+
 export async function updateUserProfile(userId: string, updates: {
   name?: string;
   bio?: string;

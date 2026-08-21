@@ -3,6 +3,7 @@ import multer from 'multer';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadPhoto } from '../services/s3Service';
+import { savePhotoUrl } from '../services/photoService';
 import { query } from '../database/connection';
 import {
   registerUser,
@@ -283,6 +284,17 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
     };
 
     const result = await registerUser(input);
+
+    // The main profile photo (photo_url) must also live in the `photos` gallery
+    // so it stays in sync with photo management (upload/delete). Otherwise a
+    // registration photo could never be removed or replaced from the profile.
+    if (photo_url) {
+      try {
+        await savePhotoUrl(id, photo_url);
+      } catch {
+        console.warn('Failed to add registration photo to gallery (continuing)');
+      }
+    }
 
     // Auto-send a verification email to the newly registered address, so the
     // user can confirm the email right away. Fire-and-forget (non-blocking).
