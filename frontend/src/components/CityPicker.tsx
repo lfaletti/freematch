@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Keyboard,
+  Modal,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
@@ -38,6 +39,21 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder 
   const [results, setResults] = useState<City[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number } | null>(null);
+  const inputWrapRef = useRef<View>(null);
+
+  // Measure the input's position so the Modal-rendered dropdown is anchored
+  // right below it (a Modal covers the whole screen, so it can't use the
+  // parent's relative coordinates).
+  const anchorDropdown = useCallback(() => {
+    if (inputWrapRef.current && typeof (inputWrapRef.current as any).measureInWindow === 'function') {
+      (inputWrapRef.current as any).measureInWindow((x: number, y: number, w: number, h: number) => {
+        setDropdownStyle({ top: y + h + 4, left: x, width: w });
+      });
+    } else {
+      setDropdownStyle(null);
+    }
+  }, []);
 
   const searchCities = useCallback(async (text: string) => {
     if (text.length < 2) {
@@ -79,6 +95,8 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder 
 
   const handleFocus = () => {
     setShowDropdown(true);
+    // Anchor the Modal-rendered dropdown to the input's on-screen position.
+    anchorDropdown();
     if (query.length >= 2 && results.length > 0) {
       searchCities(query);
     }
@@ -92,7 +110,7 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder 
   const dropdownOpen = showDropdown && results.length > 0;
 
   return (
-    <View style={[styles.container, dropdownOpen && styles.containerOpen]}>
+    <View style={styles.container} ref={inputWrapRef}>
       <TextInput
         style={styles.input}
         value={query}
@@ -111,24 +129,31 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder 
         </View>
       )}
 
-      {dropdownOpen && (
-        <View style={styles.dropdown}>
-          <FlatList
-            data={results}
-            keyExtractor={(_item, index) => `${_item.name}-${index}`}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.resultItem}
-                onPress={() => handleSelect(item)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.resultText}>{item.display}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      )}
+      {/* The dropdown is rendered in a transparent Modal so it is always drawn
+          ON TOP of the following form fields (e.g. "Radio de búsqueda") no
+          matter the parent scroll stacking context. Rendering it inline as an
+          absolutely-positioned child lets later siblings paint over it on web
+          despite zIndex, which made the list hard to select. */}
+      <Modal visible={dropdownOpen} transparent animationType="none" onRequestClose={() => setShowDropdown(false)}>
+        <TouchableOpacity style={styles.modalRoot} activeOpacity={1} onPress={() => setShowDropdown(false)}>
+          <View style={[styles.dropdown, dropdownStyle]}>
+            <FlatList
+              data={results}
+              keyExtractor={(_item, index) => `${_item.name}-${index}`}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.resultItem}
+                  onPress={() => handleSelect(item)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.resultText}>{item.display}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -137,15 +162,11 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
   },
-  // When the dropdown is open, lift the WHOLE picker above the sibling fields
-  // that follow it in the form. zIndex only competes among siblings in the same
-  // stacking context; the absolutely-positioned dropdown alone can be painted
-  // under later fields, so the container itself must carry the z-index.
-  containerOpen: {
-    zIndex: 9999,
-    elevation: 100,
-    // Some parents clip absolutely-positioned children (overflow: hidden).
-    // Overriding here is a no-op if the parent clips, but harmless.
+  // Full-screen transparent layer behind the Modal dropdown; tapping outside
+  // closes it. Light and transparent so the form is still visible behind it.
+  modalRoot: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.01)',
   },
   input: {
     backgroundColor: colors.surface,
@@ -164,7 +185,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     position: 'absolute',
-    top: '100%',
+    top: 0,
     left: 0,
     right: 0,
     // Opaque, slightly lighter than the fields behind it (colors.surface) so the
