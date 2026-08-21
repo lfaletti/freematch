@@ -49,6 +49,11 @@ export const deletePhoto = async (photoId: string): Promise<void> => {
   await api.delete(`/api/photos/${photoId}`);
 };
 
+export const setMainPhoto = async (photoId: string): Promise<{ photo_url: string }> => {
+  const res = await api.post(`/api/photos/${photoId}/main`);
+  return res.data;
+};
+
 export const fetchUserPhotos = async (userId: string): Promise<Photo[]> => {
   const res = await api.get(`/api/users/${userId}/photos`);
   return res.data;

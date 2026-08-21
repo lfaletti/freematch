@@ -286,6 +286,9 @@ const es = {
       successUpload: 'Foto subida correctamente.',
       errUpload: 'No se pudo subir la foto.',
       errDelete: 'No se pudo eliminar la foto.',
+      main: 'Principal',
+      setMain: 'Poner principal',
+      errSetMain: 'No se pudo cambiar la foto principal.',
     },
 
     // ── Tabs ──
@@ -571,6 +574,9 @@ const en = {
       successUpload: 'Photo uploaded successfully',
       errUpload: 'Failed to upload photo',
       errDelete: 'Failed to delete photo',
+      main: 'Main',
+      setMain: 'Set as main',
+      errSetMain: 'Failed to change main photo.',
     },
 
     // ── Tabs ──

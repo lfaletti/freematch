@@ -13,14 +13,17 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '../redux/hooks';
+import { useAppSelector, useAppDispatch } from '../redux/hooks';
+import { setPhoto as setSessionPhoto } from '../redux/slices/sessionSlice';
 import { colors } from '../theme/colors';
-import { uploadPhoto, getUserPhotos, deletePhoto, Photo } from '../services/photoService';
+import { uploadPhoto, getUserPhotos, deletePhoto, setMainPhoto, Photo } from '../services/photoService';
 import ConfirmModal from '../components/ConfirmModal';
 
 const PhotoScreen = () => {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const userId = useAppSelector((s) => s.session.userId);
+  const sessionPhoto = useAppSelector((s) => s.session.photo);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -109,20 +112,52 @@ const PhotoScreen = () => {
     setPendingDeleteId(null);
   };
 
-  const renderPhotoItem = ({ item }: { item: Photo }) => (
-    <View style={styles.photoItemContainer}>
-      <Image source={{ uri: item.url }} style={styles.photoImage} />
-      <TouchableOpacity
-        style={styles.deleteBtn}
-        onPress={() => setPendingDeleteId(item.id)}
-      >
-        <Text style={styles.deleteBtnText}>✕</Text>
-      </TouchableOpacity>
-      <Text style={styles.photoDate}>
-        {new Date(item.created_at).toLocaleDateString()}
-      </Text>
-    </View>
-  );
+  const handleSetMain = async (photo: Photo) => {
+    try {
+      setError(null);
+      await setMainPhoto(photo.id);
+      dispatch(setSessionPhoto(photo.url));
+    } catch (err) {
+      console.error('Set main photo failed:', err);
+      if (Platform.OS === 'web') {
+        setError('Failed to set main photo');
+      } else {
+        Alert.alert(t('common.error'), t('photos.errSetMain'));
+      }
+    }
+  };
+
+  const renderPhotoItem = ({ item }: { item: Photo }) => {
+    const isMain = item.url === sessionPhoto;
+    return (
+      <View style={styles.photoItemContainer}>
+        <Image source={{ uri: item.url }} style={styles.photoImage} />
+        {isMain && (
+          <View style={styles.mainBadge}>
+            <Text style={styles.mainBadgeText}>⭐ {t('photos.main')}</Text>
+          </View>
+        )}
+        {!isMain && (
+          <TouchableOpacity
+            style={styles.setMainBtn}
+            onPress={() => handleSetMain(item)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.setMainBtnText}>⭐ {t('photos.setMain')}</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={() => setPendingDeleteId(item.id)}
+        >
+          <Text style={styles.deleteBtnText}>✕</Text>
+        </TouchableOpacity>
+        <Text style={styles.photoDate}>
+          {new Date(item.created_at).toLocaleDateString()}
+        </Text>
+      </View>
+    );
+  };
 
   if (!userId) {
     return (
@@ -298,6 +333,34 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 18,
     fontWeight: '700',
+  },
+  mainBadge: {
+    position: 'absolute',
+    bottom: 34,
+    left: 8,
+    backgroundColor: colors.matchGold,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  mainBadgeText: {
+    color: colors.black,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  setMainBtn: {
+    position: 'absolute',
+    bottom: 34,
+    left: 8,
+    backgroundColor: 'rgba(255, 77, 109, 0.9)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  setMainBtnText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: '800',
   },
   photoDate: {
     padding: 8,

@@ -52,11 +52,14 @@ const sessionSlice = createSlice({
     setLanguage(state, action: PayloadAction<'es' | 'en'>) {
       state.language = action.payload;
     },
+    setPhoto(state, action: PayloadAction<string>) {
+      state.photo = action.payload;
+    },
     clearSession() {
       return initialState;
     },
   },
 });
 
-export const { setSession, setToken, setLanguage, clearSession } = sessionSlice.actions;
+export const { setSession, setToken, setLanguage, setPhoto, clearSession } = sessionSlice.actions;
 export default sessionSlice.reducer;

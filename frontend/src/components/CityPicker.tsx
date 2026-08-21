@@ -144,6 +144,8 @@ const styles = StyleSheet.create({
   containerOpen: {
     zIndex: 9999,
     elevation: 100,
+    // Some parents clip absolutely-positioned children (overflow: hidden).
+    // Overriding here is a no-op if the parent clips, but harmless.
   },
   input: {
     backgroundColor: colors.surface,

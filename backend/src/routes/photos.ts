@@ -6,6 +6,7 @@ import {
   getUserPhotos,
   getPhotoById,
   deletePhoto,
+  setMainPhoto,
 } from '../services/photoService';
 import { getUserId, respondAuthError } from '../utils/session';
 import { checkImage } from '../services/nsfwService';
@@ -86,6 +87,25 @@ router.get('/:photoId', async (req: Request, res: Response) => {
     if (respondAuthError(res, error)) return;
     console.error('Get photo error:', error);
     return res.status(500).json({ error: 'Failed to fetch photo' });
+  }
+});
+
+// Promote a gallery photo to the main profile photo (users.photo_url).
+router.post('/:photoId/main', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const { photoId } = req.params;
+
+    const result = await setMainPhoto(userId, photoId);
+    if (!result) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+
+    return res.json({ success: true, photo_url: result.url });
+  } catch (error) {
+    if (respondAuthError(res, error)) return;
+    console.error('Set main photo error:', error);
+    return res.status(500).json({ error: 'Failed to set main photo' });
   }
 });
 

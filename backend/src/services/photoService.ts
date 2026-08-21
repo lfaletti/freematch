@@ -62,6 +62,23 @@ export async function getPhotoById(photoId: string): Promise<Photo | null> {
   }
 }
 
+export async function setMainPhoto(userId: string, photoId: string): Promise<{ url: string } | null> {
+  try {
+    // Verify ownership + pull the photo's URL, then promote it to photo_url.
+    const photo = await getPhotoById(photoId);
+    if (!photo || photo.user_id !== userId) return null;
+
+    await query(
+      `UPDATE users SET photo_url = $2 WHERE id = $1`,
+      [userId, photo.url]
+    );
+    return { url: photo.url };
+  } catch (error) {
+    console.error('Error setting main photo:', error);
+    throw new Error('Failed to set main photo');
+  }
+}
+
 export async function deletePhoto(
   photoId: string,
   userId: string
