@@ -165,10 +165,11 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 0,
     right: 0,
-    // Opaque, slightly lighter than the fields behind it (colors.surface) so the
-    // open list reads as a solid panel on top rather than blending/"transparent"
-    // with the inputs/chips underneath.
-    backgroundColor: colors.surfaceLight,
+    // Fondo totalmente opaco y distintivo (más oscuro que los campos de atrás,
+    // #1A1A1A) para que la lista se lea como un panel sólido encima y nunca se
+    // "transponga" con el contenido que queda detrás (ej. Radio de búsqueda).
+    backgroundColor: '#222222',
+    opacity: 1,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
