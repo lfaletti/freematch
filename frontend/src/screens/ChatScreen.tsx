@@ -23,6 +23,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { colors } from '../theme/colors';
 import { Match } from '../redux/slices/matchesSlice';
 import { getPhotoUrl } from '../services/api';
+import { replaceEmoticons } from '../utils/emoticons';
 
 interface ChatScreenProps {
   route: { params: { match: Match } };
@@ -105,7 +106,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
   };
 
   const sendMessage = () => {
-    const text = inputText.trim();
+    const text = replaceEmoticons(inputText.trim());
     if (!text) return;
     setInputText('');
     socket.emit('send_message', { matchId: match.id, content: text, senderId: sessionUserId });
@@ -146,6 +147,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
 
   const isTyping = typingPartners.includes(match.partner_id);
 
+  // Format the message timestamp as HH:MM (24h). Falls back to an empty string.
+  const formatTime = (iso?: string): string => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  };
+
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwn = item.sender_id === sessionUserId;
     const hasLikes = item.liked_by && item.liked_by.length > 0;
@@ -162,15 +173,20 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
           )}
           <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.theirBubble]}>
             <Text style={[styles.msgText, isOwn ? styles.ownText : styles.theirText]}>
-              {item.content}
+              {replaceEmoticons(item.content)}
             </Text>
-            {hasLikes && (
-              <View style={styles.likesRow}>
-                <Text style={styles.likesText}>
-                  {isLikedByMe ? '❤️' : '🤍'} {item.liked_by.length}
-                </Text>
-              </View>
-            )}
+            <View style={styles.metaRow}>
+              <Text style={[styles.timeText, isOwn ? styles.ownMeta : styles.theirMeta]}>
+                {formatTime(item.created_at)}
+              </Text>
+              {hasLikes && (
+                <View style={styles.likesRow}>
+                  <Text style={styles.likesText}>
+                    {isLikedByMe ? '❤️' : '🤍'} {item.liked_by.length}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
           {isOwn && (
             <Image source={{ uri: sessionPhoto }} style={styles.msgAvatarOwn} />
@@ -393,13 +409,28 @@ const styles = StyleSheet.create({
   theirText: {
     color: colors.text,
   },
-  likesRow: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 4,
+    gap: 8,
+  },
+  likesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   likesText: {
     fontSize: 12,
+    color: colors.textMuted,
+  },
+  timeText: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  ownMeta: {
+    color: 'rgba(255,255,255,0.7)',
+  },
+  theirMeta: {
     color: colors.textMuted,
   },
   typingRow: {
