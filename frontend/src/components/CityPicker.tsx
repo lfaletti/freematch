@@ -27,12 +27,16 @@ interface Props {
   onChange: (city: string) => void;
   onSelectCity?: (city: City) => void;
   placeholder?: string;
+  /** Called with true when the dropdown opens, false when it closes. Lets the
+   *  parent (EditProfile) raise the z-index of THIS field so the open list
+   *  truly paints above the following sibling field ("Radio de búsqueda"). */
+  onOpenChange?: (open: boolean) => void;
 }
 
 // Backend URL - Railway staging (fallback to local for dev)
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
-export default function CityPicker({ value, onChange, onSelectCity, placeholder }: Props) {
+export default function CityPicker({ value, onChange, onSelectCity, placeholder, onOpenChange }: Props) {
   const { t } = useTranslation();
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<City[]>([]);
@@ -74,11 +78,13 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder 
     onChange(city.display);
     onSelectCity?.(city);
     setShowDropdown(false);
+    onOpenChange?.(false);
     Keyboard.dismiss();
   };
 
   const handleFocus = () => {
     setShowDropdown(true);
+    onOpenChange?.(true);
     if (query.length >= 2 && results.length > 0) {
       searchCities(query);
     }
@@ -86,7 +92,10 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder 
 
   const handleBlur = () => {
     // Delay hiding to allow tap on dropdown item
-    setTimeout(() => setShowDropdown(false), 200);
+    setTimeout(() => {
+      setShowDropdown(false);
+      onOpenChange?.(false);
+    }, 200);
   };
 
   const dropdownOpen = showDropdown && results.length > 0;

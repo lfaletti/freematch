@@ -67,6 +67,11 @@ export default function EditProfileScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // True while the CityPicker dropdown is open → raise this field's z-index so
+  // the open list paints above the following sibling fields ("Radio de
+  // búsqueda", etc.) instead of appearing behind them on web.
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+
   // Account deletion (right to erasure)
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -276,12 +281,13 @@ export default function EditProfileScreen({ navigation }: Props) {
           />
         </View>
 
-        <View style={styles.field}>
+        <View style={[styles.field, cityDropdownOpen && styles.fieldRaised]}>
           <Text style={styles.label}>{t('editProfile.location')}</Text>
           <CityPicker
             value={location}
             onChange={setLocation}
             onSelectCity={(city) => { setLatitude(city.lat); setLongitude(city.lon); }}
+            onOpenChange={setCityDropdownOpen}
           />
         </View>
 
@@ -429,6 +435,14 @@ const styles = StyleSheet.create({
   },
   field: {
     marginBottom: 24,
+  },
+  // Raised while the CityPicker dropdown is open: a high z-index here lets the
+  // field (and its absolutely-positioned dropdown) paint ABOVE the following
+  // sibling field ("Radio de búsqueda") on web, where z-index only applies
+  // among siblings sharing the same stacking context.
+  fieldRaised: {
+    zIndex: 9999,
+    elevation: 100,
   },
   label: {
     fontSize: 13,
