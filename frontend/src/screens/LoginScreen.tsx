@@ -70,6 +70,10 @@ export default function LoginScreen({ navigation }: Props) {
         slot: '',
         gender: user.gender,
         seekingGender: user.seekingGender,
+        location: user.location ?? '',
+        latitude: user.latitude ?? undefined,
+        longitude: user.longitude ?? undefined,
+        searchRadiusKm: user.searchRadiusKm ?? undefined,
         language: userLang,
         // Same post-auth gate as signup: an unverified new account must land on
         // VerifyEmailScreen, not HomeScreen. The backend now returns
