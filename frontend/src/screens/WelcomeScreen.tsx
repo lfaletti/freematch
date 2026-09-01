@@ -23,7 +23,10 @@ export default function WelcomeScreen({ navigation }: Props) {
         </View>
         <Text style={styles.logoText}>{t('welcome.title')}</Text>
         <Text style={styles.tagline}>{t('welcome.tagline')}</Text>
-        <Text style={styles.taglineSub}>{t('home.noAlgorithms')}</Text>
+        <View style={styles.pillars}>
+          <Text style={styles.pillarItem}>• {t('home.noAlgorithms')}</Text>
+          <Text style={styles.pillarItem}>• {t('home.noTracking')}</Text>
+        </View>
       </View>
 
       <View style={styles.actions}>
@@ -119,10 +122,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '400',
   },
-  taglineSub: {
+  pillars: {
+    marginTop: 12,
+    alignItems: 'center',
+    gap: 6,
+  },
+  pillarItem: {
     fontSize: 13,
     color: colors.textMuted,
-    marginTop: 8,
     textAlign: 'center',
   },
   actions: {
