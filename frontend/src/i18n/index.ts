@@ -218,6 +218,7 @@ const es = {
     home: {
       title: 'Descubrir',
       tagline: 'Conectá libremente',
+      noAlgorithms: 'Sin algoritmos de matcheo',
       loading: 'Buscando gente cerca tuyo…',
       error: 'No se pudo conectar con el servidor.',
       retry: 'Reintentar',
@@ -514,6 +515,7 @@ const en = {
     home: {
       title: 'Discover',
       tagline: 'Connect freely',
+      noAlgorithms: 'No matching algorithms',
       loading: 'Finding people near you...',
       error: 'Could not connect to server.',
       retry: 'Retry',
