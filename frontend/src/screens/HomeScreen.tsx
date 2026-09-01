@@ -209,7 +209,6 @@ const HomeScreen = () => {
         <View style={styles.headerCenter}>
           <Text style={styles.logo}>FreeMatch</Text>
           <Text style={styles.tagline}>{t('home.tagline')}</Text>
-          <Text style={styles.taglineSub}>{t('home.noAlgorithms')}</Text>
         </View>
         <View style={styles.menuContainer}>
           <TouchableOpacity style={styles.menuBtn} onPress={() => setMenuOpen(!menuOpen)}>
@@ -393,13 +392,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     marginTop: 2,
-  },
-  taglineSub: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 4,
-    opacity: 0.8,
-    textAlign: 'center',
   },
   btn: {
     width: 64,

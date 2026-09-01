@@ -23,6 +23,7 @@ export default function WelcomeScreen({ navigation }: Props) {
         </View>
         <Text style={styles.logoText}>{t('welcome.title')}</Text>
         <Text style={styles.tagline}>{t('welcome.tagline')}</Text>
+        <Text style={styles.taglineSub}>{t('home.noAlgorithms')}</Text>
       </View>
 
       <View style={styles.actions}>
@@ -117,6 +118,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '400',
+  },
+  taglineSub: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 8,
+    textAlign: 'center',
   },
   actions: {
     width: '100%',
