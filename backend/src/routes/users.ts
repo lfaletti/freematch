@@ -54,7 +54,7 @@ router.patch('/me', async (req: Request, res: Response) => {
     // photo_url is intentionally NOT accepted here: profile photos are managed
     // through the dedicated /api/photos endpoints (upload/delete). Allowing an
     // arbitrary photo_url would let a user point their profile at any URL.
-    const { name, bio, interests, location, latitude, longitude, searchRadiusKm, gender, seekingGender, language } = req.body;
+    const { name, bio, interests, location, latitude, longitude, searchRadiusKm, gender, seekingGender, language, bornDate } = req.body;
 
     if (language !== undefined && language !== 'es' && language !== 'en') {
       return res.status(400).json({ error: 'language must be es or en' });
@@ -107,9 +107,37 @@ router.patch('/me', async (req: Request, res: Response) => {
       }
     }
 
+    // Date of birth (optional on PATCH): must be a valid YYYY-MM-DD and imply an
+    // age in the allowed range. Reuses the same day-safe age logic as register so
+    // an account aged-out or corrected its birth date can't drop below 18 (nor
+    // become implausibly old).
+    if (bornDate !== undefined) {
+      if (typeof bornDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(bornDate.trim())) {
+        return res.status(400).json({ error: 'bornDate must be in YYYY-MM-DD format' });
+      }
+      const ymd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(bornDate.trim());
+      const dob = new Date(Number(ymd![1]), Number(ymd![2]) - 1, Number(ymd![3]));
+      if (isNaN(dob.getTime()) || dob.getDate() !== Number(ymd![3]) || dob.getMonth() !== Number(ymd![2]) - 1) {
+        return res.status(400).json({ error: 'bornDate is not a valid date' });
+      }
+      const now = new Date();
+      let age = now.getFullYear() - dob.getFullYear();
+      const monthDiff = now.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        return res.status(400).json({ error: 'You must be at least 18 years old' });
+      }
+      if (age > 120) {
+        return res.status(400).json({ error: 'Date of birth must be plausible (age at most 120)' });
+      }
+    }
+
     const updated = await userService.updateUserProfile(userId, {
       name: name?.trim(),
       bio,
+      bornDate: bornDate !== undefined ? bornDate.trim() : undefined,
       interests,
       location: location?.trim(),
       latitude: lat,

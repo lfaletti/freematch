@@ -122,6 +122,7 @@ export async function updateUserProfile(userId: string, updates: {
   name?: string;
   bio?: string;
   photo_url?: string | null;
+  bornDate?: string;
   interests?: string[];
   location?: string;
   latitude?: number;
@@ -143,6 +144,11 @@ export async function updateUserProfile(userId: string, updates: {
   if (updates.bio !== undefined) {
     fields.push(`bio = $${idx}`);
     values.push(updates.bio);
+    idx++;
+  }
+  if (updates.bornDate !== undefined) {
+    fields.push(`born_date = $${idx}`);
+    values.push(updates.bornDate);
     idx++;
   }
   if (updates.photo_url !== undefined) {

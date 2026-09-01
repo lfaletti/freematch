@@ -51,6 +51,7 @@ export default function EditProfileScreen({ navigation }: Props) {
 
   const [name, setName] = useState(session.name ?? '');
   const [bio, setBio] = useState(session.bio ?? '');
+  const [bornDate, setBornDate] = useState(session.bornDate ?? '');
   const [location, setLocation] = useState(session.location ?? '');
   const [latitude, setLatitude] = useState<number | null>(session.latitude ?? null);
   const [longitude, setLongitude] = useState<number | null>(session.longitude ?? null);
@@ -100,6 +101,29 @@ export default function EditProfileScreen({ navigation }: Props) {
       return;
     }
 
+    // Date of birth: optional to change, but if provided it must be a valid
+    // YYYY-MM-DD between 18 and 120 years old (same rules as registration).
+    if (bornDate.trim()) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(bornDate.trim())) {
+        setError(t('editProfile.errBornDateFormat'));
+        return;
+      }
+      const parsed = new Date(bornDate.trim());
+      if (isNaN(parsed.getTime())) {
+        setError(t('editProfile.errBornDateInvalid'));
+        return;
+      }
+      const age = Math.floor((Date.now() - parsed.getTime()) / (365.25 * 24 * 3600 * 1000));
+      if (age < 18) {
+        setError(t('editProfile.errUnder18'));
+        return;
+      }
+      if (age > 120) {
+        setError(t('editProfile.errAgeInvalid'));
+        return;
+      }
+    }
+
     const interests = interestsText
       .split(',')
       .map((i: string) => i.trim())
@@ -110,6 +134,7 @@ export default function EditProfileScreen({ navigation }: Props) {
       const updated = await updateProfile({
         name: name.trim(),
         bio: bio.trim() || undefined,
+        bornDate: bornDate.trim() || undefined,
         location: location.trim() || undefined,
         latitude: latitude ?? undefined,
         longitude: longitude ?? undefined,
@@ -294,6 +319,46 @@ export default function EditProfileScreen({ navigation }: Props) {
         <View style={styles.field}>
           <Text style={styles.label}>{t('editProfile.radius')}</Text>
           <RadiusPicker value={searchRadiusKm} onChange={setSearchRadiusKm} />
+        </View>
+
+        {/* Date of birth: editable for the age shown on the profile. On web a
+            native date input keeps the value as YYYY-MM-DD; on mobile a
+            free-text field with the same format requirement. */}
+        <View style={styles.field}>
+          <Text style={styles.label}>{t('editProfile.dateOfBirth')}</Text>
+          {Platform.OS === 'web' ? (
+            // @ts-ignore - native web date input
+            <input
+              type="date"
+              value={bornDate}
+              onChange={(e: any) => setBornDate(e.target.value)}
+              max={new Date(Date.now() - 18 * 365.25 * 24 * 3600 * 1000).toISOString().split('T')[0]}
+              style={{
+                backgroundColor: colors.surface,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 12,
+                padding: '14px 16px',
+                fontSize: 16,
+                color: colors.text,
+                width: '100%',
+                boxSizing: 'border-box',
+                outline: 'none',
+                colorScheme: 'dark',
+              }}
+            />
+          ) : (
+            <TextInput
+              style={styles.input}
+              placeholder={t('editProfile.dateOfBirthPlaceholder')}
+              placeholderTextColor={colors.textMuted}
+              value={bornDate}
+              onChangeText={setBornDate}
+              keyboardType="numeric"
+              maxLength={10}
+              returnKeyType="next"
+            />
+          )}
+          <Text style={styles.hint}>{t('editProfile.bornDateHint')}</Text>
         </View>
 
         <View style={styles.field}>

@@ -194,6 +194,14 @@ const es = {
       errSeeking: 'Seleccioná al menos un género que te interese.',
       errLocation: 'La ubicación es obligatoria.',
       errUpdate: 'No se pudo actualizar el perfil.',
+      // date of birth
+      dateOfBirth: 'Fecha de nacimiento',
+      dateOfBirthPlaceholder: 'AAAA-MM-DD',
+      bornDateHint: 'Cambiará tu edad mostrada en el perfil.',
+      errBornDateFormat: 'La fecha de nacimiento debe tener formato AAAA-MM-DD.',
+      errBornDateInvalid: 'La fecha de nacimiento no es válida.',
+      errUnder18: 'Tenés que tener al menos 18 años.',
+      errAgeInvalid: 'Ingresá una fecha de nacimiento válida.',
       // account deletion
       deleteTitle: 'Eliminar cuenta',
       deleteHint: 'Esto borra tu perfil, fotos, matches y mensajes de forma permanente e irreversible.',
@@ -482,6 +490,14 @@ const en = {
       errSeeking: 'Please select at least one gender you are interested in.',
       errLocation: 'Location is required.',
       errUpdate: 'Failed to update profile.',
+      // date of birth
+      dateOfBirth: 'Date of birth',
+      dateOfBirthPlaceholder: 'YYYY-MM-DD',
+      bornDateHint: 'This changes the age shown on your profile.',
+      errBornDateFormat: 'Date of birth must be in YYYY-MM-DD format.',
+      errBornDateInvalid: 'Date of birth is not a valid date.',
+      errUnder18: 'You must be at least 18 years old.',
+      errAgeInvalid: 'Please enter a valid date of birth.',
       // account deletion
       deleteTitle: 'Delete Account',
       deleteHint: 'This permanently and irreversibly deletes your profile, photos, matches, and messages.',

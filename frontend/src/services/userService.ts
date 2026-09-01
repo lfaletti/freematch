@@ -68,6 +68,7 @@ export const resetLeftSwipes = async () => {
 export interface ProfileUpdatePayload {
   name?: string;
   bio?: string;
+  bornDate?: string;
   location?: string;
   latitude?: number;
   longitude?: number;
