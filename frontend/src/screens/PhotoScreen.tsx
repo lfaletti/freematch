@@ -175,24 +175,6 @@ const PhotoScreen = () => {
         <Text style={styles.title}>{t('photos.title')}</Text>
       </View>
 
-      <View style={styles.uploadSection}>
-        <TouchableOpacity
-          style={styles.uploadBtn}
-          onPress={pickImage}
-          disabled={uploading}
-        >
-          {uploading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <>
-              <Text style={styles.uploadBtnIcon}>+</Text>
-              <Text style={styles.uploadBtnText}>{t('photos.upload')}</Text>
-            </>
-          )}
-        </TouchableOpacity>
-        {error && <Text style={styles.errorMessage}>{error}</Text>}
-      </View>
-
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} size="large" />
@@ -216,6 +198,24 @@ const PhotoScreen = () => {
           contentContainerStyle={styles.galleryContent}
         />
       )}
+
+      <View style={styles.uploadSection}>
+        <TouchableOpacity
+          style={styles.uploadBtn}
+          onPress={pickImage}
+          disabled={uploading}
+        >
+          {uploading ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <>
+              <Text style={styles.uploadBtnIcon}>+</Text>
+              <Text style={styles.uploadBtnText}>{t('photos.upload')}</Text>
+            </>
+          )}
+        </TouchableOpacity>
+        {error && <Text style={styles.errorMessage}>{error}</Text>}
+      </View>
 
       <ConfirmModal
         visible={pendingDeleteId !== null}
@@ -250,8 +250,8 @@ const styles = StyleSheet.create({
   },
   uploadSection: {
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   uploadBtn: {
     backgroundColor: colors.primary,
