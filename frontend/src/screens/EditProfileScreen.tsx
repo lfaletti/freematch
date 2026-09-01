@@ -31,6 +31,22 @@ type Props = {
 const GENDER_OPTIONS = ['man', 'woman', 'other'] as const;
 type GenderOption = typeof GENDER_OPTIONS[number];
 
+// Normalize a birth date to the exact YYYY-MM-DD a date input expects. The
+// backend serializes born_date as ISO with a timezone (`1995-01-01T00:00:00.000Z`)
+// which a native <input type="date"> will NOT render (it only shows plain
+// YYYY-MM-DD). Handle both that and the already-clean form.
+function toDateInputValue(value?: string | null): string {
+  if (!value) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+}
+
 export default function EditProfileScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const session = useAppSelector((s) => s.session);
@@ -51,7 +67,7 @@ export default function EditProfileScreen({ navigation }: Props) {
 
   const [name, setName] = useState(session.name ?? '');
   const [bio, setBio] = useState(session.bio ?? '');
-  const [bornDate, setBornDate] = useState(session.bornDate ?? '');
+  const [bornDate, setBornDate] = useState<string>(() => toDateInputValue(session.bornDate));
   const [location, setLocation] = useState(session.location ?? '');
   const [latitude, setLatitude] = useState<number | null>(session.latitude ?? null);
   const [longitude, setLongitude] = useState<number | null>(session.longitude ?? null);
