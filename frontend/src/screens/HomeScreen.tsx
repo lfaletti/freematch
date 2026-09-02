@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  Image,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
@@ -20,11 +21,19 @@ import { navigate } from '../navigation/navigationRef';
 import { resetLeftSwipes } from '../services/userService';
 import { resendVerification } from '../services/authService';
 import { fetchDonationConfig } from '../services/donationService';
+import { getPhotoUrl } from '../services/api';
+import { ageFromBornDate } from '../utils/date';
 
 const HomeScreen = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
   const sessionUserId = useAppSelector((s) => s.session.userId);
+  const myName = useAppSelector((s) => s.session.name);
+  const myPhoto = useAppSelector((s) => s.session.photo);
+  const myBio = useAppSelector((s) => s.session.bio);
+  const myBornDate = useAppSelector((s) => s.session.bornDate);
+  const myLocation = useAppSelector((s) => s.session.location);
+  const myInterests = useAppSelector((s) => s.session.interests);
   const requiresVerification = useAppSelector((s) => s.session.requiresVerification);
   const sessionEmail = useAppSelector((s) => s.session.email);
   const { all: users, currentIndex, loading, loaded, error } = useAppSelector((s) => s.users);
@@ -99,6 +108,22 @@ const HomeScreen = () => {
   const handleEditProfile = () => {
     setMenuOpen(false);
     navigate('EditProfile');
+  };
+
+  // Opens the user's own public profile (the way others see it). ProfileScreen
+  // refetches the user by id on mount, so these session values only act as an
+  // initial fallback to avoid a blank header while that request completes.
+  const handleOpenMyProfile = () => {
+    setMenuOpen(false);
+    navigate('Profile', {
+      partnerId: sessionUserId,
+      name: myName,
+      age: ageFromBornDate(myBornDate) ?? 0,
+      photo: myPhoto,
+      bio: myBio,
+      location: myLocation ?? '',
+      interests: myInterests ?? [],
+    });
   };
 
   const handleDonate = () => {
@@ -205,7 +230,9 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity style={styles.avatarBtn} onPress={handleOpenMyProfile} activeOpacity={0.7}>
+          <Image source={{ uri: getPhotoUrl(myPhoto) }} style={styles.avatarImg} />
+        </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.logo}>FreeMatch</Text>
           <Text style={styles.tagline}>{t('home.tagline')}</Text>
@@ -217,6 +244,9 @@ const HomeScreen = () => {
           <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
             <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuOpen(false)}>
               <View style={styles.menuDropdown}>
+                <TouchableOpacity style={styles.menuItem} onPress={handleOpenMyProfile}>
+                  <Text style={styles.menuItemText}>👤 {t('home.viewProfile')}</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}>
                   <Text style={styles.menuItemText}>⚙️ {t('home.editProfile')}</Text>
                 </TouchableOpacity>
@@ -327,6 +357,19 @@ const styles = StyleSheet.create({
   menuBtn: {
     padding: 8,
   },
+  avatarBtn: {
+    width: 38,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  avatarImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
   menuIcon: {
     fontSize: 24,
     color: colors.textMuted,
@@ -362,9 +405,6 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: colors.nope,
-  },
-  headerSpacer: {
-    width: 38,
   },
   cardArea: {
     flex: 1,
