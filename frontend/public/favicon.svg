@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FreeMatch">
+  <title>FreeMatch</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF6B6B"/>
+      <stop offset="1" stop-color="#FF3C3C"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#FF9800"/>
+      <stop offset="0.55" stop-color="#FFC107"/>
+      <stop offset="1" stop-color="#FFF3D6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Round gradient background -->
+  <rect x="16" y="16" width="480" height="480" rx="110" fill="url(#bg)"/>
+
+  <!-- Soft white heart silhouette (the card) -->
+  <g fill="#ffffff">
+    <path d="M256 400C 160 330 96 268 96 196
+             C96 138 144 96 196 96
+             C220 96 244 108 256 128
+             C268 108 292 96 316 96
+             C368 96 416 138 416 196
+             C416 268 352 330 256 400Z"/>
+  </g>
+
+  <!-- Inner flame (heart core) as a match spark -->
+  <path d="M256 350
+           C214 310 186 282 186 246
+           C186 216 212 196 240 200
+           C246 214 252 226 256 240
+           C260 226 266 214 272 200
+           C300 196 326 216 326 246
+           C326 282 298 310 256 350Z"
+        fill="url(#flame)"/>
+</svg>

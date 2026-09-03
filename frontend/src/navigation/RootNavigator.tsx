@@ -30,6 +30,7 @@ import { storageService } from '../services/storageService';
 import { colors } from '../theme/colors';
 import { loadMatches } from '../redux/slices/matchesSlice';
 import i18n, { loadSavedLanguage, Language } from '../i18n';
+import { APP_BRAND } from '../config/brand';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -215,7 +216,12 @@ function RootNavigator() {
   // being kicked to a separate screen; the backend enforces the visibility rule
   // (can't view profiles / not shown to others) until they verify their email.
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer
+      ref={navigationRef}
+      // React Navigation auto-sets document.title on web to the focused route's
+      // name (e.g. "Home"); force it to always read the app brand instead.
+      documentTitle={{ formatter: () => APP_BRAND }}
+    >
       <DeepLinkHandler />
       {session.isAuthenticated ? (
         <>
