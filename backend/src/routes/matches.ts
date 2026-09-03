@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import * as matchService from '../services/matchService';
 import * as swipeService from '../services/swipeService';
+import * as reportService from '../services/reportService';
 import { getUserId, respondAuthError } from '../utils/session';
 
 const router = Router();
@@ -55,6 +56,45 @@ router.delete('/:id', async (req: Request, res: Response) => {
   } catch (err) {
     if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to unmatch' });
+  }
+});
+
+// Report a chat partner (and remove the match). The reporter picks a reason
+// from a fixed keeplist and may add evidence as free text. Internally this:
+//   - records the report (stays in DB for later admin triage),
+//   - removes the match + conversation + clears the swipes between the two,
+//   - permanently hides the reported user from the reporter's swipe deck.
+// The reported user is not told (it looks like a normal unmatch to them).
+router.post('/:id/report', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    const { reason, details } = req.body ?? {};
+    if (!reportService.isReportReason(reason)) {
+      return res.status(400).json({ error: 'Invalid report reason' });
+    }
+
+    const { match, reportedId } = await reportService.reportMatch(
+      userId,
+      req.params.id,
+      reason,
+      typeof details === 'string' ? details : undefined
+    );
+    if (!match) {
+      // Match doesn't exist or the user isn't part of it.
+      return res.status(404).json({ error: 'Match not found' });
+    }
+
+    // Notify the reported user in realtime so their chat closes too (sent to
+    // their personal room; payload has no mention of a report).
+    const io = req.app.get('io');
+    if (io && reportedId) {
+      io.to(`user:${reportedId}`).emit('unmatch', { matchId: match.id });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    if (respondAuthError(res, err)) return;
+    res.status(500).json({ error: 'Failed to report user' });
   }
 });
 

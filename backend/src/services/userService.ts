@@ -46,6 +46,12 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
          AND u.id NOT IN (
            SELECT swiped_id FROM swipes WHERE swiper_id = $1
          )
+         -- A reported user is hidden from the reporting user's deck forever.
+         -- Reporting also deletes the match + swipes, so without this rule the
+         -- pair would simply reappear in each other's deck and could re-match.
+         AND u.id NOT IN (
+           SELECT reported_id FROM reports WHERE reporter_id = $1
+         )
          AND (
            -- They must want my gender (or want everyone)
            (COALESCE(u.seeking_gender, '{man,woman,other}'::text[]) = '{}'::text[] OR my_user.gender = ANY(COALESCE(u.seeking_gender, '{man,woman,other}'::text[])))

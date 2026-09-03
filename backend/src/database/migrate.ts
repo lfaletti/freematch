@@ -144,6 +144,9 @@ export async function runMigrations() {
   const sql014_photo_sync = fs.readFileSync(path.join(__dirname, 'migrations/014_photo_url_sync.sql'), 'utf8');
   await query(sql014_photo_sync);
 
+  const sql015_reports = fs.readFileSync(path.join(__dirname, 'migrations/015_reports.sql'), 'utf8');
+  await query(sql015_reports);
+
   console.log('Migrations ran successfully');
 }
 

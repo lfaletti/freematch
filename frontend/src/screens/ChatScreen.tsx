@@ -18,8 +18,9 @@ import { loadMessages, setTyping, setActiveMatch, removeMatchMessages, Message, 
 import { clearUnread, removeMatch } from '../redux/slices/matchesSlice';
 import { loadUsers } from '../redux/slices/usersSlice';
 import { getSocket } from '../services/socketService';
-import { unmatch } from '../services/userService';
+import { unmatch, reportMatch } from '../services/userService';
 import ConfirmModal from '../components/ConfirmModal';
+import ReportUserModal from '../components/ReportUserModal';
 import { colors } from '../theme/colors';
 import { Match } from '../redux/slices/matchesSlice';
 import { getPhotoUrl } from '../services/api';
@@ -41,6 +42,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
   const loading = useAppSelector((s) => s.messages.loading);
   const [inputText, setInputText] = useState('');
   const [confirmUnmatch, setConfirmUnmatch] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportError, setReportError] = useState<string | undefined>(undefined);
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const flatListRef = useRef<FlatList>(null);
   const lastTapRef = useRef<number>(0);
@@ -103,6 +107,26 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
     dispatch(removeMatchMessages(match.id));
     dispatch(loadUsers());
     navigation.goBack();
+  };
+
+  // Report removes the match too (the backend handles the deletion and hides
+  // the reported user permanently from the swipe deck). The partner is never
+  // told it was a report -- to them it just looks like a normal unmatch.
+  const handleReport = async (reason: string, details: string) => {
+    setReportSubmitting(true);
+    setReportError(undefined);
+    try {
+      await reportMatch(match.id, { reason, details });
+      setShowReport(false);
+      dispatch(removeMatch(match.id));
+      dispatch(removeMatchMessages(match.id));
+      dispatch(loadUsers());
+      navigation.goBack();
+    } catch (err) {
+      setReportError(t('matches.reportError'));
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   const sendMessage = () => {
@@ -236,6 +260,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
             {isTyping ? 'typing...' : 'online'}
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowReport(true)} style={styles.reportBtn}>
+          <Text style={styles.reportIcon}>🚩</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => setConfirmUnmatch(true)} style={styles.unmatchBtn}>
           <Text style={styles.unmatchIcon}>💔</Text>
         </TouchableOpacity>
@@ -293,6 +320,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route, navigation }) => {
         </TouchableOpacity>
       </View>
 
+      <ReportUserModal
+        visible={showReport}
+        partnerName={match.partner_name}
+        submitting={reportSubmitting}
+        error={reportError}
+        onCancel={() => setShowReport(false)}
+        onSubmit={handleReport}
+      />
+
       <ConfirmModal
         visible={confirmUnmatch}
         title={t('matches.unmatchTitle')}
@@ -341,8 +377,14 @@ const styles = StyleSheet.create({
   headerInfo: {
     marginLeft: 10,
   },
-  unmatchBtn: {
+  reportBtn: {
     marginLeft: 'auto',
+    padding: 6,
+  },
+  reportIcon: {
+    fontSize: 22,
+  },
+  unmatchBtn: {
     padding: 6,
   },
   unmatchIcon: {

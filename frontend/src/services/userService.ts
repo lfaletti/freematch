@@ -50,6 +50,17 @@ export const unmatch = async (matchId: string) => {
   return res.data;
 };
 
+// Report a chat partner for a match. reason is a stable key, details is the
+// optional free-text evidence. The backend records the report, removes the
+// match, and hides the reported user from the reporter's swipe deck.
+export const reportMatch = async (
+  matchId: string,
+  payload: { reason: string; details?: string }
+) => {
+  const res = await api.post(`/api/matches/${matchId}/report`, payload);
+  return res.data;
+};
+
 export const fetchMessages = async (matchId: string) => {
   const res = await api.get(`/api/messages/${matchId}`);
   return res.data;

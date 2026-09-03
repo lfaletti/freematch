@@ -277,6 +277,20 @@ const es = {
       saySomething: 'Escribí un mensaje…',
       send: 'Enviar',
       typeMessage: 'Escribí un mensaje…',
+      // ── Report ──
+      reportTitle: 'Reportar a {{name}}',
+      reportReasonLabel: '¿Por qué reportás a {{name}}?',
+      reportDetailsPlaceholder: 'Agregá detalle o evidencia (opcional)',
+      reportSubmit: 'Reportar y eliminar match',
+      reportSubmitting: 'Enviando…',
+      reportSuccess: 'Gracias por reportar. Vamos a revisarlo.',
+      reportError: 'No se pudo enviar el reporte. Probá de nuevo.',
+      reasonHarassment: 'Acoso u hostigamiento',
+      reasonOffensive: 'Mensajes ofensivos o groseros',
+      reasonExplicit: 'Contenido explícito o inapropiado',
+      reasonSpam: 'Spam o promoción',
+      reasonImpersonation: 'Falsa identidad o estafa',
+      reasonOther: 'Otra razón',
     },
 
     // ── Photos ──
@@ -576,6 +590,20 @@ const en = {
       saySomething: 'Write a message…',
       send: 'Send',
       typeMessage: 'Type a message...',
+      // ── Report ──
+      reportTitle: 'Report {{name}}',
+      reportReasonLabel: 'Why are you reporting {{name}}?',
+      reportDetailsPlaceholder: 'Add details or evidence (optional)',
+      reportSubmit: 'Report and unmatch',
+      reportSubmitting: 'Sending…',
+      reportSuccess: 'Thanks for reporting. We\'ll take a look.',
+      reportError: 'Could not send the report. Please try again.',
+      reasonHarassment: 'Harassment',
+      reasonOffensive: 'Offensive or rude messages',
+      reasonExplicit: 'Explicit or inappropriate content',
+      reasonSpam: 'Spam or promotion',
+      reasonImpersonation: 'Impersonation or scam',
+      reasonOther: 'Another reason',
     },
 
     // ── Photos ──
