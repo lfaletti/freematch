@@ -218,17 +218,18 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 10,
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 14,
   },
   btn: {
-    paddingHorizontal: 20,
+    flex: 1,
+    paddingHorizontal: 10,
     paddingVertical: 12,
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 110,
+    minHeight: 44,
   },
   btnDisabled: {
     opacity: 0.5,
