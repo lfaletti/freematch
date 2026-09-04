@@ -18,10 +18,14 @@ npm-debug.log*
 # OS / editor
 .DS_Store
 Thumbs.db
+.vs/
 
 # Expo / Metro
 .expo/
 web-build/
+
+# Local AI tool config (Abacus AI) — machine-specific, not project source
+.abacusai/
 
 # Uploaded user photos (runtime-generated)
 backend/uploads/
