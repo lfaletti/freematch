@@ -26,10 +26,20 @@ export interface DonationConfig {
 }
 
 // ── Global switch ──────────────────────────────────────────────────────────
+// Comma-separated allowed-email whitelist read from the environment so it is
+// never committed to source. Falls back to EMPTY (feature disabled) when unset.
+const allowedEmailsRaw: string = process.env.DONATION_ALLOWED_EMAILS ?? '';
+export const ALLOWED_EMAILS: string[] = allowedEmailsRaw
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter((e) => e.length > 0);
+export const ENABLED_FOR_ALL: boolean =
+  (process.env.DONATION_ENABLED_FOR_ALL ?? 'false').toLowerCase() === 'true';
+
 export const DONATION = {
   // Set to true once confident to broadcast the donate entry to everyone.
-  ENABLED_FOR_ALL: false,
-  ALLOWED_EMAILS: ['REDACTED_EMAIL', 'REDACTED_EMAIL'],
+  ENABLED_FOR_ALL,
+  ALLOWED_EMAILS,
 
   // Ko-fi — variable USD (international / rest of the world).
   KOFI: {
@@ -71,8 +81,8 @@ export function getDonationConfig(
   const normalized = (email ?? '').trim().toLowerCase();
   const enabled =
     normalized.length > 0 &&
-    (DONATION.ENABLED_FOR_ALL ||
-      DONATION.ALLOWED_EMAILS.some((e) => e.trim().toLowerCase() === normalized));
+    (ENABLED_FOR_ALL ||
+      ALLOWED_EMAILS.some((e) => e.trim().toLowerCase() === normalized));
 
   if (!enabled) {
     return { enabled: false, methods: [], primaryIndex: 0 };

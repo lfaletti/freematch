@@ -27,6 +27,11 @@ web-build/
 # Local AI tool config (Abacus AI) — machine-specific, not project source
 .abacusai/
 
+# Internal agent operation files (kept out of the public repo)
+# Private copies live in the workspace backup, not in version control.
+agent-prompts/
+CLAUDE.md
+
 # Uploaded user photos (runtime-generated)
 backend/uploads/
 
