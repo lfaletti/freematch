@@ -6,8 +6,6 @@
 
 Una app de citas construida **enteramente en producción, lista para escalar**, realizada con un **asistente de código de IA**.
 
-> **Licencia:** Creative Commons Atribución-NoComercial 4.0 (CC BY-NC 4.0). Podés copiar y compartir libremente — pero no usar con fines comerciales. Ver [`LICENSE`](./LICENSE).
-
 ---
 
 ## Qué es
@@ -18,6 +16,12 @@ FreeMatch es simple y transparente.
 - **Sin seguimiento constante de tu ubicación.** Tu zona general se usa solo para mostrarte gente cercana, desde un centroide a nivel de ciudad — nunca tu posición exacta.
 
 Incluye funcionalidad real: autenticación y recuperación de contraseña, fotos, matches, chat en tiempo real, edición de perfil, moderación NSFW de fotos, donaciones e internacionalización completa **ES/EN**.
+
+---
+
+## Entrega continua (Continuous Delivery)
+
+El repositorio está conectado a **Vercel** (frontend) y a **Railway** (backend). Cada commit que se hace a `master` se **auto-despliega** en producción automáticamente, sin intervención manual.
 
 ---
 
@@ -68,7 +72,7 @@ El trabajo se extendió por varios meses con cortes reales en el medio. Según e
 
 ---
 
-## Cómo empezar
+## Correr localmente
 
 ```bash
 # 1) Servicios locales (PostgreSQL + Redis + MinIO) — requiere Docker
@@ -97,8 +101,6 @@ Las guías completas de setup y deployment están en [`docs/`](./docs).
 
 A dating app built **entirely for production, ready to scale**, made with an **AI code assistant**.
 
-> **License:** Creative Commons Attribution-NonCommercial 4.0 (CC BY-NC 4.0). Copy and share freely — but no commercial use. See [`LICENSE`](./LICENSE).
-
 ---
 
 ## What it is
@@ -109,6 +111,12 @@ FreeMatch is simple and transparent.
 - **No constant location tracking.** Your general area is used only to show people near you, from a coarse city-level centroid — never your exact position.
 
 It includes a real feature set: auth and password recovery, photos, matching, real-time chat, profile editing, NSFW photo moderation, donations, and full **ES/EN** i18n.
+
+---
+
+## Continuous delivery
+
+The repository is connected to **Vercel** (frontend) and **Railway** (backend). Every commit pushed to `master` **auto-deploys** to production automatically, with no manual steps.
 
 ---
 
@@ -159,7 +167,7 @@ The work was spread over several months with real breaks in between. Based on th
 
 ---
 
-## Getting started
+## Run locally
 
 ```bash
 # 1) Local services (PostgreSQL + Redis + MinIO) — requires Docker
