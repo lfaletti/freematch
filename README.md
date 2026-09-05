@@ -1,3 +1,7 @@
+>[🌐 English](#freematch) &nbsp;|&nbsp; [🌐 Español](#freematch-español)
+
+---
+
 # FreeMatch
 
 A dating app built to test what artificial intelligence can do when asked to create a real product from scratch — with an AI assistant working alongside a human developer from idea to production.
@@ -59,6 +63,8 @@ Full setup and deployment guides live in [`docs/`](./docs).
 ## License
 
 **FreeMatch** © 2026 is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**. You may share and adapt it with credit, but not for commercial purposes. Full text in [`LICENSE`](./LICENSE) or at <https://creativecommons.org/licenses/by-nc/4.0/>.
+
+---
 
 ---
 
