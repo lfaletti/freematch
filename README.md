@@ -1,31 +1,20 @@
 # FreeMatch
 
-A dating app born out of a simple question: **what can artificial intelligence really do when asked to build a product from scratch?**
+A dating app built to test what artificial intelligence can do when asked to create a real product from scratch — with an AI assistant working alongside a human developer from idea to production.
 
-FreeMatch was created by an AI assistant as an experiment to test the power of AI to design and build a real, production-ready application — from backend to mobile frontend — working together with a human developer.
-
-> **FreeMatch is licensed under a Creative Commons Attribution-NonCommercial 4.0 (CC BY-NC 4.0).** You may copy, share and adapt it — but **not** use it for commercial purposes. See [`LICENSE`](./LICENSE).
+> **License:** Creative Commons Attribution-NonCommercial 4.0 (CC BY-NC 4.0). Copy and share freely — but no commercial use. See [`LICENSE`](./LICENSE).
 
 ---
 
-## What this app actually is
+## What it is
 
-FreeMatch is intentionally **simple and transparent**. We made a deliberate choice *not* to copy the dark patterns of mainstream dating products.
+FreeMatch is **simple and transparent**.
 
-- **No matching algorithms.** There are no ranking heuristics, no "optimal match scores", no engagement-optimizing feeds. Profiles are simply shown to you, and you decide with a swipe. Nothing guesses who you "should" like.
-- **No constant location tracking.** Your general area is only used to show you people near you and to order the deck by distance — and even then it works from a coarse city-level centroid, never your precise position.
-- **Simple by design.** No endless engagement loops, no daily streaks to keep you hooked, no algorithmic pressure. Just profiles, swipes, matches and chat.
-- **Real feature set.** Authentication and password recovery, photos, matching, real-time chat, profile editing, photo moderation (NSFW filtering), donations, and full **ES/EN** internationalization.
+- **No matching algorithms.** Profiles are shown to you and you decide with a swipe. Nothing guesses who you "should" like.
+- **No constant location tracking.** Your general area is used only to show people near you, from a coarse city-level centroid — never your exact position.
+- **Created to test AI.** A proof that AI can architect, build and ship a full cross-platform app, not just write snippets.
 
----
-
-## The real purpose
-
-FreeMatch is essentially a **showcase and a proof of concept**: what an AI pair-programmer can build when it works alongside a person to ship a complete product.
-
-We wanted to prove that AI isn't just for code snippets or autocomplete — it can architect, implement, debug and ship an entire cross-platform application. This repository is the evidence.
-
-If you are a developer curious about AI-assisted development, or a maker who wants to see a full-stack app built with an AI partner, this codebase is for you. Fork it, study it, and learn from it — but remember the non-commercial license.
+It includes a real feature set: auth and password recovery, photos, matching, real-time chat, profile editing, NSFW photo moderation, donations, and full **ES/EN** i18n.
 
 ---
 
@@ -38,15 +27,14 @@ If you are a developer curious about AI-assisted development, or a maker who wan
 | **Real-time chat** | Socket.IO (Redis adapter) |
 | **Database** | PostgreSQL |
 | **Storage** | S3-compatible (MinIO / Cloudflare R2) |
-| **Photo moderation** | nsfwjs (on-device / backend) |
+| **Photo moderation** | nsfwjs |
 
 ---
 
 ## Getting started
 
 ```bash
-# 1) Spin up local services (PostgreSQL + Redis + MinIO)
-#    Requires Docker Desktop
+# 1) Local services (PostgreSQL + Redis + MinIO) — requires Docker
 npm run docker:up
 
 # 2) Backend
@@ -62,44 +50,27 @@ Full setup and deployment guides live in [`docs/`](./docs).
 
 ## License
 
-**FreeMatch** © 2026 is licensed under the
-**Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).**
-
-You are free to **share** (copy and redistribute) and **adapt** (remix, transform, build upon) the material — as long as you give appropriate credit and do **not** use it for **commercial** purposes.
-
-See the full legal text in [`LICENSE`](./LICENSE) or at
-<https://creativecommons.org/licenses/by-nc/4.0/>.
+**FreeMatch** © 2026 is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**. You may share and adapt it with credit, but not for commercial purposes. Full text in [`LICENSE`](./LICENSE) or at <https://creativecommons.org/licenses/by-nc/4.0/>.
 
 ---
 
 # FreeMatch (Español)
 
-Una app de citas nacida de una pregunta simple: **¿qué puede hacer realmente la inteligencia artificial cuando se le pide crear un producto desde cero?**
+Una app de citas construida para probar lo que la inteligencia artificial puede hacer cuando se le pide crear un producto real desde cero — con un asistente de IA trabajando junto a una persona desarrolladora, de la idea a la producción.
 
-FreeMatch fue creada por un asistente de IA como un experimento para poner a prueba el poder de la IA para diseñar y construir una aplicación real, lista para producción — desde el backend hasta el frontend móvil — trabajando junto a un desarrollador humano.
-
-> **FreeMatch está bajo una licencia Creative Commons Atribución-NoComercial 4.0 (CC BY-NC 4.0).** Podés copiar, compartir y adaptarla — pero **no** usarla con fines comerciales. Ver [`LICENSE`](./LICENSE).
+> **Licencia:** Creative Commons Atribución-NoComercial 4.0 (CC BY-NC 4.0). Podés copiar y compartir libremente — pero no usar con fines comerciales. Ver [`LICENSE`](./LICENSE).
 
 ---
 
-## Qué es realmente esta app
+## Qué es
 
-FreeMatch es, a propósito, **simple y transparente**. Tomamos una decisión deliberada de *no* copiar los patrones oscuros de los productos de citas mainstream.
+FreeMatch es **simple y transparente**.
 
-- **Sin algoritmos de matching.** No hay heurísticas de ranking, ni "puntajes de match óptimo", ni feeds optimizados para el engagement. Los perfiles simplemente se te muestran, y vos decidís con un swipe. Nada adivina quién "debería" gustarte.
-- **Sin seguimiento constante de tu ubicación.** Tu zona general se usa solo para mostrarte gente cercana y ordenar el mazo por distancia — y aun así funciona desde un centroide a nivel de ciudad, nunca tu posición exacta.
-- **Simple por diseño.** Sin loops infinitos de engagement, sin rachas diarias para mantenerte enganchado, sin presión algorítmica. Solo perfiles, swipes, matches y chat.
-- **Funcionalidad real.** Autenticación y recuperación de contraseña, fotos, matches, chat en tiempo real, edición de perfil, moderación de fotos (filtro NSFW), donaciones e internacionalización completa **ES/EN**.
+- **Sin algoritmos de matching.** Los perfiles se te muestran y vos decidís con un swipe. Nada adivina quién "debería" gustarte.
+- **Sin seguimiento constante de tu ubicación.** Tu zona general se usa solo para mostrarte gente cercana, desde un centroide a nivel de ciudad — nunca tu posición exacta.
+- **Creada para probar la IA.** Una prueba de que la IA puede arquitecturar, construir y publicar una app multiplataforma completa, no solo escribir snippets.
 
----
-
-## El propósito real
-
-FreeMatch es, en esencia, una **demostración y una prueba de concepto**: lo que un programador-IA puede construir cuando trabaja junto a una persona para publicar un producto completo.
-
-Queríamos probar que la IA no es solo para snippets de código o autocompletado — puede **arquitecturar, implementar, depurar y publicar** una aplicación multiplataforma completa. Este repositorio es la evidencia.
-
-Si sos una persona desarrolladora curiosa sobre el desarrollo asistido por IA, o un maker que quiere ver una app full-stack construida con un socio de IA, este código es para vos. Hacé fork, estudiá y aprendé — pero recordá la licencia no comercial.
+Incluye funcionalidad real: autenticación y recuperación de contraseña, fotos, matches, chat en tiempo real, edición de perfil, moderación NSFW de fotos, donaciones e internacionalización completa **ES/EN**.
 
 ---
 
@@ -112,15 +83,14 @@ Si sos una persona desarrolladora curiosa sobre el desarrollo asistido por IA, o
 | **Chat en tiempo real** | Socket.IO (adaptador Redis) |
 | **Base de datos** | PostgreSQL |
 | **Almacenamiento** | Compatible S3 (MinIO / Cloudflare R2) |
-| **Moderación de fotos** | nsfwjs (backend) |
+| **Moderación de fotos** | nsfwjs |
 
 ---
 
 ## Cómo empezar
 
 ```bash
-# 1) Levantar servicios locales (PostgreSQL + Redis + MinIO)
-#    Requiere Docker Desktop
+# 1) Servicios locales (PostgreSQL + Redis + MinIO) — requiere Docker
 npm run docker:up
 
 # 2) Backend
@@ -136,10 +106,4 @@ Las guías completas de setup y deployment están en [`docs/`](./docs).
 
 ## Licencia
 
-**FreeMatch** © 2026 está bajo la
-**licencia Creative Commons Atribución-NoComercial 4.0 Internacional (CC BY-NC 4.0).**
-
-Sos libre de **compartir** (copiar y redistribuir) y **adaptar** (remezclar, transformar, construir sobre) el material — siempre que des el crédito correspondiente y **no** lo uses con fines **comerciales**.
-
-Texto legal completo en [`LICENSE`](./LICENSE) o en
-<https://creativecommons.org/licenses/by-nc/4.0/>.
+**FreeMatch** © 2026 está bajo la **licencia Creative Commons Atribución-NoComercial 4.0 Internacional (CC BY-NC 4.0)**. Podés compartir y adaptarla con crédito, pero no con fines comerciales. Texto completo en [`LICENSE`](./LICENSE) o en <https://creativecommons.org/licenses/by-nc/4.0/>.
