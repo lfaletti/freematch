@@ -4,7 +4,7 @@
 
 # FreeMatch (es)
 
-Una app de citas construida para probar lo que la inteligencia artificial puede hacer cuando se le pide crear un producto real desde cero — con un asistente de IA trabajando junto a una persona desarrolladora, de la idea a la producción.
+Una app de citas construida **enteramente en producción, lista para escalar**, realizada con un **asistente de código de IA**.
 
 > **Licencia:** Creative Commons Atribución-NoComercial 4.0 (CC BY-NC 4.0). Podés copiar y compartir libremente — pero no usar con fines comerciales. Ver [`LICENSE`](./LICENSE).
 
@@ -14,7 +14,7 @@ Una app de citas construida para probar lo que la inteligencia artificial puede 
 
 FreeMatch es simple y transparente.
 
-- **No hay algoritmo de selección.** Los perfiles se te muestran y vos decidís con un swipe.
+- **No hay algoritmo de selección.** Los perfiles se muestran y el usuario decide con un swipe, sin aplicar más algoritmos.
 - **Sin seguimiento constante de tu ubicación.** Tu zona general se usa solo para mostrarte gente cercana, desde un centroide a nivel de ciudad — nunca tu posición exacta.
 
 Incluye funcionalidad real: autenticación y recuperación de contraseña, fotos, matches, chat en tiempo real, edición de perfil, moderación NSFW de fotos, donaciones e internacionalización completa **ES/EN**.
@@ -95,7 +95,7 @@ Las guías completas de setup y deployment están en [`docs/`](./docs).
 
 # FreeMatch (en)
 
-A dating app built to test what artificial intelligence can do when asked to create a real product from scratch — with an AI assistant working alongside a human developer from idea to production.
+A dating app built **entirely for production, ready to scale**, made with an **AI code assistant**.
 
 > **License:** Creative Commons Attribution-NonCommercial 4.0 (CC BY-NC 4.0). Copy and share freely — but no commercial use. See [`LICENSE`](./LICENSE).
 
@@ -105,7 +105,7 @@ A dating app built to test what artificial intelligence can do when asked to cre
 
 FreeMatch is simple and transparent.
 
-- **No selection algorithm.** Profiles are shown to you and you decide with a swipe.
+- **No selection algorithm.** Profiles are shown and the user decides with a swipe, with no further algorithms applied.
 - **No constant location tracking.** Your general area is used only to show people near you, from a coarse city-level centroid — never your exact position.
 
 It includes a real feature set: auth and password recovery, photos, matching, real-time chat, profile editing, NSFW photo moderation, donations, and full **ES/EN** i18n.
