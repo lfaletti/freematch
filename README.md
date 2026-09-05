@@ -33,7 +33,7 @@ La app se construyó de forma **iterativa**:
 - **Pasos incrementales**: cada cambio se testeaba a medida que se avanzaba.
 - **Corrección continua** sobre la marcha, ajustando según los resultados de las pruebas.
 
-En lugar de pedirle a la IA que generara todo de una sola vez, el trabajo se fue guiando por pequeños pasos verificables, corrigiendo los errores detectados en cada iteración y construyendo la app de forma estable y gradual.
+En lugar de pedirle a la IA que generara todo de una sola vez, el trabajo se fue guiando por pequeños pasos verificables, corrigiendo los errores detectados en cada iteración y construyendo la app de forma estable y gradual — pero sin tocar una línea de código.
 
 ---
 
@@ -128,7 +128,7 @@ The app was built **iteratively**:
 - **Incremental steps**: each change was tested as we went along.
 - **Continuous correction** on the fly, adjusting based on test results.
 
-Instead of asking the AI to generate everything at once, the work was guided through small, verifiable steps — fixing issues as they appeared in each iteration and building the app in a stable, gradual way.
+Instead of asking the AI to generate everything at once, the work was guided through small, verifiable steps — fixing issues as they appeared in each iteration and building the app in a stable, gradual way — without touching a single line of code.
 
 ---
 
