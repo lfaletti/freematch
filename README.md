@@ -16,17 +16,19 @@ FreeMatch is **simple and transparent**.
 
 - **No matching algorithms.** Profiles are shown to you and you decide with a swipe. Nothing guesses who you "should" like.
 - **No constant location tracking.** Your general area is used only to show people near you, from a coarse city-level centroid — never your exact position.
-- **Created to test AI.** A proof that AI can architect, build and ship a full cross-platform app, not just write snippets.
 
 It includes a real feature set: auth and password recovery, photos, matching, real-time chat, profile editing, NSFW photo moderation, donations, and full **ES/EN** i18n.
 
 ---
 
-## The AI models behind it
+## Models used
 
-The entire app was developed by an AI pair-programmer. **Claude** was used initially, and **DeepSeek Flash** handled most of the rest throughout development — from architecture to shipping.
+The entire app was developed by an AI pair-programmer running on **OpenClaw**:
 
-Notably, the whole project cost **less than $100** in AI usage.
+- **Claude** — used initially.
+- **DeepSeek Flash** — used for most of the rest of the development.
+
+The whole project cost less than $100 in AI usage.
 
 ---
 
@@ -82,17 +84,19 @@ FreeMatch es **simple y transparente**.
 
 - **Sin algoritmos de matching.** Los perfiles se te muestran y vos decidís con un swipe. Nada adivina quién "debería" gustarte.
 - **Sin seguimiento constante de tu ubicación.** Tu zona general se usa solo para mostrarte gente cercana, desde un centroide a nivel de ciudad — nunca tu posición exacta.
-- **Creada para probar la IA.** Una prueba de que la IA puede arquitecturar, construir y publicar una app multiplataforma completa, no solo escribir snippets.
 
 Incluye funcionalidad real: autenticación y recuperación de contraseña, fotos, matches, chat en tiempo real, edición de perfil, moderación NSFW de fotos, donaciones e internacionalización completa **ES/EN**.
 
 ---
 
-## Los modelos de IA detrás
+## Modelos usados
 
-Toda la app fue desarrollada por una IA programadora. **Claude** se usó inicialmente, y **DeepSeek Flash** se encargó de la mayoría del resto durante el desarrollo — desde la arquitectura hasta la publicación.
+Toda la app fue desarrollada por una IA programadora corriendo en **OpenClaw**:
 
-Dato destacable: todo el proyecto costó **menos de $100** en uso de IA.
+- **Claude** — se usó inicialmente.
+- **DeepSeek Flash** — se usó para la mayoría del resto del desarrollo.
+
+Todo el proyecto costó menos de $100 en uso de IA.
 
 ---
 
