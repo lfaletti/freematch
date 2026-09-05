@@ -22,6 +22,8 @@ It includes a real feature set: auth and password recovery, photos, matching, re
 
 The entire app was developed by an AI pair-programmer. **Claude** was used initially, and **DeepSeek Flash** handled most of the rest throughout development — from architecture to shipping.
 
+Notably, the whole project cost **less than $100** in AI usage.
+
 ---
 
 ## Tech stack
@@ -83,6 +85,8 @@ Incluye funcionalidad real: autenticación y recuperación de contraseña, fotos
 ## Los modelos de IA detrás
 
 Toda la app fue desarrollada por una IA programadora. **Claude** se usó inicialmente, y **DeepSeek Flash** se encargó de la mayoría del resto durante el desarrollo — desde la arquitectura hasta la publicación.
+
+Dato destacable: todo el proyecto costó **menos de $100** en uso de IA.
 
 ---
 
