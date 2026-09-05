@@ -32,6 +32,17 @@ The whole project cost less than $100 in AI usage.
 
 ---
 
+## Development time
+
+The work was spread over several months with real breaks in between. Based on the commit history:
+
+- **Calendar span:** ~71 days (26 Jun – 4 Sep)
+- **Active days:** 26 (with commits)
+- **Total commits:** ~187
+- **Estimated real work invested: ~100 hours** across 26 development days — roughly 13 8-hour working days of focused effort to go from idea to a production-ready app.
+
+---
+
 ## Tech stack
 
 | Layer | Technology |
@@ -97,6 +108,17 @@ Toda la app fue desarrollada por una IA programadora corriendo en **OpenClaw**:
 - **DeepSeek Flash** — se usó para la mayoría del resto del desarrollo.
 
 Todo el proyecto costó menos de $100 en uso de IA.
+
+---
+
+## Tiempo de desarrollo
+
+El trabajo se extendió por varios meses con cortes reales en el medio. Según el historial de commits:
+
+- **Período de calendario:** ~71 días (26 jun – 4 sep)
+- **Días activos:** 26 (con commits)
+- **Total de commits:** ~187
+- **Tiempo real de trabajo estimado: ~100 horas** repartidas en 26 días de desarrollo — unas **13 jornadas de 8 h** de esfuerzo concentrado para pasar de la idea a una app lista para producción.
 
 ---
 
