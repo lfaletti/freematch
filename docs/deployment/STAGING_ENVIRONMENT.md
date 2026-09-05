@@ -150,7 +150,7 @@ For quick cloud-based dev:
 
 ### Staging (MinIO)
 - Uses local MinIO container (no external credentials needed)
-- Bucket: `REDACTED_RW_ENV`
+- Bucket: `freematch-staging`
 - Public endpoint: `http://localhost:9002` (local) or your VPS IP
 
 ### Production (S3/R2)

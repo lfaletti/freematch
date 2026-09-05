@@ -17,7 +17,7 @@ JWT_SECRET=your-generated-secret-here
 2. **DATABASE_URL** = `${{ Postgres.DATABASE_URL }}` (Railway auto-injects PostgreSQL URL)
 3. **REDIS_URL** = `${{ Redis.PRIVATE_URL }}` (Railway auto-injects Redis URL)
 4. **PORT** = `3000` (must match Dockerfile EXPOSE)
-5. **CORS_ORIGIN** = Your Vercel URL (e.g., `https://freematch-workspace.vercel.app`)
+5. **CORS_ORIGIN** = Your Vercel URL (e.g., `https://your-app.vercel.app`)
 6. **JWT_SECRET** = Generated via: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
 ### Generated JWT_SECRET Example:
@@ -53,7 +53,7 @@ NODE_ENV=production
 
 ```
 NODE_ENV=development
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/freematch
+DATABASE_URL=postgresql://postgres:changeme@localhost:5432/freematch
 REDIS_URL=redis://localhost:6379
 PORT=3000
 CORS_ORIGIN=http://localhost:19006

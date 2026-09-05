@@ -58,7 +58,7 @@ En **Settings** → **Build & Development Settings**:
 
 1. **Deploy** - Vercel auto-despliega
 2. Ver progreso en **Deployments**
-3. URL pública: `freematch-workspace.vercel.app` (o personalizada)
+3. URL pública: `your-app.vercel.app` (o personalizada)
 
 ## Paso 7: Conectar Dominio Personalizado
 
@@ -73,7 +73,7 @@ Backend debe permitir requests desde Vercel:
 
 ```bash
 # En Railway Backend → Variables
-CORS_ORIGIN=https://freematch-workspace.vercel.app,https://app.yourdomain.com
+CORS_ORIGIN=https://your-app.vercel.app,https://app.yourdomain.com
 ```
 
 ## Verificar Conectividad

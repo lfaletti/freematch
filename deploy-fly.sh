@@ -19,7 +19,7 @@ echo "Preparing deployment to Fly.io ($ENVIRONMENT)..."
 if [ "$ENVIRONMENT" = "production" ]; then
   FLY_APP="freematch-prod"
 else
-  FLY_APP="REDACTED_RW_ENV"
+  FLY_APP="freematch-staging"
 fi
 
 echo "Deploying to Fly app: $FLY_APP"

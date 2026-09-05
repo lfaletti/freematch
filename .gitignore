@@ -39,3 +39,7 @@ backend/uploads/
 
 .vercel
 .env*
+
+# Dev test scripts (hardcoded test credentials) — keep out of public repo
+test-script.ps1
+test-photos.js

@@ -191,7 +191,7 @@ curl https://your-backend-url.railway.app/health
 
 1. Deployment completes automatically
 2. Click on latest deployment
-3. Copy **Production URL** (looks like: `freematch-workspace.vercel.app`)
+3. Copy **Production URL** (looks like: `your-app.vercel.app`)
 4. **Save this URL**
 
 Test:

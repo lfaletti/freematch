@@ -25,7 +25,7 @@ elseif ($Service -eq "fly") {
         exit 1
     }
 
-    $flyApp = if ($Environment -eq "production") { "freematch-prod" } else { "REDACTED_RW_ENV" }
+    $flyApp = if ($Environment -eq "production") { "freematch-prod" } else { "freematch-staging" }
     
     Write-Host "Deploying to Fly app: $flyApp"
     flyctl deploy --app $flyApp

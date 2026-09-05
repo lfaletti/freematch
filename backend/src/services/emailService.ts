@@ -20,7 +20,7 @@ import { Resend } from 'resend';
 
 const API_KEY = process.env.RESEND_API_KEY || '';
 const FROM = process.env.EMAIL_FROM || 'FreeMatch <no-reply@freematch.app>';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://freematch-workspace.vercel.app';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:8081';
 
 // Singleton — resend SDK just wraps a fetch call, cheap to keep around.
 let _client: Resend | null = null;

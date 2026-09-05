@@ -266,7 +266,7 @@ NODE_ENV=development
 PORT=3000
 
 # Local PostgreSQL
-DATABASE_URL=postgresql://freematch:freematch123@localhost:5432/freematch_db
+DATABASE_URL=postgresql://freematch:changeme@localhost:5432/freematch_db
 
 # Local Redis
 REDIS_URL=redis://localhost:6379

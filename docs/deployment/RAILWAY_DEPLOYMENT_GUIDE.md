@@ -3,7 +3,7 @@
 ## Project Info
 - **Repo:** `https://github.com/lfaletti/freematch`
 - **Railway Project:** `REDACTED_RW_PROJECT` (ID: `REDACTED_PROJECT_ID`)
-- **Staging Environment:** `REDACTED_RW_ENV` (ID: `REDACTED_ENV_ID`)
+- **Staging Environment:** `freematch-staging` (ID: `REDACTED_ENV_ID`)
 - **Backend Service ID:** `REDACTED_SERVICE_ID`
 - **Postgres Service ID:** `7de58101-4951-4f8a-9aa3-0fc2503e4c3a`
 - **Redis Service ID:** `78f2b3bb-1a28-4ea4-ac33-f41ec53d1988`
@@ -42,7 +42,7 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 ```
 
-### Backend Environment Variables (`REDACTED_RW_ENV`)
+### Backend Environment Variables (`freematch-staging`)
 ```
 NODE_ENV=staging
 DATABASE_URL=${{Postgres.DATABASE_URL}}
