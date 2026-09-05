@@ -18,6 +18,12 @@ It includes a real feature set: auth and password recovery, photos, matching, re
 
 ---
 
+## The AI models behind it
+
+The entire app was developed by an AI pair-programmer. **Claude** was used initially, and **DeepSeek Flash** handled most of the rest throughout development — from architecture to shipping.
+
+---
+
 ## Tech stack
 
 | Layer | Technology |
@@ -71,6 +77,12 @@ FreeMatch es **simple y transparente**.
 - **Creada para probar la IA.** Una prueba de que la IA puede arquitecturar, construir y publicar una app multiplataforma completa, no solo escribir snippets.
 
 Incluye funcionalidad real: autenticación y recuperación de contraseña, fotos, matches, chat en tiempo real, edición de perfil, moderación NSFW de fotos, donaciones e internacionalización completa **ES/EN**.
+
+---
+
+## Los modelos de IA detrás
+
+Toda la app fue desarrollada por una IA programadora. **Claude** se usó inicialmente, y **DeepSeek Flash** se encargó de la mayoría del resto durante el desarrollo — desde la arquitectura hasta la publicación.
 
 ---
 
