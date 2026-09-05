@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Keyboard,
+  Modal,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
@@ -27,9 +28,7 @@ interface Props {
   onChange: (city: string) => void;
   onSelectCity?: (city: City) => void;
   placeholder?: string;
-  /** Called with true when the dropdown opens, false when it closes. Lets the
-   *  parent (EditProfile) raise the z-index of THIS field so the open list
-   *  truly paints above the following sibling field ("Radio de búsqueda"). */
+  /** Called with true when the dropdown opens, false when it closes. */
   onOpenChange?: (open: boolean) => void;
 }
 
@@ -42,6 +41,22 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
   const [results, setResults] = useState<City[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  // Screen-position anchor for the Modal-rendered dropdown (a Modal covers the
+  // whole screen, so the list must be placed using viewport coordinates).
+  const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number } | null>(null);
+  const inputWrapRef = useRef<View>(null);
+
+  // Measure the input's on-screen position so the Modal dropdown sits right
+  // below it. Only render the list once we have a real anchor (avoids a flash
+  // at the top-left corner).
+  const anchorDropdown = useCallback(() => {
+    const node = inputWrapRef.current as any;
+    if (node && typeof node.measureInWindow === 'function') {
+      node.measureInWindow((x: number, y: number, w: number, h: number) => {
+        setDropdownStyle({ top: y + h + 4, left: x, width: w });
+      });
+    }
+  }, []);
 
   const searchCities = useCallback(async (text: string) => {
     if (text.length < 2) {
@@ -73,35 +88,37 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
     return () => clearTimeout(timer);
   }, [query, searchCities]);
 
+  const closeDropdown = useCallback(() => {
+    setShowDropdown(false);
+    onOpenChange?.(false);
+  }, [onOpenChange]);
+
   const handleSelect = (city: City) => {
     setQuery(city.display);
     onChange(city.display);
     onSelectCity?.(city);
-    setShowDropdown(false);
-    onOpenChange?.(false);
+    closeDropdown();
     Keyboard.dismiss();
   };
 
   const handleFocus = () => {
     setShowDropdown(true);
     onOpenChange?.(true);
+    anchorDropdown();
     if (query.length >= 2 && results.length > 0) {
       searchCities(query);
     }
   };
 
-  const handleBlur = () => {
-    // Delay hiding to allow tap on dropdown item
-    setTimeout(() => {
-      setShowDropdown(false);
-      onOpenChange?.(false);
-    }, 200);
-  };
-
+  // The input's position can shift while the modal is open (scroll, layout),
+  // so re-anchor every time the dropdown transitions to open.
   const dropdownOpen = showDropdown && results.length > 0;
+  useEffect(() => {
+    if (dropdownOpen) anchorDropdown();
+  }, [dropdownOpen, anchorDropdown]);
 
   return (
-    <View style={[styles.container, dropdownOpen && styles.containerOpen]}>
+    <View style={styles.container} ref={inputWrapRef}>
       <TextInput
         style={styles.input}
         value={query}
@@ -109,7 +126,6 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
         placeholder={placeholder ?? t('editProfile.locationPlaceholder')}
         placeholderTextColor={colors.textMuted}
         onFocus={handleFocus}
-        onBlur={handleBlur}
         autoCapitalize="words"
         autoCorrect={false}
       />
@@ -120,24 +136,33 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
         </View>
       )}
 
-      {dropdownOpen && (
-        <View style={styles.dropdown}>
-          <FlatList
-            data={results}
-            keyExtractor={(_item, index) => `${_item.name}-${index}`}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.resultItem}
-                onPress={() => handleSelect(item)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.resultText}>{item.display}</Text>
-              </TouchableOpacity>
-            )}
-          />
+      {/* The dropdown is rendered in a transparent Modal so it is always drawn
+          ON TOP of the following form fields (e.g. "Radio de búsqueda"),
+          regardless of the parent ScrollView's stacking context. The backdrop
+          and the list are SIBLINGS (not nested): the list sits above the
+          backdrop, so tapping a result selects it instead of the backdrop
+          swallowing the press and closing the modal first. */}
+      <Modal visible={dropdownOpen && dropdownStyle !== null} transparent animationType="none" onRequestClose={closeDropdown}>
+        <View style={styles.overlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeDropdown} />
+          <View style={[styles.dropdown, dropdownStyle]}>
+            <FlatList
+              data={results}
+              keyExtractor={(_item, index) => `${_item.name}-${index}`}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.resultItem}
+                  onPress={() => handleSelect(item)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.resultText}>{item.display}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 }
@@ -145,14 +170,6 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-  },
-  // When the dropdown is open, lift the WHOLE picker above the sibling fields
-  // that follow it in the form (e.g. "Radio de búsqueda"). zIndex only competes
-  // among siblings in the same stacking context, so the container itself must
-  // carry the z-index or later siblings paint over the open list on web.
-  containerOpen: {
-    zIndex: 9999,
-    elevation: 100,
   },
   input: {
     backgroundColor: colors.surface,
@@ -169,26 +186,27 @@ const styles = StyleSheet.create({
     right: 16,
     top: 14,
   },
+  // Full-screen transparent layer behind the list. The list is a sibling that
+  // renders ABOVE the backdrop (declared after it), so item presses land on the
+  // list while presses anywhere else land on the backdrop and close the modal.
+  overlay: {
+    flex: 1,
+  },
   dropdown: {
     position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    // Fondo totalmente opaco y distintivo (más oscuro que los campos de atrás,
-    // #1A1A1A) para que la lista se lea como un panel sólido encima y nunca se
-    // "transponga" con el contenido que queda detrás (ej. Radio de búsqueda).
+    // Fondo totalmente opaco y distintivo para que la lista se lea como un
+    // panel sólido encima de lo que quede detrás (ej. Radio de búsqueda).
     backgroundColor: '#222222',
-    opacity: 1,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    marginTop: 4,
-    maxHeight: 200,
-    zIndex: 9999,
-    elevation: 100,
+    maxHeight: 220,
+    overflow: 'hidden',
+    zIndex: 10,
+    elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
   },
   resultItem: {
