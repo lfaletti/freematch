@@ -149,7 +149,11 @@ export default function EditProfileScreen({ navigation }: Props) {
     try {
       const updated = await updateProfile({
         name: name.trim(),
-        bio: bio.trim() || undefined,
+        // Send bio always (even when empty): the backend only updates a field
+        // when it is !== undefined, so an empty bio must be sent as '' to get
+        // cleared — `|| undefined` used to swallow the empty string and the
+        // backend kept the old bio.
+        bio: bio.trim(),
         bornDate: bornDate.trim() || undefined,
         location: location.trim() || undefined,
         latitude: latitude ?? undefined,
