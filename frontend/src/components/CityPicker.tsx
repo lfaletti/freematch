@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Keyboard,
   Modal,
+  Platform,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
@@ -35,20 +36,21 @@ interface Props {
 // Backend URL - Railway staging (fallback to local for dev)
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
+const IS_WEB = Platform.OS === 'web';
+
 export default function CityPicker({ value, onChange, onSelectCity, placeholder, onOpenChange }: Props) {
   const { t } = useTranslation();
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<City[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  // Screen-position anchor for the Modal-rendered dropdown (a Modal covers the
-  // whole screen, so the list must be placed using viewport coordinates).
+  // Web only: screen-position anchor for the Modal-rendered dropdown (a Modal
+  // covers the whole screen, so the list must be placed with viewport coords).
   const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number } | null>(null);
   const inputWrapRef = useRef<View>(null);
 
   // Measure the input's on-screen position so the Modal dropdown sits right
-  // below it. Only render the list once we have a real anchor (avoids a flash
-  // at the top-left corner).
+  // below it. Only used on web.
   const anchorDropdown = useCallback(() => {
     const node = inputWrapRef.current as any;
     if (node && typeof node.measureInWindow === 'function') {
@@ -104,18 +106,20 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
   const handleFocus = () => {
     setShowDropdown(true);
     onOpenChange?.(true);
-    anchorDropdown();
+    if (IS_WEB) {
+      anchorDropdown();
+    }
     if (query.length >= 2 && results.length > 0) {
       searchCities(query);
     }
   };
 
-  // The input's position can shift while the modal is open (scroll, layout),
-  // so re-anchor every time the dropdown transitions to open.
-  const dropdownOpen = showDropdown && results.length > 0;
+  // Web: re-anchor the Modal list whenever the dropdown transitions to open
+  // (the input's on-screen position can shift while the modal is up).
+  const webDropdownOpen = showDropdown && results.length > 0 && dropdownStyle !== null;
   useEffect(() => {
-    if (dropdownOpen) anchorDropdown();
-  }, [dropdownOpen, anchorDropdown]);
+    if (IS_WEB && showDropdown && results.length > 0) anchorDropdown();
+  }, [showDropdown, results.length, anchorDropdown]);
 
   return (
     <View style={styles.container} ref={inputWrapRef}>
@@ -136,16 +140,45 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
         </View>
       )}
 
-      {/* The dropdown is rendered in a transparent Modal so it is always drawn
-          ON TOP of the following form fields (e.g. "Radio de búsqueda"),
-          regardless of the parent ScrollView's stacking context. The backdrop
-          and the list are SIBLINGS (not nested): the list sits above the
-          backdrop, so tapping a result selects it instead of the backdrop
-          swallowing the press and closing the modal first. */}
-      <Modal visible={dropdownOpen && dropdownStyle !== null} transparent animationType="none" onRequestClose={closeDropdown}>
-        <View style={styles.overlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeDropdown} />
-          <View style={[styles.dropdown, dropdownStyle]}>
+      {IS_WEB ? (
+        /* WEB: the dropdown is rendered in a transparent Modal so it is always
+           drawn ON TOP of the following form fields (e.g. "Radio de búsqueda"),
+           regardless of the parent ScrollView's stacking context. The backdrop
+           and the list are SIBLINGS (not nested): the list sits above the
+           backdrop so tapping a result selects it. */
+        <Modal visible={webDropdownOpen} transparent animationType="none" onRequestClose={closeDropdown}>
+          <View style={styles.overlay}>
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeDropdown} />
+            <View style={[styles.dropdown, dropdownStyle]}>
+              <FlatList
+                data={results}
+                keyExtractor={(_item, index) => `${_item.name}-${index}`}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.resultItem}
+                    onPress={() => handleSelect(item)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.resultText}>{item.display}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+      ) : (
+        /* MOBILE: the dropdown is rendered INLINE (absolutely positioned under
+           the input, in the regular view tree) — NOT inside a Modal. A native
+           React Native <Modal> creates a separate window that takes over the
+           responder system and prevents the TextInput from receiving focus, so
+           the on-screen keyboard would never appear. On iOS/Android the parent
+           ScrollView doesn't create the stacking-context problem web has, so an
+           inline, elevated dropdown is the correct choice and keeps the
+           keyboard working. */
+        showDropdown &&
+        results.length > 0 && (
+          <View style={styles.dropdownMobile}>
             <FlatList
               data={results}
               keyExtractor={(_item, index) => `${_item.name}-${index}`}
@@ -161,8 +194,8 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
               )}
             />
           </View>
-        </View>
-      </Modal>
+        )
+      )}
     </View>
   );
 }
@@ -186,9 +219,7 @@ const styles = StyleSheet.create({
     right: 16,
     top: 14,
   },
-  // Full-screen transparent layer behind the list. The list is a sibling that
-  // renders ABOVE the backdrop (declared after it), so item presses land on the
-  // list while presses anywhere else land on the backdrop and close the modal.
+  // Web Modal layers.
   overlay: {
     flex: 1,
   },
@@ -204,6 +235,27 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     zIndex: 10,
     elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+  },
+  // Mobile inline dropdown. High zIndex/elevation so it paints above the
+  // following sibling fields on the native side too (defensive).
+  dropdownMobile: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '100%',
+    marginTop: 4,
+    backgroundColor: '#222222',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    maxHeight: 220,
+    overflow: 'hidden',
+    zIndex: 9999,
+    elevation: 100,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
