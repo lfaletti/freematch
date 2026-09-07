@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Keyboard,
+  Platform,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
@@ -29,36 +30,182 @@ interface Props {
   placeholder?: string;
   /** Called with true when the dropdown opens, false when it closes. */
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Optional bias coordinates from the user's profile (the centroid of the city
+   * they previously chose). Used to rank nearby cities first on Geoapify. The
+   * component also requests a one-off, cached device geolocation which takes
+   * precedence when available.
+   */
+  biasLat?: number | null;
+  biasLon?: number | null;
 }
 
 // Backend URL - Railway staging (fallback to local for dev)
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
-export default function CityPicker({ value, onChange, onSelectCity, placeholder, onOpenChange }: Props) {
+const GEOLOC_CACHE_KEY = 'freematch_geoloc_cache';
+const IS_WEB = Platform.OS === 'web';
+
+// Normalize text for accent-insensitive matching: lowercase + strip diacritics
+// (Bahía -> bahia). This is only used to order Geoapify's results locally; the
+// search itself is delegated to Geoapify which already handles accents.
+function normalize(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+interface GeoCache {
+  lat: number;
+  lon: number;
+  at: number;
+}
+
+function loadCachedGeoloc(): GeoCache | null {
+  if (!IS_WEB) return null;
+  try {
+    const raw = localStorage.getItem(GEOLOC_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as GeoCache;
+    if (
+      parsed &&
+      typeof parsed.lat === 'number' &&
+      typeof parsed.lon === 'number' &&
+      Number.isFinite(parsed.lat) &&
+      Number.isFinite(parsed.lon)
+    ) {
+      return parsed;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+// Request the device location ONCE and remember it (so we never spam the
+// permission prompt). Respects the product guardrail: a one-off, user-consented
+// geolocation used to rank cities — never continuous tracking. On native a
+// proper expo-location integration would wrap this; today the app runs on web.
+function resolveGeolocation(): Promise<GeoCache | null> {
+  const cached = loadCachedGeoloc();
+  if (cached) return Promise.resolve(cached);
+
+  return new Promise((resolve) => {
+    if (!IS_WEB || typeof navigator === 'undefined' || !navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const entry: GeoCache = {
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          at: Date.now(),
+        };
+        try {
+          localStorage.setItem(GEOLOC_CACHE_KEY, JSON.stringify(entry));
+        } catch {
+          /* ignore */
+        }
+        resolve(entry);
+      },
+      () => resolve(null), // denied/unavailable → fall back to profile bias
+      { enableHighAccuracy: false, timeout: 7000, maximumAge: 15 * 60 * 1000 },
+    );
+  });
+}
+
+// Score how strongly a candidate result matches the user's typed prefix. Higher
+// is better. Used to override Geoapify's ranking when it surfaces an exact-name
+// match from the wrong country (e.g. "Bahia, BR") over a prefix match for the
+// nearby city the user actually means.
+function prefixScore(candidate: City, qNorm: string): number {
+  if (!qNorm) return 0;
+  // Search over the most relevant name fields.
+  const haystack = normalize([candidate.city, candidate.name, candidate.state, candidate.country].filter(Boolean).join(' '));
+  const nameNorm = normalize(candidate.city || candidate.name);
+  if (nameNorm === qNorm) return 1000; // exact city name match
+  if (nameNorm.startsWith(qNorm)) return 500; // city starts with prefix
+  if (haystack.startsWith(qNorm)) return 400; // display starts with prefix
+  if (haystack.includes(qNorm)) return 200; // prefix appears somewhere
+  return 0;
+}
+
+export default function CityPicker({
+  value,
+  onChange,
+  onSelectCity,
+  placeholder,
+  onOpenChange,
+  biasLat,
+  biasLon,
+}: Props) {
   const { t } = useTranslation();
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<City[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const inputRef = useRef<TextInput>(null);
 
-  const searchCities = useCallback(async (text: string) => {
-    if (text.length < 2) {
-      setResults([]);
+  // The effective bias used for ranking. Prefers a real (cached) device
+  // location; otherwise falls back to the profile centroid passed as props.
+  const [useBias, setUseBias] = useState<{ lat: number; lon: number } | null>(null);
+  const geolocRequested = useRef(false);
+
+  // On first focus we request the device location once (it is cached to disk so
+  // later sessions reuse it without prompting again). We only ask when the field
+  // is actually about to be used — never on app start.
+  const ensureBias = useCallback(async () => {
+    if (geolocRequested.current) return;
+    geolocRequested.current = true;
+    const geo = await resolveGeolocation();
+    if (geo) {
+      const rounded = { lat: geo.lat, lon: geo.lon };
+      setUseBias(rounded);
       return;
     }
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/api/cities?q=${encodeURIComponent(text)}`);
-      const data = await response.json();
-      setResults(data);
-    } catch (err) {
-      console.error('Failed to search cities:', err);
-      setResults([]);
-    } finally {
-      setLoading(false);
+    // No device location (denied / unsupported): use the profile's city centroid
+    // if the host screen provided one.
+    if (typeof biasLat === 'number' && typeof biasLon === 'number') {
+      setUseBias({ lat: biasLat, lon: biasLon });
     }
-  }, []);
+  }, [biasLat, biasLon]);
+
+  const searchCities = useCallback(
+    async (text: string) => {
+      if (text.length < 2) {
+        setResults([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        let url = `${API_BASE}/api/cities?q=${encodeURIComponent(text)}`;
+        if (useBias) {
+          url += `&lat=${useBias.lat}&lon=${useBias.lon}`;
+        }
+        const response = await fetch(url);
+        const data = (await response.json()) as City[];
+        if (!Array.isArray(data)) {
+          setResults([]);
+          return;
+        }
+        // Local re-rank: prefer prefix matches (accent-insensitive) that point
+        // to the city the user is typing, rather than trusting Geoapify's
+        // raw order (which can surface an exact-name match from another
+        // country). Stability is preserved for ties (sort is stable in V8).
+        const qNorm = normalize(text);
+        const ranked = [...data].sort((a, b) => prefixScore(b, qNorm) - prefixScore(a, qNorm));
+        setResults(ranked);
+      } catch (err) {
+        console.error('Failed to search cities:', err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [useBias],
+  );
 
   // Debounce search
   useEffect(() => {
@@ -81,26 +228,11 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
     Keyboard.dismiss();
   };
 
-  // NOTE: we deliberately do NOT wrap the dropdown in a react-native <Modal>.
-  //
-  // In react-native-web running inside a mobile browser (e.g. Chrome on
-  // Android/iOS), a transparent <Modal> mounts a full-screen position:fixed
-  // overlay. While that overlay is in the tree it reliably breaks the soft
-  // keyboard: tapping the <input> behind/under it never brings up the keyboard
-  // or steals first tap. A plain absolutely-positioned dropdown (siblings under
-  // the input) keeps normal focus so the keyboard works on touch devices.
-  //
-  // For the old reason a Modal was chosen (making the list paint ABOVE the
-  // following form fields when the parent ScrollView clips/orders siblings):
-  // instead of a portal we raise the wrapper's z-index/elevation while open.
-  // The parent field (EditProfile/CreateAccount) also lifts via onOpenChange,
-  // so the open list always stacks above the sibling that follows it.
   const dropdownOpen = showDropdown && results.length > 0;
 
   return (
     <View style={styles.container}>
       <TextInput
-        ref={inputRef}
         style={styles.input}
         value={query}
         onChangeText={setQuery}
@@ -109,11 +241,11 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
         onFocus={() => {
           setShowDropdown(true);
           onOpenChange?.(true);
+          ensureBias();
           if (query.length >= 2) searchCities(query);
         }}
         onBlur={() => {
-          // Small delay so a tap on a result item registers before we unmount
-          // the list on blur.
+          // delay so a tap on a result item registers before the list unmounts
           setTimeout(closeDropdown, 120);
         }}
         autoCapitalize="words"
@@ -127,7 +259,7 @@ export default function CityPicker({ value, onChange, onSelectCity, placeholder,
       )}
 
       {dropdownOpen && (
-        <View style={[styles.dropdown, showDropdown && styles.dropdownRaised]}>
+        <View style={styles.dropdown}>
           <FlatList
             data={results}
             keyboardShouldPersistTaps="handled"
@@ -178,18 +310,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    maxHeight: 220,
-    overflow: 'visible',
-    // These let the list escape a parent with overflow: hidden on web while it
-    // still stacking above later siblings.
+    zIndex: 9999,
+    elevation: 9999,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
-  },
-  dropdownRaised: {
-    zIndex: 9999,
-    elevation: 9999,
   },
   list: {
     maxHeight: 220,

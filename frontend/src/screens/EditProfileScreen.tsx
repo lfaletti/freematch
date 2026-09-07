@@ -333,6 +333,8 @@ export default function EditProfileScreen({ navigation }: Props) {
             onChange={setLocation}
             onSelectCity={(city) => { setLatitude(city.lat); setLongitude(city.lon); }}
             onOpenChange={setCityDropdownOpen}
+            biasLat={latitude}
+            biasLon={longitude}
           />
         </View>
 

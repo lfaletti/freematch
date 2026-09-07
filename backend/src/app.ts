@@ -152,7 +152,32 @@ export function createApp() {
       return res.json([]);
     }
 
-    const cached = citiesCache.get(query.toLowerCase());
+    // Optional user location from the client's geolocation permission (one-off,
+    // cached client-side, never tracked). When present it biases Geoapify so
+    // results near the user rank first — which also fixes cases like typing
+    // "bahia" near Buenos Aires so "Bahía Blanca, AR" beats "Bahia, BR".
+    const latRaw = req.query.lat;
+    const lonRaw = req.query.lon;
+    let bias: { lat: number; lon: number } | null = null;
+    const lat = Number(latRaw);
+    const lon = Number(lonRaw);
+    if (
+      latRaw !== undefined &&
+      lonRaw !== undefined &&
+      Number.isFinite(lat) &&
+      Number.isFinite(lon) &&
+      lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
+    ) {
+      bias = { lat, lon };
+    }
+
+    // Cache key must include the bias: the same text searched from a different
+    // location should not reuse another user's geographically-ranked results.
+    const cacheKey = bias
+      ? `${query.toLowerCase()}|${Math.round(lat * 100)}|${Math.round(lon * 100)}`
+      : `g0|${query.toLowerCase()}`;
+
+    const cached = citiesCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return res.json(cached.data);
     }
@@ -164,7 +189,12 @@ export function createApp() {
     }
 
     try {
-      const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&type=city&limit=10&format=json&apiKey=${apiKey}`;
+      // Ask for more results than we show so the client can re-order by prefix
+      // match locally; Geoapify's own ranking already favors the bias.
+      let url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&type=city&limit=15&format=json&apiKey=${apiKey}`;
+      if (bias) {
+        url += `&bias=proximity:${lon},${lat}`;
+      }
       const response = await fetch(url);
       const data = await response.json() as any;
 
@@ -182,7 +212,7 @@ export function createApp() {
         lon: r.lon,
       }));
 
-      citiesCache.set(query.toLowerCase(), { expiresAt: Date.now() + CITIES_CACHE_TTL_MS, data: cities });
+      citiesCache.set(cacheKey, { expiresAt: Date.now() + CITIES_CACHE_TTL_MS, data: cities });
       res.json(cities);
     } catch (err) {
       console.error('Geoapify error:', err);

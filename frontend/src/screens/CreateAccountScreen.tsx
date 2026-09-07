@@ -383,6 +383,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
           onChange={setLocation}
           onSelectCity={(city) => { setLatitude(city.lat); setLongitude(city.lon); }}
           placeholder={t('createAccount.locationPlaceholder')}
+          biasLat={latitude}
+          biasLon={longitude}
         />
       </View>
 
