@@ -17,7 +17,9 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
         created_at,
         latitude,
         longitude,
-        search_radius_km
+        search_radius_km,
+        age_min,
+        age_max
       FROM users WHERE id = $1
     ),
     ranked AS (
@@ -26,6 +28,8 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
          COALESCE(u.photo_url, (SELECT p.url FROM photos p WHERE p.user_id = u.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
          EXTRACT(YEAR FROM AGE(u.born_date))::integer AS age,
          my_user.search_radius_km AS my_radius,
+         my_user.age_min AS my_age_min,
+         my_user.age_max AS my_age_max,
          CASE WHEN my_user.latitude IS NOT NULL AND my_user.longitude IS NOT NULL
                    AND u.latitude IS NOT NULL AND u.longitude IS NOT NULL
               THEN (6371 * 2 * ASIN(SQRT(
@@ -66,8 +70,10 @@ export async function getAllUsers(sessionUserId: string, limit: number, offset: 
      -- Search-radius filter. No fallback: when the current user has a radius
      -- and coords, ONLY candidates within it appear (empty deck if none).
      -- Legacy accounts (no radius) keep the previous ordering-only behavior.
-     WHERE my_radius IS NULL
-        OR (distance_km IS NOT NULL AND distance_km <= my_radius)
+     WHERE (my_radius IS NULL
+        OR (distance_km IS NOT NULL AND distance_km <= my_radius))
+       AND (my_age_min IS NULL OR age >= my_age_min)
+       AND (my_age_max IS NULL OR age <= my_age_max)
      ORDER BY distance_km ASC NULLS LAST
      LIMIT $2 OFFSET $3`,
     [sessionUserId, limit, offset, REQUIRES_VERIFICATION_SINCE]
@@ -93,7 +99,7 @@ export async function getUserById(id: string) {
 // and phone_number (the owner is allowed to see them) but NEVER password_hash.
 export async function getOwnUserById(id: string) {
   const result = await query(
-    `SELECT id, name, email, phone_number, bio, born_date, interests, location, latitude, longitude, search_radius_km,
+    `SELECT id, name, email, phone_number, bio, born_date, interests, location, latitude, longitude, search_radius_km, age_min, age_max,
        is_mock, gender, seeking_gender, language, email_verified, created_at,
        COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
        EXTRACT(YEAR FROM AGE(born_date))::integer AS age
@@ -134,6 +140,8 @@ export async function updateUserProfile(userId: string, updates: {
   latitude?: number;
   longitude?: number;
   searchRadiusKm?: number;
+  ageMin?: number;
+  ageMax?: number;
   gender?: 'man' | 'woman' | 'other';
   seekingGender?: ('man' | 'woman' | 'other')[];
   language?: 'es' | 'en';
@@ -187,6 +195,16 @@ export async function updateUserProfile(userId: string, updates: {
     values.push(updates.searchRadiusKm);
     idx++;
   }
+  if (updates.ageMin !== undefined) {
+    fields.push(`age_min = $${idx}`);
+    values.push(updates.ageMin);
+    idx++;
+  }
+  if (updates.ageMax !== undefined) {
+    fields.push(`age_max = $${idx}`);
+    values.push(updates.ageMax);
+    idx++;
+  }
   if (updates.gender !== undefined) {
     fields.push(`gender = $${idx}`);
     values.push(updates.gender);
@@ -210,7 +228,7 @@ export async function updateUserProfile(userId: string, updates: {
 
   const result = await query(
     `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}
-       RETURNING id, name, email, phone_number, bio, born_date, interests, location, latitude, longitude, search_radius_km,
+       RETURNING id, name, email, phone_number, bio, born_date, interests, location, latitude, longitude, search_radius_km, age_min, age_max,
          is_mock, gender, seeking_gender, language,
          COALESCE(photo_url, (SELECT p.url FROM photos p WHERE p.user_id = users.id ORDER BY p.created_at ASC LIMIT 1)) AS photo_url,
          EXTRACT(YEAR FROM AGE(born_date))::integer AS age`,

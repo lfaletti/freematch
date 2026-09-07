@@ -18,6 +18,8 @@ export interface AuthResponse {
   latitude?: number;
   longitude?: number;
   searchRadiusKm?: number;
+  ageMin?: number;
+  ageMax?: number;
   emailVerified?: boolean;
   requiresVerification?: boolean;
 }
@@ -74,6 +76,8 @@ export const registerWithPhoto = async (
     latitude: number;
     longitude: number;
     searchRadiusKm: number;
+    ageMin?: number;
+    ageMax?: number;
     acceptedPrivacyPolicy?: boolean;
     acceptedTerms?: boolean;
   },
@@ -95,6 +99,8 @@ export const registerWithPhoto = async (
   formData.append('latitude', String(fields.latitude));
   formData.append('longitude', String(fields.longitude));
   formData.append('searchRadiusKm', String(fields.searchRadiusKm));
+  if (fields.ageMin !== undefined) formData.append('ageMin', String(fields.ageMin));
+  if (fields.ageMax !== undefined) formData.append('ageMax', String(fields.ageMax));
   formData.append('acceptedPrivacyPolicy', fields.acceptedPrivacyPolicy ? 'true' : 'false');
   formData.append('acceptedTerms', fields.acceptedTerms ? 'true' : 'false');
 
@@ -166,6 +172,8 @@ export interface SessionProfile {
   latitude?: number;
   longitude?: number;
   searchRadiusKm?: number;
+  ageMin?: number;
+  ageMax?: number;
   interests?: string[];
   gender?: string;
   seekingGender?: string[];

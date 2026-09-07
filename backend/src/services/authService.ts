@@ -87,6 +87,8 @@ export interface RegisterInput {
   latitude: number;
   longitude: number;
   searchRadiusKm: number;
+  ageMin?: number;
+  ageMax?: number;
   language?: 'es' | 'en';
   privacyAcceptedAt?: string; // ISO timestamp of when the user accepted the Privacy Policy
   termsAcceptedAt?: string;   // ISO timestamp of when the user accepted the Terms of Service
@@ -119,6 +121,8 @@ export interface AuthResponse {
   latitude?: number;
   longitude?: number;
   searchRadiusKm?: number;
+  ageMin?: number;
+  ageMax?: number;
   token: string;
   refreshToken: string;
 }
@@ -165,9 +169,10 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     `INSERT INTO users (
       id, name, email, password_hash, bio, born_date, phone_number, photo_url, is_mock,
       gender, seeking_gender, language, location, latitude, longitude, search_radius_km,
+      age_min, age_max,
       privacy_policy_accepted_at, terms_accepted_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-    RETURNING id, name, email, bio, born_date, phone_number, photo_url, gender, seeking_gender, language, location, latitude, longitude, search_radius_km`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+    RETURNING id, name, email, bio, born_date, phone_number, photo_url, gender, seeking_gender, language, location, latitude, longitude, search_radius_km, age_min, age_max`,
     [
       id,
       input.name,
@@ -184,6 +189,8 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
       input.latitude,
       input.longitude,
       input.searchRadiusKm,
+      input.ageMin ?? 18,
+      input.ageMax ?? 99,
       input.privacyAcceptedAt ?? null,
       input.termsAcceptedAt ?? null,
     ]
@@ -212,6 +219,8 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
     latitude: user.latitude,
     longitude: user.longitude,
     searchRadiusKm: user.search_radius_km,
+    ageMin: user.age_min,
+    ageMax: user.age_max,
     token,
     refreshToken,
   };
@@ -219,7 +228,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
 
 export async function loginUser(input: LoginInput): Promise<AuthResponse & { requiresVerification?: boolean } | null> {
   const result = await query(
-    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, created_at, gender, seeking_gender, language, location, latitude, longitude, search_radius_km
+    `SELECT id, name, email, password_hash, bio, born_date, phone_number, photo_url, email_verified, created_at, gender, seeking_gender, language, location, latitude, longitude, search_radius_km, age_min, age_max
      FROM users WHERE email = $1 AND is_mock = false`,
     [input.email]
   );
@@ -259,6 +268,8 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse & { req
     latitude: user.latitude,
     longitude: user.longitude,
     searchRadiusKm: user.search_radius_km,
+    ageMin: user.age_min,
+    ageMax: user.age_max,
     token,
     refreshToken,
   };

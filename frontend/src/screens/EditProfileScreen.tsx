@@ -21,6 +21,7 @@ import { colors } from '../theme/colors';
 import { storageService } from '../services/storageService';
 import CityPicker from '../components/CityPicker';
 import RadiusPicker from '../components/RadiusPicker';
+import AgeRangePicker from '../components/AgeRangePicker';
 import LanguagePicker from '../components/LanguagePicker';
 import i18n, { Language, saveLanguage } from '../i18n';
 
@@ -72,6 +73,8 @@ export default function EditProfileScreen({ navigation }: Props) {
   const [latitude, setLatitude] = useState<number | null>(session.latitude ?? null);
   const [longitude, setLongitude] = useState<number | null>(session.longitude ?? null);
   const [searchRadiusKm, setSearchRadiusKm] = useState(session.searchRadiusKm ?? 50);
+  const [ageMin, setAgeMin] = useState(session.ageMin ?? 18);
+  const [ageMax, setAgeMax] = useState(session.ageMax ?? 99);
   const [interestsText, setInterestsText] = useState(
     (session.interests ?? []).join(', '),
   );
@@ -159,6 +162,8 @@ export default function EditProfileScreen({ navigation }: Props) {
         latitude: latitude ?? undefined,
         longitude: longitude ?? undefined,
         searchRadiusKm,
+        ageMin,
+        ageMax,
         interests: interests.length > 0 ? interests : undefined,
         gender: gender ?? undefined,
         seekingGender: seekingGenders.length > 0 ? seekingGenders : undefined,
@@ -182,6 +187,8 @@ export default function EditProfileScreen({ navigation }: Props) {
           latitude: updated.latitude ?? latitude,
           longitude: updated.longitude ?? longitude,
           searchRadiusKm: updated.searchRadiusKm ?? searchRadiusKm,
+          ageMin: updated.ageMin ?? ageMin,
+          ageMax: updated.ageMax ?? ageMax,
           interests,
           gender: updated.gender ?? gender,
           seekingGender: updated.seekingGender ?? seekingGenders,
@@ -341,6 +348,19 @@ export default function EditProfileScreen({ navigation }: Props) {
         <View style={styles.field}>
           <Text style={styles.label}>{t('editProfile.radius')}</Text>
           <RadiusPicker value={searchRadiusKm} onChange={setSearchRadiusKm} />
+        </View>
+
+        {/* Preferred age range for the swipe deck (min/max of who to show).
+            Users pick who they want to see; defaults 18–99. */}
+        <View style={styles.field}>
+          <Text style={styles.label}>{t('editProfile.ageRange')}</Text>
+          <AgeRangePicker
+            min={ageMin}
+            max={ageMax}
+            minLabel={t('editProfile.ageMin')}
+            maxLabel={t('editProfile.ageMax')}
+            onChange={(mn, mx) => { setAgeMin(mn); setAgeMax(mx); }}
+          />
         </View>
 
         {/* Date of birth: editable for the age shown on the profile. On web a

@@ -177,7 +177,7 @@ function calculateAge(bornDate: string): number | null {
 
 router.post('/register', registerRateLimiter, registerIntervalMiddleware, memoryUpload.single('photo'), async (req, res) => {
   try {
-    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language, location, latitude, longitude, searchRadiusKm, acceptedPrivacyPolicy, acceptedTerms } = req.body;
+    const { name, email, password, bio, born_date, phone_number, gender, seekingGender, language, location, latitude, longitude, searchRadiusKm, ageMin, ageMax, acceptedPrivacyPolicy, acceptedTerms } = req.body;
 
     if (!name || !email || !password || !born_date) {
       res.status(400).json({ error: 'name, email, password, and born_date are required' });
@@ -216,6 +216,29 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
     const radius = Number(searchRadiusKm);
     if (!Number.isInteger(radius) || radius < 1 || radius > 100) {
       res.status(400).json({ error: 'searchRadiusKm must be an integer between 1 and 100' });
+      return;
+    }
+
+    // Preferred age range for the deck (optional at signup): integers 18-120,
+    // min <= max. Omitted → defaults (min 18 / max 99); the user can edit later.
+    let minAge = 18;
+    let maxAge = 99;
+    if (ageMin !== undefined) {
+      minAge = Number(ageMin);
+      if (!Number.isInteger(minAge) || minAge < 18 || minAge > 120) {
+        res.status(400).json({ error: 'ageMin must be an integer between 18 and 120' });
+        return;
+      }
+    }
+    if (ageMax !== undefined) {
+      maxAge = Number(ageMax);
+      if (!Number.isInteger(maxAge) || maxAge < 18 || maxAge > 120) {
+        res.status(400).json({ error: 'ageMax must be an integer between 18 and 120' });
+        return;
+      }
+    }
+    if (minAge > maxAge) {
+      res.status(400).json({ error: 'ageMin cannot be greater than ageMax' });
       return;
     }
 
@@ -278,6 +301,8 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       latitude: lat,
       longitude: lon,
       searchRadiusKm: radius,
+      ageMin: minAge,
+      ageMax: maxAge,
       language: language === 'en' ? 'en' : 'es',
       privacyAcceptedAt: consentTime,
       termsAcceptedAt: consentTime,
@@ -319,9 +344,11 @@ router.post('/register', registerRateLimiter, registerIntervalMiddleware, memory
       seekingGender: result.seekingGender,
       language: result.language ?? 'es',
       location: result.location ?? '',
+      searchRadiusKm: result.searchRadiusKm ?? null,
+      ageMin: result.ageMin ?? 18,
+      ageMax: result.ageMax ?? 99,
       latitude: result.latitude ?? null,
       longitude: result.longitude ?? null,
-      searchRadiusKm: result.searchRadiusKm ?? null,
       token: result.token,
       refreshToken: result.refreshToken,
     });

@@ -84,6 +84,8 @@ export interface ProfileUpdatePayload {
   latitude?: number;
   longitude?: number;
   searchRadiusKm?: number;
+  ageMin?: number;
+  ageMax?: number;
   interests?: string[];
   photo_url?: string | null;
   gender?: string;

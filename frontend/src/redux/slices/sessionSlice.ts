@@ -18,6 +18,8 @@ interface SessionState {
   latitude?: number;
   longitude?: number;
   searchRadiusKm?: number;
+  ageMin?: number;
+  ageMax?: number;
   interests?: string[];
   gender?: string;
   seekingGender?: string[];

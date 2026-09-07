@@ -54,7 +54,7 @@ router.patch('/me', async (req: Request, res: Response) => {
     // photo_url is intentionally NOT accepted here: profile photos are managed
     // through the dedicated /api/photos endpoints (upload/delete). Allowing an
     // arbitrary photo_url would let a user point their profile at any URL.
-    const { name, bio, interests, location, latitude, longitude, searchRadiusKm, gender, seekingGender, language, bornDate } = req.body;
+    const { name, bio, interests, location, latitude, longitude, searchRadiusKm, ageMin, ageMax, gender, seekingGender, language, bornDate } = req.body;
 
     if (language !== undefined && language !== 'es' && language !== 'en') {
       return res.status(400).json({ error: 'language must be es or en' });
@@ -107,6 +107,26 @@ router.patch('/me', async (req: Request, res: Response) => {
       }
     }
 
+    // Preferred age range (optional on PATCH): integers 18-120, min <= max.
+    // Either extreme may be updated independently (e.g. only raising the max).
+    let minAge: number | undefined;
+    let maxAge: number | undefined;
+    if (ageMin !== undefined) {
+      minAge = Number(ageMin);
+      if (!Number.isInteger(minAge) || minAge < 18 || minAge > 120) {
+        return res.status(400).json({ error: 'ageMin must be an integer between 18 and 120' });
+      }
+    }
+    if (ageMax !== undefined) {
+      maxAge = Number(ageMax);
+      if (!Number.isInteger(maxAge) || maxAge < 18 || maxAge > 120) {
+        return res.status(400).json({ error: 'ageMax must be an integer between 18 and 120' });
+      }
+    }
+    if (minAge !== undefined && maxAge !== undefined && minAge > maxAge) {
+      return res.status(400).json({ error: 'ageMin cannot be greater than ageMax' });
+    }
+
     // Date of birth (optional on PATCH): must be a valid YYYY-MM-DD and imply an
     // age in the allowed range. Reuses the same day-safe age logic as register so
     // an account aged-out or corrected its birth date can't drop below 18 (nor
@@ -143,6 +163,8 @@ router.patch('/me', async (req: Request, res: Response) => {
       latitude: lat,
       longitude: lon,
       searchRadiusKm: radius,
+      ageMin: minAge,
+      ageMax: maxAge,
       gender,
       seekingGender: normalizedSeeking,
       language,
@@ -163,6 +185,8 @@ router.patch('/me', async (req: Request, res: Response) => {
       latitude: updated.latitude ?? null,
       longitude: updated.longitude ?? null,
       searchRadiusKm: updated.search_radius_km ?? null,
+      ageMin: updated.age_min ?? 18,
+      ageMax: updated.age_max ?? 99,
     });
   } catch (err) {
     if (respondAuthError(res, err)) return;
