@@ -357,8 +357,6 @@ export default function EditProfileScreen({ navigation }: Props) {
           <AgeRangePicker
             min={ageMin}
             max={ageMax}
-            minLabel={t('editProfile.ageMin')}
-            maxLabel={t('editProfile.ageMax')}
             onChange={(mn, mx) => { setAgeMin(mn); setAgeMax(mx); }}
           />
         </View>
