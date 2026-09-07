@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View, Text } from 'react-native';
+import { ActivityIndicator, View, Text, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -111,6 +111,11 @@ function TabNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        // On web there's no native renderer: switching tabs is animated by JS on
+        // the main thread over the whole mounted tree, which reads as lag on a
+        // phone browser even for light screens. Disable the transition on web;
+        // native keeps its default (fast) animation.
+        animation: Platform.OS === 'web' ? 'none' : undefined,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,

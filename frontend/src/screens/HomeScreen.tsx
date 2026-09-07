@@ -46,14 +46,17 @@ const HomeScreen = () => {
   const [verifyResendError, setVerifyResendError] = useState(false);
   const swipingRef = useRef(false);
 
-  // Load users on mount and when coming back from EditProfile
+  // Load the match list on mount. The swipe deck itself is loaded via
+  // useFocusEffect below (single source), so there is no duplicated loadUsers
+  // on first entry — the focus effect already runs once on mount.
   useEffect(() => {
     if (!sessionUserId) return;
-    dispatch(loadUsers());
     dispatch(loadMatches());
   }, [sessionUserId]);
 
-  // Refresh users when returning to Home (e.g., after editing profile)
+  // Refresh users when Home gains focus (first mount and returning from another
+  // tab/screen). loadUsers.fulfilled in the reducer skips reassigning the deck
+  // when the payload is unchanged, so re-focusing does not churn the SwipeCards.
   useFocusEffect(
     useCallback(() => {
       if (sessionUserId) {
