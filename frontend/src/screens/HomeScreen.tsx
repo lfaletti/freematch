@@ -247,9 +247,6 @@ const HomeScreen = () => {
           <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
             <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuOpen(false)}>
               <View style={styles.menuDropdown}>
-                <TouchableOpacity style={styles.menuItem} onPress={handleOpenMyProfile}>
-                  <Text style={styles.menuItemText}>👤 {t('home.viewProfile')}</Text>
-                </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}>
                   <Text style={styles.menuItemText}>⚙️ {t('home.editProfile')}</Text>
                 </TouchableOpacity>
