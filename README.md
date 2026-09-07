@@ -12,10 +12,10 @@ Una app de citas construida **enteramente en producción, lista para escalar**, 
 
 FreeMatch es simple y transparente.
 
-- **No hay algoritmo de selección.** Los perfiles se muestran y el usuario decide con un swipe, sin aplicar más algoritmos.
-- **Sin seguimiento constante de tu ubicación.** Tu zona general se usa solo para mostrarte gente cercana, desde un centroide a nivel de ciudad — nunca tu posición exacta.
+- **Sin algoritmo de ranking.** El deck aplica sólo *filtros de preferencia* que vos controlás — género que te interesa, distancia (radio desde tu ciudad) y rango de edad — y entre esa gente elegís con un swipe. No hay puntuación oculta ni ranking: nadie es empujado ni enterrado por un algoritmo.
+- **Sin seguimiento constante de tu ubicación.** Tu zona general se usa sólo para mostrarte gente cercana, desde un centroide a nivel de ciudad — nunca tu posición exacta.
 
-Incluye funcionalidad real: autenticación y recuperación de contraseña, fotos, matches, chat en tiempo real, edición de perfil, moderación NSFW de fotos, donaciones e internacionalización completa **ES/EN**.
+Incluye funcionalidad real: autenticación y recuperación de contraseña, fotos, matches, chat en tiempo real, edición de perfil, preferencias de matching (género, distancia y rango de edad), moderación NSFW de fotos, donaciones e internacionalización completa **ES/EN**.
 
 ---
 
@@ -107,10 +107,10 @@ A dating app built **entirely for production, ready to scale**, made with an **A
 
 FreeMatch is simple and transparent.
 
-- **No selection algorithm.** Profiles are shown and the user decides with a swipe, with no further algorithms applied.
+- **No ranking algorithm.** The deck applies only *preference filters* that you control — gender you're into, distance (radius from your city), and age range — and among those people you decide with a swipe. There is no hidden scoring or ranking: nobody is pushed up or buried by an algorithm.
 - **No constant location tracking.** Your general area is used only to show people near you, from a coarse city-level centroid — never your exact position.
 
-It includes a real feature set: auth and password recovery, photos, matching, real-time chat, profile editing, NSFW photo moderation, donations, and full **ES/EN** i18n.
+It includes a real feature set: auth and password recovery, photos, matching, real-time chat, profile editing, matching preferences (gender, distance and age range), NSFW photo moderation, donations, and full **ES/EN** i18n.
 
 ---
 
