@@ -96,13 +96,6 @@ export default function AgeRangePicker({ min, max, onChange }: Props) {
 
   return (
     <View>
-      {/* Readout of the selected range (display only — editing happens by sliding) */}
-      <View style={styles.valueRow}>
-        <Text style={styles.valueText}>
-          {`${min} – ${dispMax === AGE_MAX_CEILING ? '99+' : dispMax}`}
-        </Text>
-      </View>
-
       {/* Measured area: owns onLayout AND the drag gesture, so they share one box. */}
       <View style={styles.control} onLayout={onLayout} {...pan.panHandlers}>
         {/* Rail */}
@@ -132,62 +125,53 @@ export default function AgeRangePicker({ min, max, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  valueRow: {
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  valueText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.primary,
-  },
   control: {
-    height: 44,
+    height: 30,
     justifyContent: 'center',
     position: 'relative',
   },
   rail: {
-    height: 6,
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: colors.border,
   },
   railActive: {
     position: 'absolute',
-    height: 6,
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: colors.primary,
   },
   thumb: {
     position: 'absolute',
-    top: 8,
-    width: 40,
-    height: 40,
-    marginLeft: -20,
-    borderRadius: 20,
+    top: 5, // center the smaller thumb on the 4px rail within the 30px tall track
+    width: 26,
+    height: 26,
+    marginLeft: -13,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: colors.primary,
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
     zIndex: 2,
   },
   thumbValue: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.primary,
   },
   endsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 4,
+    marginTop: 2,
   },
   endText: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textMuted,
   },
 });
