@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { ActivityIndicator, View, Text, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -101,11 +101,16 @@ function MatchesStack() {
 
 // The bottom footer: Discover (swipe deck), Matches, and Photos.
 function TabNavigator() {
-  const unreadCount = useAppSelector((s) =>
-    Object.values(s.matches.unread).reduce((sum, n) => sum + n, 0)
+  const unread = useAppSelector((s) => s.matches.unread);
+  const { t } = useTranslation();
+  // Aggregate unread counts memoized so the tab bar only re-renders when the
+  // actual count changes, not on every matches-slice write (e.g. every new
+  // message/last_message update while a chat is open).
+  const unreadCount = useMemo(() =>
+    Object.values(unread).reduce((sum, n) => sum + n, 0),
+    [unread]
   );
   const hasUnread = unreadCount > 0;
-  const { t } = useTranslation();
 
   return (
     <Tab.Navigator

@@ -196,6 +196,10 @@ const PhotoScreen = () => {
           columnWrapperStyle={styles.galleryRow}
           scrollEnabled={true}
           contentContainerStyle={styles.galleryContent}
+          initialNumToRender={4}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          removeClippedSubviews={false}
         />
       )}
 

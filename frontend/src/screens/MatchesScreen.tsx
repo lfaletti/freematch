@@ -82,6 +82,10 @@ const MatchesScreen = ({ navigation }: { navigation: any }) => {
           renderItem={renderMatch}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={6}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          removeClippedSubviews={false}
         />
       )}
     </View>
