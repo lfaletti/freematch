@@ -143,7 +143,7 @@ function renderRaw(obj) {
 async function loadDash() {
   const days = parseInt($('days').value) || 7;
   setConn('Cargando…');
-  const msg = $('msgDash') || (() => { const p = document.createElement('p'); p.id = 'msgDash'; p.className = 'msg'; $('controls').prepend(p); return p; })();
+  const statusEl = document.getElementById('dashStatus');
   try {
     const summary = await apiCall('/api/summary', { days });
     renderKpis(summary);
@@ -158,20 +158,21 @@ async function loadDash() {
         else renderSeriesUnavailable();
       } catch (e2) {
         if (e2.status === 401) { logout();
-          msg.className = 'msg err'; msg.textContent = 'La sesión expiró. Ingresa de nuevo.'; return; }
+          const lm = $('loginMsg'); lm.className = 'msg err'; lm.textContent = 'La sesión expira. Ingresa de nuevo.'; return; }
         if (e2.status === 404 || (e2.message || '').includes('series')) state.hasSeries = false;
         renderSeriesUnavailable();
       }
     } else {
       renderSeriesUnavailable();
     }
-    msg.textContent = ''; setConn('Conectado', 'ok');
+    if (statusEl) { statusEl.textContent = ''; statusEl.className = 'note muted'; }
+    setConn('Conectado', 'ok');
   } catch (e) {
     if (e.status === 401) {
       clearToken(); show('login');
       const lm = $('loginMsg'); lm.className = 'msg err'; lm.textContent = 'La sesión expiró. Ingresa de nuevo.';
     } else {
-      msg.className = 'msg err'; msg.textContent = e.message;
+      if (statusEl) { statusEl.textContent = e.message; statusEl.className = 'msg err'; }
       setConn('Error de conexión', 'err');
     }
   }
