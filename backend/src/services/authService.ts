@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { createHash } from 'crypto';
+import { track } from './analyticsService';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 // Require a real JWT secret in ANY non-development environment. Railway runs
@@ -200,6 +201,9 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
   const token = generateToken(user.id, user.email);
   const refreshToken = await generateAndStoreRefreshToken(user.id, user.email);
 
+  // Analytics: a new account was created.
+  void track('register', user.id);
+
   return {
     userId: user.id,
     email: user.email,
@@ -250,6 +254,9 @@ export async function loginUser(input: LoginInput): Promise<AuthResponse & { req
 
   const token = generateToken(user.id, user.email);
   const refreshToken = await generateAndStoreRefreshToken(user.id, user.email);
+
+  // Analytics: a successful login.
+  void track('login', user.id);
 
   return {
     userId: user.id,

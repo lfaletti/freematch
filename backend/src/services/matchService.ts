@@ -1,4 +1,5 @@
 import { query } from '../database/connection';
+import { track } from './analyticsService';
 
 export async function createMatch(user1Id: string, user2Id: string) {
   const [a, b] = [user1Id, user2Id].sort();
@@ -9,7 +10,16 @@ export async function createMatch(user1Id: string, user2Id: string) {
      RETURNING *`,
     [a, b]
   );
-  return result.rows[0] || null;
+  const row = result.rows[0] || null;
+  // Analytics: record only ACTUAL new matches, not conflicts (a re-match of the
+  // same pair returns null rows). This is the single origin where a match is
+  // born, so tracking here means it's never double-counted regardless of caller
+  // (route, like flow, etc.). A match involves two users; we attach one of them
+  // for traceability but count matches as events (not per-active-user).
+  if (row) {
+    void track('match', a, { user1: a, user2: b });
+  }
+  return row;
 }
 
 export async function getMatchesForUser(userId: string) {

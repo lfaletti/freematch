@@ -31,6 +31,7 @@ import { colors } from '../theme/colors';
 import { loadMatches } from '../redux/slices/matchesSlice';
 import i18n, { loadSavedLanguage, Language } from '../i18n';
 import { APP_BRAND } from '../config/brand';
+import { trackAppOpen } from '../services/analyticsService';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -77,6 +78,11 @@ const initSession = async (dispatch: any) => {
           requiresVerification: profile.requiresVerification,
         }),
       );
+      // Analytics: a validated authenticated session is live (app open). A
+      // login-driven session flows through here too (via validateToken), so we
+      // count one app_open per boot/login — exactly the "is there activity?"
+      // signal we aggregate on. Fire-and-forget.
+      void trackAppOpen();
     } else {
       await storageService.clearTokens();
       dispatch(clearSession());

@@ -12,6 +12,7 @@ import authRouter from './routes/auth';
 import photosRouter from './routes/photos';
 import legalRouter from './routes/legal';
 import donationRouter from './routes/donation';
+import analyticsRouter from './routes/analytics';
 import { apiLimiter, authLimiter, swipeLimiter, citiesLimiter } from './middleware/rateLimiter';
 
 
@@ -132,6 +133,9 @@ export function createApp() {
   app.use('/api/photos', photosRouter);
   app.use('/api/legal', legalRouter);
   app.use('/api/donation', donationRouter);
+  // Analytics: authenticated POST /api/analytics/track (app_open) + owner-only
+  // GET /api/analytics/summary for the "how is the app going?" dashboard.
+  app.use('/api/analytics', analyticsRouter);
 
   // Global error handler: map auth failures to 401, mask everything else as 500.
   // Routes catch their own expected errors; this is the safety net for anything

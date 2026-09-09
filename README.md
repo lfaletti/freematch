@@ -27,6 +27,8 @@ El repositorio está conectado a **Vercel** (frontend) y a **Railway** (backend)
 
 ## Estrategia de desarrollo
 
+**Objetivo general:** FreeMatch es un caso de uso para testear cómo guiar a un asistente de IA en la generación de una aplicación de forma iterativa. Se busca entender los límites y lo que implica desarrollar una app en serio: qué cosas hay que ajustar o tener en cuenta, y en qué puntos se puede delegar.
+
 La app se construyó de forma **iterativa**:
 
 - **Indicaciones paso a paso**, no prompts grandes ni monolíticos.
@@ -121,6 +123,8 @@ The repository is connected to **Vercel** (frontend) and **Railway** (backend). 
 ---
 
 ## Development strategy
+
+**General goal:** FreeMatch is a use case to test how to guide an AI assistant to build an application iteratively. The aim is to understand the limits and what building a real app seriously entails: what needs to be adjusted or taken into account, and where tasks can be delegated.
 
 The app was built **iteratively**:
 

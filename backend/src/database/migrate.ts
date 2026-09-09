@@ -150,6 +150,9 @@ export async function runMigrations() {
   const sql016_age = fs.readFileSync(path.join(__dirname, 'migrations/016_age_range.sql'), 'utf8');
   await query(sql016_age);
 
+  const sql017_analytics = fs.readFileSync(path.join(__dirname, 'migrations/017_analytics_events.sql'), 'utf8');
+  await query(sql017_analytics);
+
   console.log('Migrations ran successfully');
 }
 
