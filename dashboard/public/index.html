@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FreeMatch — Dashboard</title>
+  <!-- Chart.js (local file if stored in /public/vendor, else CDN fallback). -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand">📊 FreeMatch · Dashboard</span>
+    <span id="conn" class="conn muted">—</span>
+  </header>
+
+  <!-- Login form -->
+  <section id="loginView" class="view">
+    <div class="card loginCard">
+      <h2>Iniciar sesión (producción)</h2>
+      <p class="muted small">
+        El login se hace contra <code>api.freematch.io</code>. Tu password y el token
+        solo se usan en esta máquina local; nada se guarda en disco.
+      </p>
+      <form id="loginForm">
+        <label>Email</label>
+        <input type="email" id="email" autocomplete="username" required placeholder="luciano.faletti@hotmail.com" />
+        <label>Contraseña</label>
+        <input type="password" id="password" autocomplete="current-password" required placeholder="••••••••" />
+        <button type="submit">Ingresar</button>
+        <p id="loginMsg" class="msg muted"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- Dashboard body -->
+  <section id="dashView" class="view hidden">
+    <div class="controls">
+      <label>Período</label>
+      <select id="days">
+        <option value="7">Últimos 7 días</option>
+        <option value="14">Últimos 14 días</option>
+        <option value="30">Últimos 30 días</option>
+        <option value="90">Últimos 90 días</option>
+      </select>
+      <button id="refresh" class="secondary">Refrescar</button>
+      <button id="logout" class="ghost">Salir</button>
+    </div>
+
+    <!-- KPI cards -->
+    <div id="kpis" class="kpis"></div>
+
+    <!-- Summary chart: event counts over the period -->
+    <div class="card">
+      <h3>Actividad en el período</h3>
+      <div class="chartWrap">
+        <canvas id="summaryChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Time series chart (evolución por día). Muestra aviso si el backend
+         todavía no expone /series. -->
+    <div class="card">
+      <h3>Evolución diaria</h3>
+      <p id="seriesNote" class="note muted"></p>
+      <div class="chartWrap">
+        <canvas id="seriesChart"></canvas>
+      </div>
+    </div>
+
+    <div id="rawCard" class="card">
+      <h3>Respuesta cruda</h3>
+      <pre id="raw"></pre>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

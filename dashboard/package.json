@@ -1,0 +1,13 @@
+{
+  "name": "freematch-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local-only dashboard to visualize FreeMatch analytics from the production API. Never deployed.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "node-fetch": "^3.3.2"
+  }
+}

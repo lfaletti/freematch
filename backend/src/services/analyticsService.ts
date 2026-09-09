@@ -47,6 +47,67 @@ export interface AnalyticsSummary {
   match: number;
 }
 
+// Per-calendar-day series over the window. Used by the dashboard's time-series
+// chart (evolution of each event over time). `labels` are date-only ISO strings
+// covering every day in the range (including empty ones) oldest→newest;
+// `events[event]` aligns 1:1 with `labels`. Active-user counts per day are the
+// distinct user_ids seen that day across activity events.
+export interface AnalyticsSeries {
+  days: number;
+  labels: string[];
+  events: Record<string, number[]>;
+}
+
+export async function getSeries(days = 7): Promise<AnalyticsSeries> {
+  const n = Math.max(1, Math.floor(days));
+  // Build the full list of dates in the window (server local date) in SQL so we
+  // always return contiguous days even when a day had zero events.
+  const res = await query(
+    `WITH range AS (
+       SELECT generate_series(
+         (CURRENT_DATE - make_interval(days => ${n} - 1))::timestamp,
+         CURRENT_DATE,
+         interval '1 day'
+       )::date AS day
+     )
+     SELECT
+       to_char(r.day, 'YYYY-MM-DD') AS day,
+       ae.event,
+       COUNT(ae.*)::int AS n,
+       COUNT(DISTINCT ae.user_id)::int AS users
+     FROM range r
+     LEFT JOIN analytics_events ae
+       ON ae.created_at >= r.day
+      AND ae.created_at <  r.day + interval '1 day'
+     GROUP BY r.day, ae.event
+     ORDER BY r.day`
+  );
+
+  // Build [labels] + per-day map, then project events independently.
+  const perDay: Array<{ day: string; rows: Record<string, number> }> = [];
+  const dayIndex = new Map<string, number>();
+  for (const row of res.rows as Array<{ day: string; event: string | null; n: number; users: number }>) {
+    if (!dayIndex.has(row.day)) {
+      dayIndex.set(row.day, perDay.length);
+      perDay.push({ day: row.day, rows: {} });
+    }
+    const bucket = perDay[dayIndex.get(row.day)!];
+    if (row.event) bucket.rows[row.event] = (bucket.rows[row.event] || 0) + row.n;
+    // active users within this window: count distinct per activity across the day
+    if (row.event === 'login' || row.event === 'app_open') {
+      bucket.rows['activeUsers'] = (bucket.rows['activeUsers'] || 0) + row.users;
+    }
+  }
+
+  const labels = perDay.map((d) => d.day);
+  const keys = new Set<string>(['activeUsers', 'match', 'register', 'login', 'app_open']);
+  perDay.forEach((d) => Object.keys(d.rows).forEach((k) => keys.add(k)));
+  const events: Record<string, number[]> = {};
+  keys.forEach((k) => { events[k] = perDay.map((d) => d.rows[k] || 0); });
+
+  return { days: n, labels, events };
+}
+
 export async function getSummary(days = 7): Promise<AnalyticsSummary> {
   const since = `now() - make_interval(days => ${Math.max(1, Math.floor(days))})`;
   const one = async (event: string) => {

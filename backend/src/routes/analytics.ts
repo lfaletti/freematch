@@ -5,13 +5,29 @@ import * as userService from '../services/userService';
 
 const router = Router();
 
-// Owner/admin email(s) allowed to read the summary. Mirrors the donation
-// whitelist philosophy: metrics about user activity are sensitive, so only the
-// owner sees aggregates. Keep in sync with STATE.md account notes.
+// Owner/admin email(s) allowed to read analytics. Metrics about user activity
+// are sensitive, so only these accounts see aggregates. In sync with the email
+// used by the donation whitelist (STATE.md notes).
 const ADMIN_EMAILS = new Set([
-  process.env.ANALYTICS_ADMIN_EMAILS?.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean) ?? [],
+  ...(process.env.ANALYTICS_ADMIN_EMAILS?.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean) ?? []),
   'luciano.faletti@hotmail.com',
 ]);
+
+async function requireAdmin(req: Request, res: Response): Promise<boolean> {
+  try {
+    const user = await userService.getOwnUserById(getUserId(req));
+    const email = (user?.email ?? '').toLowerCase();
+    if (!ADMIN_EMAILS.has(email)) {
+      res.status(403).json({ error: 'Forbidden' });
+      return false;
+    }
+    return true;
+  } catch (err) {
+    if (respondAuthError(res, err)) return false;
+    res.status(500).json({ error: 'Auth check failed' });
+    return false;
+  }
+}
 
 router.post('/track', async (req: Request, res: Response) => {
   try {
@@ -34,18 +50,25 @@ router.post('/track', async (req: Request, res: Response) => {
 
 router.get('/summary', async (req: Request, res: Response) => {
   try {
-    const userId = getUserId(req);
-    const user = await userService.getOwnUserById(userId);
-    const email = (user?.email ?? '').toLowerCase();
-    if (!ADMIN_EMAILS.has(email)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
+    if (!(await requireAdmin(req, res))) return;
     const days = parseInt(req.query.days as string) || 7;
     const summary = await analyticsService.getSummary(days);
     res.json(summary);
   } catch (err) {
     if (respondAuthError(res, err)) return;
     res.status(500).json({ error: 'Failed to load summary' });
+  }
+});
+
+router.get('/series', async (req: Request, res: Response) => {
+  try {
+    if (!(await requireAdmin(req, res))) return;
+    const days = parseInt(req.query.days as string) || 7;
+    const series = await analyticsService.getSeries(days);
+    res.json(series);
+  } catch (err) {
+    if (respondAuthError(res, err)) return;
+    res.status(500).json({ error: 'Failed to load series' });
   }
 });
 

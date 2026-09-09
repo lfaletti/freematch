@@ -1,0 +1,5 @@
+# Dashboard local — no se despliega a producción.
+node_modules/
+.env
+.env.local
+*.log
