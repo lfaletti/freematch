@@ -1,35 +1,52 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import {
   View,
   Text,
   Image,
   StyleSheet,
-  Dimensions,
   Animated,
   PanResponder,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { User } from '../services/userService';
 import { getPhotoUrl } from '../services/api';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.9, 420);
-const CARD_HEIGHT = Math.min(SCREEN_HEIGHT * 0.68, 580);
-const IMAGE_HEIGHT = Math.round(CARD_HEIGHT * 0.65);
-const INFO_HEIGHT = CARD_HEIGHT - IMAGE_HEIGHT;
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
+const MAX_CARD_WIDTH = 420;
+const MAX_CARD_HEIGHT = 580;
 
-interface SwipeCardProps {
+const SwipeCardComponent: React.FC<{
   user: User;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   isTop: boolean;
   onTapProfile?: () => void;
-}
+}> = ({ user, onSwipeLeft, onSwipeRight, isTop, onTapProfile }) => {
+  // Reactive viewport size. On Chrome mobile the URL bar shows/hides as you
+  // scroll, changing the viewport; reading it per-render keeps the card sized
+  // correctly instead of freezing a stale module-level Dimensions.get() value.
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
 
-const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, isTop, onTapProfile }) => {
+  const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.9, MAX_CARD_WIDTH);
+  const CARD_HEIGHT = Math.min(SCREEN_HEIGHT * 0.68, MAX_CARD_HEIGHT);
+  const IMAGE_HEIGHT = Math.round(CARD_HEIGHT * 0.65);
+  const INFO_HEIGHT = CARD_HEIGHT - IMAGE_HEIGHT;
+  const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
+
   const pan = useRef(new Animated.ValueXY()).current;
+
+  // Keep the latest callbacks in refs so the PanResponder (created once) never
+  // captures a stale closure and never needs to be recreated on re-render.
+  const onSwipeLeftRef = useRef(onSwipeLeft);
+  const onSwipeRightRef = useRef(onSwipeRight);
+  onSwipeLeftRef.current = onSwipeLeft;
+  onSwipeRightRef.current = onSwipeRight;
+  const thresholdRef = useRef(SWIPE_THRESHOLD);
+  thresholdRef.current = SWIPE_THRESHOLD;
+  const screenWidthRef = useRef(SCREEN_WIDTH);
+  screenWidthRef.current = SCREEN_WIDTH;
+
   const rotate = pan.x.interpolate({
     inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
     outputRange: ['-15deg', '0deg', '15deg'],
@@ -51,45 +68,52 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, 
       onStartShouldSetPanResponder: () => isTop,
       onMoveShouldSetPanResponder: () => isTop,
       onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
+        // RN Web has no native animation driver: this always runs on the JS
+        // thread. Keep `false` for web/native parity (native is fast anyway),
+        // but the win here is avoiding extra re-renders while dragging.
         useNativeDriver: false,
       }),
       onPanResponderRelease: (_e, gestureState) => {
-        if (gestureState.dx > SWIPE_THRESHOLD) {
+        const threshold = thresholdRef.current;
+        const offscreen = screenWidthRef.current * 1.5;
+        if (gestureState.dx > threshold) {
           Animated.timing(pan, {
-            toValue: { x: SCREEN_WIDTH * 1.5, y: gestureState.dy },
-            duration: 300,
+            toValue: { x: offscreen, y: gestureState.dy },
+            duration: 250,
             useNativeDriver: false,
           }).start(() => {
             pan.setValue({ x: 0, y: 0 });
-            onSwipeRight();
+            onSwipeRightRef.current();
           });
-        } else if (gestureState.dx < -SWIPE_THRESHOLD) {
+        } else if (gestureState.dx < -threshold) {
           Animated.timing(pan, {
-            toValue: { x: -SCREEN_WIDTH * 1.5, y: gestureState.dy },
-            duration: 300,
+            toValue: { x: -offscreen, y: gestureState.dy },
+            duration: 250,
             useNativeDriver: false,
           }).start(() => {
             pan.setValue({ x: 0, y: 0 });
-            onSwipeLeft();
+            onSwipeLeftRef.current();
           });
         } else {
           Animated.spring(pan, {
             toValue: { x: 0, y: 0 },
             useNativeDriver: false,
-            friction: 5,
+            friction: 6,
           }).start();
         }
       },
     })
   ).current;
 
+  const photoUri = useMemo(() => getPhotoUrl(user.photo_url), [user.photo_url]);
+
   if (!isTop) {
+    // The "next" card is only a visual hint behind the top card. Keep it
+    // lightweight: no PanResponder, no badges, and no full info block — just
+    // the image behind the top card, so we don't pay for a second heavy tree.
     return (
-      <View style={[styles.card, styles.backCard]}>
-        <Image source={{ uri: getPhotoUrl(user.photo_url) }} style={styles.image} />
-        <View style={styles.info}>
-          <Text style={styles.name}>{user.name}, {user.age}</Text>
-        </View>
+      <View style={[styles.card, styles.backCard, { width: CARD_WIDTH, height: CARD_HEIGHT }]}>
+        <Image source={{ uri: photoUri }} style={styles.image} />
       </View>
     );
   }
@@ -99,13 +123,15 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, 
       style={[
         styles.card,
         {
+          width: CARD_WIDTH,
+          height: CARD_HEIGHT,
           transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }],
         },
       ]}
       {...panResponder.panHandlers}
     >
-      <TouchableOpacity activeOpacity={0.8} onPress={onTapProfile} style={styles.imageContainer}>
-        <Image source={{ uri: getPhotoUrl(user.photo_url) }} style={styles.image} />
+      <TouchableOpacity activeOpacity={0.8} onPress={onTapProfile} style={[styles.imageContainer, { height: IMAGE_HEIGHT }]}>
+        <Image source={{ uri: photoUri }} style={styles.image} />
       </TouchableOpacity>
       <Animated.View style={[styles.badge, styles.likeBadge, { opacity: likeOpacity }]}>
         <Text style={styles.badgeText}>LIKE</Text>
@@ -113,7 +139,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, 
       <Animated.View style={[styles.badge, styles.nopeBadge, { opacity: nopeOpacity }]}>
         <Text style={styles.badgeText}>NOPE</Text>
       </Animated.View>
-      <View style={styles.info}>
+      <View style={[styles.info, { height: INFO_HEIGHT }]}>
         <View style={styles.nameRow}>
           <Text style={styles.name}>{user.name}</Text>
           <Text style={styles.age}>{user.age}</Text>
@@ -132,11 +158,21 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ user, onSwipeLeft, onSwipeRight, 
   );
 };
 
+// Memoize: the deck only re-renders when the user identity or role changes,
+// not on every parent state update (menu toggles, verify banner, etc.).
+const SwipeCard = React.memo(SwipeCardComponent, (prev, next) => {
+  return (
+    prev.user.id === next.user.id &&
+    prev.user.photo_url === next.user.photo_url &&
+    prev.isTop === next.isTop &&
+    prev.user.name === next.user.name &&
+    prev.user.age === next.user.age
+  );
+});
+
 const styles = StyleSheet.create({
   card: {
     position: 'absolute',
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: colors.cardBg,
@@ -152,7 +188,6 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: IMAGE_HEIGHT,
   },
   image: {
     width: '100%',
@@ -186,7 +221,6 @@ const styles = StyleSheet.create({
   },
   info: {
     width: '100%',
-    height: INFO_HEIGHT,
     padding: 16,
     justifyContent: 'center',
   },

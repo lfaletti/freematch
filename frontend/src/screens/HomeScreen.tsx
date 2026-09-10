@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Modal,
   Image,
+  Platform,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
@@ -163,6 +164,19 @@ const HomeScreen = () => {
   const currentUser = users[currentIndex];
   const nextUser = users[currentIndex + 1];
   const isDone = !loading && !error && loaded && currentIndex >= users.length;
+
+  // Preload the photo of the card AFTER next, so by the time the user swipes
+  // twice the image is already in the browser cache — no visible decode hitch.
+  // Web-only (Image.prefetch is a no-op / unsupported on some native paths).
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const ahead = users[currentIndex + 2];
+    if (!ahead?.photo_url) return;
+    const uri = getPhotoUrl(ahead.photo_url);
+    const img = new (window as any).Image();
+    img.decoding = 'async';
+    img.src = uri;
+  }, [currentIndex, users]);
 
   const handleTapProfile = (user: typeof currentUser) => {
     if (!user) return;
