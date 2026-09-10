@@ -258,7 +258,7 @@ const HomeScreen = () => {
           <TouchableOpacity style={styles.menuBtn} onPress={() => setMenuOpen(!menuOpen)}>
             <Text style={styles.menuIcon}>⋮</Text>
           </TouchableOpacity>
-          <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+          <Modal visible={menuOpen} transparent animationType="none" onRequestClose={() => setMenuOpen(false)}>
             <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuOpen(false)}>
               <View style={styles.menuDropdown}>
                 <TouchableOpacity style={styles.menuItem} onPress={handleEditProfile}>
@@ -282,7 +282,7 @@ const HomeScreen = () => {
         </View>
       </View>
 
-      <Modal visible={resetDialog} transparent animationType="fade" onRequestClose={() => setResetDialog(false)}>
+      <Modal visible={resetDialog} transparent animationType="none" onRequestClose={() => setResetDialog(false)}>
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setResetDialog(false)}>
           <View style={styles.dialog}>
             <Text style={styles.dialogTitle}>⚠️ {t('home.resetConfirmTitle')}</Text>
