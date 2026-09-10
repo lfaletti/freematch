@@ -106,6 +106,34 @@ function MatchesStack() {
 }
 
 // The bottom footer: Discover (swipe deck), Matches, and Photos.
+//
+// Mount-everything strategy (web):
+// react-native-web + @react-navigation/bottom-tabs default to lazy=true and
+// detachInactiveScreens=true, which means every tab switch UNMOUNTS the screen
+// you leave and MOUNTS the one you enter — re-running effects, refetching, and
+// rebuilding the whole subtree. On a phone browser that is the between-tabs lag.
+// We mount all tabs up front once and keep them attached, so switching tabs is
+// just a show/hide (visibility) with no remount, no refetch, no jank.
+const tabScreenOptions = {
+  headerShown: false,
+  // All screens mounted from the start; never unmount on blur.
+  lazy: false,
+  freezeOnBlur: false,
+  detachInactiveScreens: false,
+  // RN Web animates tab transitions on the JS main thread over the whole
+  // mounted tree; with everything mounted that would be worse, so keep it off.
+  animation: Platform.OS === 'web' ? ('none' as const) : undefined,
+  tabBarStyle: {
+    backgroundColor: colors.surface,
+    borderTopColor: colors.border,
+    height: 64,
+    paddingBottom: 8,
+  },
+  tabBarActiveTintColor: colors.primary,
+  tabBarInactiveTintColor: colors.textMuted,
+  tabBarLabelStyle: { fontSize: 12, fontWeight: '600' as const },
+};
+
 function TabNavigator() {
   const unread = useAppSelector((s) => s.matches.unread);
   const { t } = useTranslation();
@@ -120,23 +148,7 @@ function TabNavigator() {
 
   return (
     <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        // On web there's no native renderer: switching tabs is animated by JS on
-        // the main thread over the whole mounted tree, which reads as lag on a
-        // phone browser even for light screens. Disable the transition on web;
-        // native keeps its default (fast) animation.
-        animation: Platform.OS === 'web' ? 'none' : undefined,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 8,
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
-      }}
+      screenOptions={tabScreenOptions}
     >
       <Tab.Screen
         name="Home"
