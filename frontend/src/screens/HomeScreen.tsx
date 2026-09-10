@@ -192,7 +192,11 @@ const HomeScreen = () => {
   };
 
   const renderCardArea = () => {
-    if (loading) {
+    // Show the spinner ONLY on the very first load (nothing rendered yet).
+    // Subsequent refetches (every tab focus, verification polling, etc.) keep
+    // the current deck on screen while the request runs — the app never blocks
+    // on the loader mid-session, and the header menu stays fully usable.
+    if (loading && !loaded) {
       return (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -200,7 +204,9 @@ const HomeScreen = () => {
         </View>
       );
     }
-    if (error) {
+    // A refetch that fails must not nuke a deck the user is already swiping:
+    // only surface the error screen when there is nothing to show.
+    if (error && users.length === 0) {
       return (
         <View style={styles.center}>
           <Text style={styles.errorText}>{t('home.error')}</Text>
