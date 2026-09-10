@@ -114,15 +114,25 @@ function MatchesStack() {
 // rebuilding the whole subtree. On a phone browser that is the between-tabs lag.
 // We mount all tabs up front once and keep them attached, so switching tabs is
 // just a show/hide (visibility) with no remount, no refetch, no jank.
+//
+// freezeOnBlur MUST stay true: it uses react-freeze to PAUSE renders of the
+// screens that are not focused. Without it, with everything mounted, each tab
+// tap makes React reconcile ALL tabs at once (deck + matches + photos + chat)
+// on the main thread — which is exactly the "tap takes a moment to react"
+// symptom. Frozen screens cost nothing until you return to them.
 const tabScreenOptions = {
   headerShown: false,
   // All screens mounted from the start; never unmount on blur.
   lazy: false,
-  freezeOnBlur: false,
+  freezeOnBlur: true,
   detachInactiveScreens: false,
   // RN Web animates tab transitions on the JS main thread over the whole
   // mounted tree; with everything mounted that would be worse, so keep it off.
   animation: Platform.OS === 'web' ? ('none' as const) : undefined,
+  // The inactive screens stay mounted (detachInactiveScreens=false) purely to
+  // avoid remount cost; but they are frozen, so we can also drop them from
+  // paint (display:none) with zero visual difference and less compositor work.
+  // Unmount/freeze handles the React cost; this handles the browser cost.
   tabBarStyle: {
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
