@@ -32,7 +32,19 @@ export async function uploadPhoto(
     let contentType = file.mimetype;
     let ext = getFileExtension(file.mimetype);
     try {
-      const jpeg = await sharp(file.buffer).jpeg({ quality: 85 }).toBuffer();
+      // Resize + re-encode. Uploads from a modern phone camera are ~4000x3000px
+      // and several MB; serving those full-size makes the BROWSER decode ~12MP
+      // every time a photo appears, which stalls the compositor on mobile (the
+      // perceived lag on Chrome mobile — the JS thread is idle, paint/decode is
+      // not). Constrain the long edge to 1440px (plenty for any phone screen,
+      // even 3x DPR) without upscaling, and re-encode as progressive JPEG (q82,
+      // mozjpeg) for a much smaller payload. `withoutEnlargement` keeps small
+      // images untouched. This is the single biggest mobile-render win.
+      const jpeg = await sharp(file.buffer)
+        .rotate() // honour EXIF orientation before resizing
+        .resize({ width: 1440, height: 1440, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 82, progressive: true, mozjpeg: true })
+        .toBuffer();
       body = jpeg;
       contentType = 'image/jpeg';
       ext = 'jpg';
