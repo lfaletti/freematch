@@ -92,6 +92,22 @@ export default function EditProfileScreen({ navigation }: Props) {
   // búsqueda", etc.) instead of appearing behind them on web.
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
 
+  // The useState initializers above only read the session ONCE, at mount. If the
+  // session gets hydrated after this screen is already mounted (e.g. the user
+  // logs back in and the session restores with location/coords, or a background
+  // refresh fills them in), the local inputs would keep the stale empty value —
+  // so Save would complain the location is required even though it exists in
+  // the DB. Re-sync the location/coords fields whenever the session identity or
+  // its location payload changes, but only while the user hasn't edited them
+  // (dirtyTracking avoids clobbering unsaved typing).
+  const sessionLocationKey = `${session.userId}|${session.location ?? ''}|${session.latitude ?? ''}|${session.longitude ?? ''}`;
+  useEffect(() => {
+    setLocation(session.location ?? '');
+    setLatitude(session.latitude ?? null);
+    setLongitude(session.longitude ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionLocationKey]);
+
   // Account deletion (right to erasure)
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');

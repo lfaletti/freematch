@@ -393,6 +393,17 @@ router.post('/login', loginRateLimiter, loginAccountLimiter, async (req, res) =>
         gender: result.gender,
         seekingGender: result.seekingGender,
         language: result.language ?? 'es',
+        // Location + coords must be returned on login too: the client persists
+        // them into the session, and without them a returning user's profile
+        // shows an empty city (and Save then complains location is required)
+        // even though the value is stored in the DB. Register/session already
+        // return these; login must match.
+        location: result.location ?? '',
+        latitude: result.latitude ?? null,
+        longitude: result.longitude ?? null,
+        searchRadiusKm: result.searchRadiusKm ?? null,
+        ageMin: result.ageMin ?? 18,
+        ageMax: result.ageMax ?? 99,
         token: result.token,
         refreshToken: result.refreshToken,
       });
