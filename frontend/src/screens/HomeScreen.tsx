@@ -225,6 +225,20 @@ const HomeScreen = () => {
         </View>
       );
     }
+    // Safety net: if there is no card to render for any other reason (e.g. a
+    // refetch resolved to an empty/short deck while loading was true, so isDone
+    // was false at that instant), never leave the area blank — show the same
+    // "no new profiles" state the user would see after the loader. Without
+    // this, returning to the tab could paint an empty black area.
+    if (loaded && !loading && !currentUser) {
+      return (
+        <View style={styles.center}>
+          <Text style={styles.doneEmoji}>🎉</Text>
+          <Text style={styles.doneText}>{t('home.done')}</Text>
+          <Text style={styles.doneSubtext}>{t('home.doneSubtext')}</Text>
+        </View>
+      );
+    }
     return (
       <>
         {nextUser && (
