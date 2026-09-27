@@ -54,10 +54,13 @@ Todo el proyecto costó menos de $100 en uso de IA.
 
 El trabajo se extendió por varios meses con cortes reales en el medio. Según el historial de commits:
 
-- **Período de calendario:** ~71 días (26 jun – 4 sep)
-- **Días activos:** 26 (con commits)
-- **Total de commits:** ~187
-- **Tiempo real de trabajo estimado: ~100 horas** repartidas en 26 días de desarrollo — unas **13 jornadas de 8 h** de esfuerzo concentrado para pasar de la idea a una app lista para producción.
+- **Período de calendario:** ~76 días (26 jun – 9 sep)
+- **Días activos:** 31 (con commits)
+- **Total de commits:** 218
+- **Tiempo real de trabajo medido: ~103 horas** repartidas en 31 días de desarrollo — unas **13 jornadas de 8 h** de esfuerzo concentrado para pasar de la idea a una app lista para producción.
+- **Tamaño del código:** ~17.000 líneas en 162 archivos versionados (frontend + backend + migraciones de DB).
+
+Ese tiempo no incluye las esperas del asistente ni las pausas largas: sale de medir los huecos reales de tiempo entre commits dentro de cada jornada.
 
 ---
 
@@ -151,10 +154,13 @@ The whole project cost less than $100 in AI usage.
 
 The work was spread over several months with real breaks in between. Based on the commit history:
 
-- **Calendar span:** ~71 days (26 Jun – 4 Sep)
-- **Active days:** 26 (with commits)
-- **Total commits:** ~187
-- **Estimated real work invested: ~100 hours** across 26 development days — roughly 13 8-hour working days of focused effort to go from idea to a production-ready app.
+- **Calendar span:** ~76 days (26 Jun – 9 Sep)
+- **Active days:** 31 (with commits)
+- **Total commits:** 218
+- **Measured real work invested: ~103 hours** across 31 development days — roughly 13 8-hour working days of focused effort to go from idea to a production-ready app.
+- **Codebase size:** ~17,000 lines across 162 tracked files (frontend + backend + DB migrations).
+
+That time excludes assistant wait times and long breaks: it comes from measuring the actual gaps between commits within each working day.
 
 ---
 
