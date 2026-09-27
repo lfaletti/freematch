@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Linking } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../theme/colors';
@@ -8,8 +8,18 @@ type Props = {
   navigation: NativeStackNavigationProp<any>;
 };
 
+// Public repo README — the development story lives there.
+const README_URL = 'https://github.com/lfaletti/freematch#readme';
+
 export default function WelcomeScreen({ navigation }: Props) {
   const { t } = useTranslation();
+
+  // On web this opens a new tab; on native it opens the system browser.
+  const openReadme = () => {
+    Linking.openURL(README_URL).catch(() => {
+      // No-op: if the link can't open we just stay on the screen.
+    });
+  };
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -58,6 +68,13 @@ export default function WelcomeScreen({ navigation }: Props) {
         </Text>
         <Text>{t('welcome.disclaimerSuffix')}</Text>
       </Text>
+
+      <TouchableOpacity onPress={openReadme} activeOpacity={0.7} style={styles.devLinkWrap}>
+        <Text style={styles.devLink}>
+          {t('welcome.developersPrefix')}{' '}
+          <Text style={styles.devLinkAccent}>{t('welcome.developersLink')}</Text>
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -177,5 +194,18 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '700',
     textDecorationLine: 'underline',
+  },
+  devLinkWrap: {
+    marginTop: 12,
+    paddingVertical: 4,
+  },
+  devLink: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  devLinkAccent: {
+    color: colors.primary,
+    fontWeight: '700',
   },
 });

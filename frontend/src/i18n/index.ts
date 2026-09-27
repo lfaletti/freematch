@@ -53,6 +53,8 @@ const es = {
       disclaimerPrefix: 'Al continuar aceptás nuestros',
       disclaimerAnd: 'y nuestra',
       disclaimerSuffix: '.',
+      developersPrefix: 'Para Desarrolladores: ver proyecto en',
+      developersLink: 'GitHub',
     },
 
     // ── Create Account ──
@@ -370,6 +372,8 @@ const en = {
       disclaimerPrefix: 'By continuing you accept our',
       disclaimerAnd: 'and our',
       disclaimerSuffix: '.',
+      developersPrefix: 'For developers: see the project on',
+      developersLink: 'GitHub',
     },
 
     // ── Create Account ──
