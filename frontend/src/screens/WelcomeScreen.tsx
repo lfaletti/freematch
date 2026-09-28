@@ -196,16 +196,19 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   devLinkWrap: {
-    marginTop: 12,
+    marginTop: 10,
     paddingVertical: 4,
   },
   devLink: {
-    color: colors.textMuted,
-    fontSize: 12,
+    color: '#6b7280',
+    fontSize: 11,
+    lineHeight: 16,
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
   devLinkAccent: {
-    color: colors.primary,
-    fontWeight: '700',
+    color: '#6b7280',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

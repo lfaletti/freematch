@@ -53,7 +53,7 @@ const es = {
       disclaimerPrefix: 'Al continuar aceptás nuestros',
       disclaimerAnd: 'y nuestra',
       disclaimerSuffix: '.',
-      developersPrefix: 'Para Desarrolladores: ver proyecto en',
+      developersPrefix: 'Ver proyecto en',
       developersLink: 'GitHub',
     },
 
@@ -372,7 +372,7 @@ const en = {
       disclaimerPrefix: 'By continuing you accept our',
       disclaimerAnd: 'and our',
       disclaimerSuffix: '.',
-      developersPrefix: 'For developers: see the project on',
+      developersPrefix: 'See project on',
       developersLink: 'GitHub',
     },
 
