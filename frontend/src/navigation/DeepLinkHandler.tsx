@@ -31,6 +31,9 @@ export default function DeepLinkHandler() {
           try {
             const res = await verifyEmail(token);
             if (res?.token) {
+              // res.alreadyVerified: the link had been used before (double click or
+              // mail-client prefetch). The backend still issues a fresh session,
+              // so we just log the user in instead of alerting an error.
               await storageService.setToken(res.token);
               if (res.refreshToken) {
                 await storageService.setRefreshToken(res.refreshToken);

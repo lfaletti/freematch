@@ -27,6 +27,7 @@ export default function VerifyEmailScreen({ navigation, route }: any) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [state, setState] = useState<'loading' | 'idle' | 'success' | 'error'>('loading');
+  const [alreadyVerified, setAlreadyVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
   const [email, setEmail] = useState('');
@@ -50,6 +51,9 @@ export default function VerifyEmailScreen({ navigation, route }: any) {
       try {
         const res = await verifyEmail(token);
         if (cancelled) return;
+        // Link already used: the account is verified and the backend still
+        // returns a session, so log in with a friendly message.
+        setAlreadyVerified(!!res.alreadyVerified);
         setState('success');
 
         // Opción A: the backend returns new tokens → log the user in directly.
@@ -153,7 +157,7 @@ export default function VerifyEmailScreen({ navigation, route }: any) {
       {state === 'success' && (
         <>
           <Text style={styles.emoji}>✅</Text>
-          <Text style={styles.subtitle}>{t('verifyEmail.success')}</Text>
+          <Text style={styles.subtitle}>{alreadyVerified ? t('verifyEmail.alreadyVerified') : t('verifyEmail.success')}</Text>
           <TouchableOpacity
             style={styles.button}
             onPress={() => navigation.navigate('Login')}

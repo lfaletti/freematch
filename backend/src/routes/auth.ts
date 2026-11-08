@@ -518,6 +518,11 @@ router.post('/register-phone', registerRateLimiter, registerIntervalMiddleware, 
 
 // GET /api/auth/verify-email?token=...
 // Marks the user's email as verified when given a valid signed token.
+// Idempotent: a valid token for an account that is already verified (i.e. the
+// same link clicked twice) resolves to `alreadyVerified: true` and still
+// returns fresh session tokens, instead of an opaque "invalid or expired"
+// error. Links that were superseded (account verified by a different token) or
+// that expired stay invalid.
 router.get('/verify-email', async (req, res) => {
   try {
     const token = req.query.token as string;
@@ -525,22 +530,26 @@ router.get('/verify-email', async (req, res) => {
       return res.status(400).json({ error: 'Verification token is required' });
     }
 
-    const verified = await verifyEmailToken(token);
-    if (verified) {
-      // Opción A: after verifying from the email link, the user is logged in
-      // directly. Emit fresh access + refresh tokens so the web app can resume
-      // the session straight into the home screen.
-      const accessToken = generateToken(verified.userId, verified.email);
-      const refreshToken = await generateAndStoreRefreshToken(verified.userId, verified.email);
-      return res.json({
-        success: true,
-        message: 'Email verified successfully',
-        token: accessToken,
-        refreshToken,
-      });
+    const result = await verifyEmailToken(token);
+    if (result.status === 'invalid') {
+      return res.status(400).json({ error: 'Invalid or expired verification token' });
     }
 
-    return res.status(400).json({ error: 'Invalid or expired verification token' });
+    // Opcion A: after verifying from the email link, the user is logged in
+    // directly. Emit fresh access + refresh tokens so the web app can resume
+    // the session straight into the home screen.
+    const accessToken = generateToken(result.userId, result.email);
+    const refreshToken = await generateAndStoreRefreshToken(result.userId, result.email);
+    return res.json({
+      success: true,
+      alreadyVerified: result.status === 'already_verified',
+      message:
+        result.status === 'already_verified'
+          ? 'Email was already verified'
+          : 'Email verified successfully',
+      token: accessToken,
+      refreshToken,
+    });
   } catch (err) {
     console.error('Email verification error:', err);
     res.status(500).json({ error: 'Email verification failed' });

@@ -148,7 +148,7 @@ export const resetPassword = async (token: string, newPassword: string): Promise
 };
 
 // Verifies an email address with a signed token (from the email link).
-export const verifyEmail = async (token: string): Promise<{ success: boolean; token?: string; refreshToken?: string }> => {
+export const verifyEmail = async (token: string): Promise<{ success: boolean; alreadyVerified?: boolean; token?: string; refreshToken?: string }> => {
   const res = await api.get('/api/auth/verify-email', { params: { token } });
   return res.data;
 };

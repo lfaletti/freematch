@@ -2,7 +2,7 @@ import { query } from '../database/connection';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-import { createHash } from 'crypto';
+import { createHash, createHmac } from 'crypto';
 import { track } from './analyticsService';
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -17,6 +17,26 @@ if (!JWT_SECRET && !isDev) {
 const JWT_SECRET_EFFECTIVE = JWT_SECRET || 'dev-secret-do-not-use-in-production';
 const JWT_EXPIRY = '24h';
 const REFRESH_TOKEN_EXPIRY = '7d';
+
+// Email verification links are single-use. The token carries an HMAC marker
+// bound to the user's current `email_verified_at`, so once the account is
+// verified the marker no longer matches and a second click is rejected as
+// already-used (instead of silently re-verifying). Missing marker = a token
+// issued before this hardening: still accepted, as long as the account is
+// unverified and the JWT has not expired.
+const VERIFY_MARKER_CONTEXT = 'email_verify:';
+
+function verificationMarker(userId: string, verifiedAt: Date | string | null): string {
+  return createHmac('sha256', JWT_SECRET_EFFECTIVE)
+    .update(VERIFY_MARKER_CONTEXT + userId + ':' + (verifiedAt ? new Date(verifiedAt).toISOString() : 'never'))
+    .digest('base64url')
+    .slice(0, 16);
+}
+
+export type VerifyEmailResult =
+  | { status: 'verified'; userId: string; email: string }
+  | { status: 'already_verified'; userId: string; email: string }
+  | { status: 'invalid' };
 
 // Email verification cut-off. Accounts created ON/AFTER this date must verify
 // their email before using the app (strong 2FA-style signup). Accounts created
@@ -359,27 +379,72 @@ async function revokeUserTokens(userId: string): Promise<void> {
   );
 }
 
-export async function verifyEmailToken(token: string): Promise<{ userId: string; email: string } | null> {
+export async function verifyEmailToken(token: string): Promise<VerifyEmailResult> {
+  let decoded: (JWTPayload & { type?: string; vmk?: string }) | null = null;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET_EFFECTIVE) as JWTPayload & { type: string };
-    if (decoded.type !== 'email_verify') return null;
+    decoded = jwt.verify(token, JWT_SECRET_EFFECTIVE) as JWTPayload & { type: string; vmk?: string };
+  } catch {
+    // Bad signature, expired, or malformed. No user id to look up.
+    return { status: 'invalid' };
+  }
+  if (!decoded || decoded.type !== 'email_verify' || !decoded.userId) {
+    return { status: 'invalid' };
+  }
+
+  try {
+    const found = await query(
+      'SELECT id, email, email_verified, email_verified_at FROM users WHERE id = $1',
+      [decoded.userId]
+    );
+    if (found.rows.length === 0) return { status: 'invalid' };
+    const user = found.rows[0];
+
+    if (user.email_verified) {
+      // Account is verified. If this token was issued for the CURRENT
+      // verification, it is the link that did it (or a duplicate click right
+      // after): treat as a friendly "already verified" so the user gets
+      // logged in instead of an error. Anything else is a used/stale link.
+      if (decoded.vmk && decoded.vmk === verificationMarker(user.id, user.email_verified_at)) {
+        return { status: 'already_verified', userId: user.id, email: user.email };
+      }
+      return { status: 'invalid' };
+    }
 
     const res = await query(
       `UPDATE users SET email_verified = true, email_verified_at = NOW()
-       WHERE id = $1 AND email_verified = false RETURNING id, email`,
-      [decoded.userId]
+       WHERE id = $1 AND email_verified = false
+       RETURNING id, email, email_verified_at`,
+      [user.id]
     );
-
-    if (res.rows.length === 0) return null; // already verified / not found
-    return { userId: res.rows[0].id, email: res.rows[0].email };
-  } catch {
-    return null;
+    if (res.rows.length === 0) {
+      // Lost a race with another click: the account is verified now.
+      const recheck = await query('SELECT id, email, email_verified_at FROM users WHERE id = $1', [user.id]);
+      if (recheck.rows.length > 0 && decoded.vmk
+          && decoded.vmk === verificationMarker(recheck.rows[0].id, recheck.rows[0].email_verified_at)) {
+        return { status: 'already_verified', userId: recheck.rows[0].id, email: recheck.rows[0].email };
+      }
+      return { status: 'invalid' };
+    }
+    return { status: 'verified', userId: res.rows[0].id, email: res.rows[0].email };
+  } catch (err) {
+    console.error('verifyEmailToken error:', err);
+    return { status: 'invalid' };
   }
 }
 
 export async function generateEmailVerificationToken(userId: string, email: string): Promise<string> {
+  // Bind the marker to the account's current state: `never` while unverified,
+  // and its email_verified_at once it is (only used for already-verified
+  // re-issues, e.g. resend requests from a verified account).
+  let verifiedAt: Date | string | null = null;
+  try {
+    const row = await query('SELECT email_verified_at FROM users WHERE id = $1', [userId]);
+    verifiedAt = row.rows[0]?.email_verified_at ?? null;
+  } catch {
+    verifiedAt = null;
+  }
   return jwt.sign(
-    { userId, email, type: 'email_verify' } as JWTPayload & { type: string },
+    { userId, email, type: 'email_verify', vmk: verificationMarker(userId, verifiedAt) } as JWTPayload & { type: string; vmk: string },
     JWT_SECRET_EFFECTIVE,
     { expiresIn: '24h' }
   );
