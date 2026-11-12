@@ -105,6 +105,9 @@ const es = {
       errSeeking: 'Seleccioná al menos un género que te interese.',
       errLocation: 'La ubicación es obligatoria.',
       errEmailTaken: 'Ese email ya está vinculado a una cuenta.',
+      errTooManyAttempts: 'Demasiados intentos. Esperá unos segundos y volvé a probar.',
+      errNoConnection: 'No pudimos conectar con el servidor. Revisá tu conexión y volvé a intentar.',
+      errPhotoTooLarge: 'La foto es muy grande (máximo 10 MB). Probá con otra.',
       // legal consent
       legalPrefix: 'Acepto la',
       legalAnd: 'y los',
@@ -424,6 +427,9 @@ const en = {
       errSeeking: "Please select at least one gender you're interested in.",
       errLocation: 'Location is required.',
       errEmailTaken: 'That email is already linked to an account.',
+      errTooManyAttempts: 'Too many attempts. Please wait a few seconds and try again.',
+      errNoConnection: "We couldn't reach the server. Check your connection and try again.",
+      errPhotoTooLarge: 'That photo is too large (10 MB max). Try another one.',
       // legal consent
       legalPrefix: 'I accept the',
       legalAnd: 'and the',

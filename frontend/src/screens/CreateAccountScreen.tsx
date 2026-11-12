@@ -152,6 +152,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
     }
 
     setLoading(true);
+    let accountCreated = false;
     try {
       const [profile, ...rest] = photos;
 
@@ -182,6 +183,11 @@ export default function CreateAccountScreen({ navigation }: Props) {
       if (user.refreshToken) {
         await storageService.setRefreshToken(user.refreshToken);
       }
+
+      // The account is fully created and the tokens are now persisted, so the
+      // post-signup gate can boot the session. From here on, any local failure
+      // must NOT surface as "Registration failed" (see the catch below).
+      accountCreated = true;
 
       dispatch(setSession({
         userId: user.userId,
@@ -219,8 +225,29 @@ export default function CreateAccountScreen({ navigation }: Props) {
     } catch (err: any) {
       const status = err?.response?.status;
       const message = err?.response?.data?.error;
-      if (status === 409) {
+      if (accountCreated) {
+        // The backend already created the account and we already stored the
+        // session; whatever failed here (e.g. a transient local storage write)
+        // is not a registration failure. Don't tell the user to try again —
+        // they'd end up with "that email is already linked to an account".
+        console.warn('Post-registration local step failed:', err);
+      } else if (status === 409) {
         setError(t('createAccount.errEmailTaken'));
+      } else if (status === 429) {
+        // Rate-limited (per-IP registration cap or the 5s cooldown between
+        // attempts). Surface the real reason so retrying makes sense.
+        setError(message ?? t('createAccount.errTooManyAttempts'));
+      } else if (status && status >= 400 && status < 500 && message) {
+        // Validation error from the backend: show the specific reason, not a
+        // generic "registration failed".
+        setError(message);
+      } else if (status === 413) {
+        setError(t('createAccount.errPhotoTooLarge'));
+      } else if (!status) {
+        // No response: timeout (60s) or network drop. On a slow connection the
+        // account may still have been created server-side — verify before
+        // retrying, otherwise the retry lands on "email already registered".
+        setError(t('createAccount.errNoConnection'));
       } else {
         setError(message ?? t('createAccount.registrationFailed'));
       }

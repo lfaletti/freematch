@@ -114,7 +114,11 @@ export const registerWithPhoto = async (
   }
 
   // Let the platform set the multipart boundary; don't force Content-Type.
-  const res = await api.post('/api/auth/register', formData);
+  // Register is slower than a plain JSON call (photo moderation + R2 upload +
+  // verification email), so give it more headroom than the default 30s. A
+  // timeout here looks like a hard failure to the user even when the account
+  // was actually created on the backend.
+  const res = await api.post('/api/auth/register', formData, { timeout: 60000 });
   return res.data;
 };
 
