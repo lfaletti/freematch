@@ -355,9 +355,12 @@ export default function EditProfileScreen({ navigation }: Props) {
             value={location}
             onChange={setLocation}
             onSelectCity={(city) => { setLatitude(city.lat); setLongitude(city.lon); }}
-            onOpenChange={setCityDropdownOpen}
             biasLat={latitude}
             biasLon={longitude}
+            onOpenChange={setCityDropdownOpen}
+            /* Inline: an absolute overlay collided with the "Radio de búsqueda"
+               field right below. In flow it pushes the form down instead. */
+            inline
           />
         </View>
 
@@ -557,13 +560,12 @@ const styles = StyleSheet.create({
   field: {
     marginBottom: 24,
   },
-  // Raised while the CityPicker dropdown is open: a high z-index here lets the
-  // field (and its absolutely-positioned dropdown) paint ABOVE the following
-  // sibling field ("Radio de búsqueda") on web, where z-index only applies
-  // among siblings sharing the same stacking context.
+  // Lifts the location field (and its inline suggestion list) above the
+  // following fields, whose pressables each create a stacking context at
+  // z-index 0 on react-native-web — without this the list paints UNDER the
+  // "Radio de búsqueda" chips even though it is laid out above them.
   fieldRaised: {
-    zIndex: 9999,
-    elevation: 100,
+    zIndex: 10,
   },
   label: {
     fontSize: 13,

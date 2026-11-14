@@ -31,6 +31,14 @@ interface Props {
   /** Called with true when the dropdown opens, false when it closes. */
   onOpenChange?: (open: boolean) => void;
   /**
+   * When true the result list is rendered inline in the document flow (pushing
+   * the following fields down) instead of as an absolutely-positioned overlay.
+   * Use this inside scroll containers where an overlay would collide with the
+   * next field (e.g. the registration form, where the radius chips sit right
+   * below the location input).
+   */
+  inline?: boolean;
+  /**
    * Optional bias coordinates from the user's profile (the centroid of the city
    * they previously chose). Used to rank nearby cities first on Geoapify. The
    * component also requests a one-off, cached device geolocation which takes
@@ -139,6 +147,7 @@ export default function CityPicker({
   onSelectCity,
   placeholder,
   onOpenChange,
+  inline = false,
   biasLat,
   biasLon,
 }: Props) {
@@ -231,7 +240,7 @@ export default function CityPicker({
   const dropdownOpen = showDropdown && results.length > 0;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, !inline && styles.containerOverlay]}>
       <TextInput
         style={styles.input}
         value={query}
@@ -259,17 +268,18 @@ export default function CityPicker({
       )}
 
       {dropdownOpen && (
-        <View style={styles.dropdown}>
+        <View style={[styles.dropdown, inline && styles.dropdownInline]}>
           <FlatList
             data={results}
             keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
             keyExtractor={(_item, index) => `${_item.name}-${index}`}
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.resultItem} onPress={() => handleSelect(item)} activeOpacity={0.7}>
                 <Text style={styles.resultText}>{item.display}</Text>
               </TouchableOpacity>
             )}
-            style={styles.list}
+            style={[styles.list, inline && styles.listInline]}
           />
         </View>
       )}
@@ -280,8 +290,14 @@ export default function CityPicker({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    // While open, lift this whole subtree so the absolutely-positioned list
-    // paints above the sibling fields that follow it in the ScrollView.
+  },
+  // Overlay mode only: lift the whole subtree so the absolutely-positioned
+  // list paints above the sibling fields that follow it in the ScrollView.
+  // NOTE: zIndex on this container creates a stacking context on web which
+  // also CLIPS stacking to the container box — that is exactly what made the
+  // inline variant render underneath the following field. So it lives on the
+  // container only in overlay mode.
+  containerOverlay: {
     zIndex: 9999,
     elevation: 9999,
   },
@@ -317,8 +333,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
   },
+  dropdownInline: {
+    position: 'relative',
+    top: undefined,
+    left: undefined,
+    right: undefined,
+    // The list occupies real layout space (so it pushes the following fields
+    // down), but react-native-web's Pressable wrappers in the sibling fields
+    // create their own stacking contexts at z-index:0. Without an explicit
+    // z-index here the rows paint UNDER the "RADIO DE BÚSQUEDA" chips below
+    // even though they are laid out above them.
+    zIndex: 1,
+    elevation: 1,
+  },
   list: {
     maxHeight: 220,
+  },
+  // One row is ~45pt. Cap inline lists at ~3 rows so the dropdown stays
+  // readable and the form keeps a sensible length.
+  listInline: {
+    maxHeight: 156,
   },
   resultItem: {
     paddingHorizontal: 16,

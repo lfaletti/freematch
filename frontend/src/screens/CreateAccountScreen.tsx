@@ -64,6 +64,11 @@ export default function CreateAccountScreen({ navigation }: Props) {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [searchRadiusKm, setSearchRadiusKm] = useState(50);
+  // True while the CityPicker suggestion list is open. The location field is
+  // lifted above the following fields while open because react-native-web
+  // gives each field's pressables their own stacking context (z-index 0), so
+  // the inline list would otherwise paint UNDER the "Radio de búsqueda" chips.
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
 
   const handleLanguageChange = (lang: Language) => {
     setLanguageState(lang);
@@ -403,7 +408,7 @@ export default function CreateAccountScreen({ navigation }: Props) {
         />
       </View>
 
-      <View style={styles.field}>
+      <View style={[styles.field, cityDropdownOpen && styles.fieldRaised]}>
         <Text style={styles.label}>{t('createAccount.location')} <Text style={styles.required}>{t('common.required')}</Text></Text>
         <CityPicker
           value={location}
@@ -412,6 +417,11 @@ export default function CreateAccountScreen({ navigation }: Props) {
           placeholder={t('createAccount.locationPlaceholder')}
           biasLat={latitude}
           biasLon={longitude}
+          onOpenChange={setCityDropdownOpen}
+          /* Inline: the overlay dropdown used to float over the "Distancia
+             máxima" field right below it. In flow it pushes the rest of the
+             form down instead of overlapping. */
+          inline
         />
       </View>
 
@@ -633,6 +643,12 @@ const styles = StyleSheet.create({
   },
   field: {
     marginBottom: 20,
+  },
+  // Lifts the location field (and its inline suggestion list) above the
+  // following fields, whose pressables each create a stacking context at
+  // z-index 0 on react-native-web.
+  fieldRaised: {
+    zIndex: 10,
   },
   label: {
     fontSize: 13,
